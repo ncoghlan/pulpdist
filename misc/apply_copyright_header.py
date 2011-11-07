@@ -5,7 +5,7 @@ import fnmatch
 import codecs
 import python_source
 
-HEADER = """
+HEADER = [line + "\n" for line in """\
 #
 # Copyright (C) 2011 Red Hat, Inc.
 #
@@ -16,8 +16,8 @@ HEADER = """
 # including the implied warranties of MERCHANTABILITY,
 # NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
 # have received a copy of GPLv2 along with this software; if not, see
-# http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
-""".split("\n")
+# http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.\
+""".split("\n")]
 
 def _make_parser():
     parser = argparse.ArgumentParser(description='Add copyright headers')
@@ -54,7 +54,7 @@ def add_headers(source_dirs, excluded_dirs=None):
                 else:
                     print "Adding header to {}".format(fpath)
                     data[index:index] = HEADER
-                with codecs.open(fpath, 'w', encoding=encoding):
+                with codecs.open(fpath, 'w', encoding=encoding) as f:
                     f.writelines(data)
             if excluded_dirs:
                 subdirs[:] = [d for d in subdirs if not
