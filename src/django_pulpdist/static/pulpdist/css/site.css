@@ -1,0 +1,77 @@
+body {
+background-color:#eaeaea;
+width:97%;
+}
+
+hr {
+margin-bottom:1em;
+margin-top:1em;
+clear:both;
+width:97%;
+border: 1px solid #aaaaaa;
+}
+
+h2 {
+padding-bottom:.3em;
+}
+
+form h2 {
+margin-top:10px;
+}
+
+form#settings {
+margin-left:1em;
+}
+
+.formlayout_wrapper {
+width:80%;
+clear:both;
+padding-bottom:2.2em;
+}
+
+h2 a.button
+{
+float:right;
+font-size:10pt;
+}
+
+.forms form,.forms {
+float:right;
+padding-right:1em;
+padding-left:1em;
+padding-top:1px;
+color:#555753;
+cursor:pointer;
+}
+
+div .forms {
+padding:0;
+}
+
+form.active {
+background-color:#FFF;
+color:#2e3436;
+}
+
+.main-content-footer {
+font-weight:700;
+font-size:8pt;
+text-align:center;
+margin-left:10px;
+margin-right:10px;
+background-color:#333;
+padding:1.5em 1em;
+}
+
+.main-content-footer .name {
+float:left;
+color:#a6a6a6;
+margin-top:-8px;
+}
+
+.main-content-footer .reportbug {
+float:right;
+color:#FFF;
+margin-top:-8px;
+text-decoration:none;
+}

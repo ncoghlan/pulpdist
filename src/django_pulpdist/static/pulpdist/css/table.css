@@ -1,0 +1,163 @@
+/* Basic table style */
+table {
+	border-collapse : collapse;
+	font-size : 12px;
+	font-weight : 400;
+	width : 100%;
+	border-bottom : 1px solid #bfbfbf;
+	border-top : 1px solid #bfbfbf;
+	margin : 0 auto 1em;
+}
+
+tr td {
+	padding-top : 4px;
+	padding-bottom : 4px;
+	padding-left : 4px;
+	border-left : 1px solid #bfbfbf;
+	border-right : 1px solid #bfbfbf;
+}
+
+tr th {
+	padding-top : 4px;
+	padding-bottom : 4px;
+	padding-left : 4px;
+	border-left : 1px solid #bfbfbf;
+	border-right : 1px solid #bfbfbf;
+	border-bottom : 1px solid #bfbfbf;
+	background-image : url(../img/table-header.png);
+	background-repeat: repeat-x;
+	background-color : #cccccc;
+	text-align : left;
+	text-shadow: 0px 1px 0px rgba(255, 255, 255, 0.50);
+}
+
+.row_even {
+	background-color : #e5e5e5;
+}
+
+.row_odd {
+	background-color : #f4f4f4;
+}
+
+tr {
+	padding : 5px;
+}
+
+.table-boolean-false, .table-boolean-true, .table-boolean-head {
+	text-align : center;
+	width : 5em;
+}
+
+.table-boolean-true {
+	color : green;
+}
+
+.table-boolean-false {
+	color : red;
+} 
+
+/*table {
+border-collapse:collapse;
+font-size:12px;
+font-weight:400;
+width:100%;
+border:1px solid #a0a0a0;
+margin:0 auto 1em;
+}
+
+tr td {
+padding-top:4px;
+padding-bottom:4px;
+padding-left:4px;
+border-left:1px solid #bfbfbf;
+}
+
+tr th {
+padding-top:4px;
+padding-bottom:4px;
+padding-left:4px;
+border-left:1px solid #A0a0a0;
+background-color:#d4d4d4;
+}
+
+tr {
+padding:5px;
+}*/
+
+/*tr th
+{
+background-image : url(images/table-header.png);
+}*/
+
+.bool,.int {
+text-align:center;
+min-width:3em;
+}
+
+th td {
+border-left:1px solid #FFF;
+}
+
+td.trees {
+max-width:7em;
+}
+
+td.bool .on {
+color:green;
+}
+
+td.bool .off {
+color:red;
+}
+
+td.status {
+text-transform:uppercase;
+color:#FFF;
+font-weight:700;
+text-align:center;
+border-bottom:1px solid #d1d1d1;
+}
+
+td.fail {
+background-color:#C00;
+}
+
+td.pass {
+background-color:#519a09;
+}
+
+td.queued,td.skipped,td.hold {
+background-color:#2e3436;
+}
+
+td.active {
+background-color:#3465a4;
+}
+
+td.filters {
+width:1em;
+}
+
+td.actions {
+min-width:4em;
+}
+
+.odd {
+background-color:#f4f4f4;
+}
+
+.even {
+background-color:#e5e5e5;
+}
+
+th {
+text-align:left;
+}
+
+#col-product {
+width:40%;
+}
+
+div.table-container {
+    display: inline-block;
+}

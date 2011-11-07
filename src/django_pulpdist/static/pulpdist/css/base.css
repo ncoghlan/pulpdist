@@ -1,0 +1,125 @@
+/* Default pulpdist styling (or, more accurately, the lack thereof...) */
+
+body {
+        font-family : "Liberation Sans", helvetica, verdana, arial, sans-serif;
+        font-size : 9pt;
+        background-color : #eaeaea;
+        padding-top : 10px;
+        padding-left : 10px;
+        padding-right : 10px;
+        margin-top : 0;
+        width : 850px;
+        margin-left : auto;
+        margin-right : auto;
+        color : #333;
+}
+
+p {
+        line-height : 120%;
+        margin-bottom : 1em;
+}
+
+h1, h2, h3 {
+        margin : 0;
+        text-shadow: 0px 1px 0px rgba(255, 255, 255, 0.50);
+}
+
+a, a:visited {
+        color : #BB5C00;
+        text-decoration : none;
+        border : none;
+        outline : none;
+        cursor:pointer;
+}
+
+a img {
+        border : none;
+}
+
+a:hover {
+        color : #6c0000;
+}
+
+.main-content-header {
+        background-color : #d1d1d1;
+        background-image : url("../img/main-content-bumper.png");
+        background-repeat : repeat-x;
+        border-left : 1px solid gray;
+        border-right : 1px solid gray;
+        border-bottom : 1px solid #a7a8a6;
+        padding-top : 6px;
+        height : 2.7em;
+        text-shadow: 0px 1px 0px rgba(255, 255, 255, 0.50);
+}
+
+.main-content-header .main-content-header-text {
+        font-size : 11pt;
+        font-weight : bold;
+        color : #444;
+        margin-left : 0.5em;
+        margin-top : -3em;
+        line-height : 2em;
+}
+
+.breadcrumbs {
+        border-left : 1px solid gray;
+        border-right : 1px solid gray;
+        padding-top : 3px;
+        padding-bottom : 3px;
+        padding-left : 6px;
+}
+
+
+/*
+  Rule for the Main Content Area
+*/
+.main-content {
+        background-color : white;
+        border-left : 1px solid gray;
+        border-right : 1px solid gray;
+        border-bottom : 1px solid gray;
+        min-height : 30em;
+        padding-top : 2em;
+        padding-left : 2em;
+        padding-right : 2em;
+        padding-bottom : 3em;
+}
+
+
+
+/* Rules for the Footer area */
+.main-content-footer {
+        font-weight : bold;
+        font-size : 8pt;
+        padding : 1em;
+        padding-top : 1.5em;
+        padding-bottom : 3em;
+        margin-left : 10px;
+        margin-right : 10px;
+        background-color : #333333;
+}
+
+.main-content-footer div {
+        float : left;
+        color : #aaa;
+        margin-top : -6px;
+        padding-left : 1em;
+}
+
+.main-content-footer img {
+        float : right;
+        margin-top : -4px;
+        padding-right : 1em;
+}
+
+.content-block {
+        background-color : #e5e5e5;
+        margin-top : 1em;
+        margin-bottom : 2em;
+        padding-bottom : 1em;
+        border : 1px solid #c4c5c5;
+        padding : 0 1em 0 1em;
+        width : 95%;
+        margin-left : auto;
+        margin-right : auto;
+}
