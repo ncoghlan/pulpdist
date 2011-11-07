@@ -49,7 +49,7 @@ BuildRequires: Django-south
 # Testing dependencies
 BuildRequires:  python-nose
 # BuildRequires:  python-mock (PyPI)
-# BuildRequires:  python-django-sane-testing (PyPI)
+# BuildRequires:  python-djangosanetesting (PyPI)
 
 Requires: pulp-admin
 Requires: python >= 2.6
