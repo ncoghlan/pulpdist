@@ -1,0 +1,2 @@
+recursive-include django_pulpdist/templates *
+recursive-include django_pulpdist/static *

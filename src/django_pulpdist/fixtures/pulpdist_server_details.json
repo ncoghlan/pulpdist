@@ -1,0 +1,9 @@
+[
+    {
+        "pk": 1, 
+        "model": "pulpdist.pulpserver",
+        "fields": {
+            "hostname": "localhost"
+        }
+    }
+]

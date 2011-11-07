@@ -1,0 +1,38 @@
+{% extends "pulpdist/base.tmpl" %}
+{% load i18n %}
+{% load pulpdist_tags %}
+
+{% block title %}{{ title }} | {% trans 'Pulp Server Administration' %}{% endblock %}
+
+{% block branding %}
+  <a href="https://fedorahosted.org/pulpdist/"><img src="{% pulpdist_image_dir %}pulpdist-logo.png"
+     alt="logo"/>
+  </a>
+{% endblock %}
+
+{% block sitestyle %}
+  <link rel="shortcut icon" href="{% pulpdist_image_dir %}favicon.png" type="image/png"/>
+  <link rel="stylesheet" type="text/css" href="{% pulpdist_style_dir %}site.css"/>
+{% endblock %}
+
+{% block breadcrumbtrail%}
+{% for crumb in breadcrumbs %}
+  &rsaquo; <a href="{{crumb.link}}">{% trans crumb.label %}</a>
+{% endfor %}
+{% endblock %}
+
+{% block header %}
+  <span class="main-content-header-text">
+  {% if pulp_server %}
+    {% trans 'Pulp Server Administration for' %} {{ pulp_server.pulp_site }}
+  {% else %}
+    {% trans 'Pulp Server Administration' %}
+  {% endif %}
+  </span>
+{% endblock %}
+
+{% block footer %}
+  <span class="name">{% trans 'PulpDist Web UI' %} {% pulpdist_version %}</span>
+  <span class="reportbug">Bug reporting not yet available</span>
+{% endblock %}
+

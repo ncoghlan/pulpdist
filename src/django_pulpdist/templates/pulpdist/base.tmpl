@@ -1,0 +1,56 @@
+{% load pulpdist_tags %}
+{% load i18n %}
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>{% block title %}{% endblock %}</title>
+  <script type="text/javascript" src="{% pulpdist_script_dir %}pulpdist.js"></script>
+  {% block sitescripts %}{% endblock %}
+  {% block pagescripts %}{% endblock %}
+  <link rel="stylesheet" type="text/css" href="{% block stylesheet %}{% pulpdist_style_dir %}base.css{% endblock %}"/>
+  {% block sitestyle %}{% endblock %}
+  {% block pagestyle %}{% endblock %}
+  <script type="text/javascript">window.__pulpdist_static_prefix__ = "{% filter escapejs %}{% pulpdist_static_prefix %}{% endfilter %}";</script>
+  {% block sitehead %}{% endblock %}
+  {% block pagehead %}{% endblock %}
+  {% block blockbots %}<meta name="robots" content="NONE,NOARCHIVE" />{% endblock %}
+</head>
+
+<body class="{% if is_popup %}popup {% endif %}{% block bodyclass %}{% endblock %}">
+  <!-- Container -->
+  <div class="container">
+    <!-- Standard Header -->
+    {% if not is_popup %}
+      <div class="header">
+        <div class="logo">
+          {% block branding %}{% endblock %}
+        </div>
+        <div class="links">
+          {% block nav-global %}{% endblock %}
+        </div>
+      </div>
+    {% endif %}
+    <!-- END Standard Header -->
+    <!-- Display Content -->
+    <div class="main-content-header">
+      {% block header %}{% endblock %}
+    </div>
+    {% block breadcrumbs %}
+    <div class="breadcrumbs">
+      <a href="{% block home_url %}{% url pulpdist_root_index %}{% endblock %}">{% trans 'Home' %}</a>
+      {% block breadcrumbtrail %}{% if title %} &rsaquo; {{ title }}{% endif %}{% endblock %}
+    </div>
+    {% endblock %}
+    <div class="main-content">
+      {% block content %}{{ content }}{% endblock %}
+      {% block sidebar %}{% endblock %}
+      <br class="clear" />
+    </div>
+    <div class="main-content-footer">
+      {% block footer %}{% endblock %}
+    </div>
+    <!-- END Display Content -->
+  </div>
+</body>
+</html>

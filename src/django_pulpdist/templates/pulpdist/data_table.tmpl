@@ -1,0 +1,24 @@
+{% extends "pulpdist/base_site.tmpl" %}
+{% load i18n %}
+{% load django_tables2 %}
+{% load pulpdist_tags %}
+
+{% block pagestyle %}
+<link rel="stylesheet" type="text/css" href="{% pulpdist_style_dir %}table.css" />
+{% endblock %}
+
+{% block content %}
+    <div class="data-header">
+    {% block data_header %}{{ data_header }}{% endblock %}
+    </div>
+    {% if data_as_table %}
+        <div class="data-table">
+        {% render_table data_as_table %}
+        </div>
+    {% else %}
+        {% block data_unavailable %}{{ data_unavailable }}{% endblock %}
+    {% endif %}
+    <div class="data-footer">
+    {% block data_footer %}{{ data_footer }}{% endblock %}
+    </div>
+{% endblock %}

@@ -1,0 +1,9 @@
+PulpDist is a tool for managing a network of Pulp servers as a secure, centrally coordinated, mirroring system. It provides filtered mirroring with robust access control between globally distributed sites over bandwidth limited and potentially high latency WAN links.
+
+For more information, check out the project website:
+
+https://fedorahosted.org/pulpdist/
+
+For more information on Pulp itself, check out the Pulp website:
+
+http://pulpproject.org

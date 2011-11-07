@@ -1,0 +1,190 @@
+# sitelib for noarch packages, sitearch for others (remove the unneeded one)
+%{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
+%{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
+
+# For commented out dependencies marked as (PyPI)
+# do a manual 'pip install name' without the
+# leading 'python-' until they have been packaged
+# properly for Fedora/EPEL/etc
+
+%define app_name django_pulpdist
+%define app_package Django-pulpdist
+
+# -- headers - PulpDist deployment  -------------------------------------------------
+Name:           pulpdist
+Summary:        Basic Django site definition to serve %{app_name} on Apache
+Version:        0.0.1
+Release:        1%{?dist}
+Group:          Development/Tools
+License:        GPLv2
+Source0:        %{name}-%{version}.tar.gz
+BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+
+BuildArch:      noarch
+BuildRequires:  rpm-python
+BuildRequires:  python2-devel
+BuildRequires:  python-setuptools
+# BuildRequires:  python-setuptools-git (PyPI)
+
+Requires: %{app_package} = %{version}
+Requires: httpd
+Requires: mod_ssl
+Requires: mod_wsgi
+Requires: mod_auth_kerb
+
+%description -n %{deploy_package}
+The necessary infrastructure to deploy and serve %{app_name} as a standalone
+Django site on Apache
+
+# -- headers - PulpDist Django App ---------------------------------------
+
+%package -n %{app_package}
+Summary:        A Django app to manage a network of Pulp servers
+BuildRequires:  rpm-python
+BuildRequires:  python2-devel
+BuildRequires:  python-setuptools
+# BuildRequires:  python-setuptools-git (PyPI)
+BuildRequires: Django-south
+
+# Testing dependencies
+BuildRequires:  python-nose
+# BuildRequires:  python-mock (PyPI)
+# BuildRequires:  python-django-sane-testing (PyPI)
+
+Requires: pulp-admin
+Requires: python >= 2.6
+Requires: Django >= 1.3
+Requires: python-oauth2
+Requires: python-httplib2
+Requires: m2crypto
+Requires: openssl
+Requires: python-ldap
+# Requires: python-django-tables2 (PyPI)
+# Requires:  python-djangorestframework (PyPI)
+
+# Installation dependencies
+Requires: python-setuptools
+Requires: Django-south
+
+%description
+The PulpDist Django application provides a web frontend for managing and
+monitoring a network of Pulp servers used as a private mirroring network.
+
+
+# TODO: Actually create the plugins package
+# # -- headers - PulpDist plugins for Pulp  -------------------------------------------------
+# 
+# # %define plugin_package %{name}-plugins
+# %package -n %{plugin_package}
+# Summary:        Pulp plugins to support PulpDist mirroring network
+# 
+# BuildRequires:  rpm-python
+# BuildRequires:  python2-devel
+# BuildRequires:  python-setuptools
+# # BuildRequires:  python-setuptools-git (PyPI)
+# 
+# Requires: pulp
+# Requires: rsync
+# 
+# %description -n %{plugin_package}
+# The Pulp plugins to be installed on each Pulp server in a PulpDist mirroring network
+
+# -- build -------------------------------------------------------------------
+
+
+%prep
+%setup -q
+
+%build
+pushd src
+%{__python} setup.py build
+popd
+
+%install
+rm -rf %{buildroot}
+pushd src
+%{__python} setup.py install -O1 --skip-build --root %{buildroot}
+popd
+# Remove egg info
+rm -rf %{buildroot}/%{python_sitelib}/%{app_name}*.egg-info
+rm -rf %{buildroot}/%{python_sitelib}/%{name}*.egg-info
+
+# Configuration
+mkdir -p %{buildroot}/etc/%{name}
+cp -R etc/%{name}/* %{buildroot}/etc/%{name}
+
+# Logging
+mkdir -p %{buildroot}/var/log/%{name}
+
+# Storage for misc files (e.g. Django sqlite3 ORM)
+mkdir -p %{buildroot}/var/lib/%{name}
+
+# Static files (CSS, JS, images)
+# We use an environment variable to tweak the Django settings
+# for the static media files and other components put in
+# place as part of the build process
+mkdir -p %{buildroot}/var/www/pub/%{name}
+pushd src/%{name}
+export DJANGO_RPM_ROOT=%{buildroot}; %{__python} manage.py collectstatic --noinput
+popd
+
+# Apache Configuration
+mkdir -p %{buildroot}/etc/httpd/conf.d/
+cp etc/httpd/conf.d/%{name}.conf %{buildroot}/etc/httpd/conf.d/
+
+# WSGI Service Hook
+mkdir -p %{buildroot}/srv/%{name}
+cp srv/%{name}/django.wsgi %{buildroot}/srv/%{name}/django.wsgi
+
+
+%clean
+rm -rf %{buildroot}
+
+# -- post ------------------------------------------------------
+
+%define database_file /var/lib/%{name}/djangoORM.db
+
+%post
+# Django ORM
+pushd %{python_sitelib}/%{name}/
+if [ "$1" = "1" ]; then
+  %{__python} manage.py syncdb --noinput
+fi
+%{__python} manage.py migrate
+chown apache:apache %{database_file}
+popd
+
+%postun
+# TODO
+
+# -- files - Django site and Apache deployment -----------------------------------------------------
+
+%files
+%defattr(644,root,root,755)
+%doc
+# For noarch packages: sitelib
+%{python_sitelib}/%{name}/
+%attr(755,root,root) %{python_sitelib}/%{name}/manage.py
+%defattr(644,apache,apache,755)
+/srv/%{name}/
+%attr(750, apache, apache) /srv/%{name}/django.wsgi
+/var/lib/%{name}/
+%attr(644,apache,apache) %ghost %{database_file}
+/var/www/pub/%{name}/
+/var/log/%{name}/
+/etc/%{name}/
+%config(noreplace) /etc/%{name}/*.conf
+
+# -- files - Apache deployment ----------------------------------------------------------
+
+%files -n %{app_package}
+%defattr(-,root,root,-)
+%doc
+%config(noreplace) /etc/httpd/conf.d/%{name}.conf
+
+# -- changelog ---------------------------------------------------------------
+
+%changelog
+* Fri 4 Nov 2011 Nick Coghlan <ncoghlan@redhat.com> 0.0.1-1
+- initial repackaging for publication as pulpdist
+

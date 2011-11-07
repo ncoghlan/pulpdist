@@ -1,0 +1,11 @@
+{% extends "pulpdist/base_site.tmpl" %}
+{% load i18n %}
+{% load django_tables2 %}
+{% load pulpdist_tags %}
+
+{% block content %}
+  {% trans 'Pulp Repository Details' %}
+  <ul>
+    <li><a href="{% url pulp_repo_index pulp_server.server_slug %}">{% trans "Packages (but not yet!)" %}</a></li>
+  </ul>
+{% endblock %}

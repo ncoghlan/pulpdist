@@ -1,0 +1,15 @@
+{% extends "pulpdist/base_site.tmpl" %}
+{% load i18n %}
+{% load pulpdist_tags %}
+
+{% block title %}{% trans 'Page not found' %} | {% trans 'Pulp Server Administration' %}{% endblock %}
+
+{% block content %}
+
+<h2>{% trans 'Page not found' %}</h2>
+
+<p>{% trans "We're sorry, but the requested page could not be found." %}</p>
+
+{{ pulpdist_static_prefix }}
+
+{% endblock %}

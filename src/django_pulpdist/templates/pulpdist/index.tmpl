@@ -1,0 +1,15 @@
+{% extends "pulpdist/data_table.tmpl" %}
+{% load i18n %}
+
+{% block breadcrumbtrail %}{% endblock %}
+
+{% block data_header %}
+  {% trans 'Select a Pulp server to administer:' %}
+{% endblock %}
+
+{% block data_footer %}
+  {% trans 'Other resources:' %}
+  <ul>
+  <li><a href="{% url restapi_root %}">{% trans 'Browse the REST data model' %}</a></li>
+  </ul>
+{% endblock %}
