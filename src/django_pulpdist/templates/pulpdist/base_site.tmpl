@@ -2,11 +2,11 @@
 {% load i18n %}
 {% load pulpdist_tags %}
 
-{% block title %}{{ title }} | {% trans 'Pulp Server Administration' %}{% endblock %}
+{% block title %}{{ title }} | {% trans 'Pulp Server Status' %}{% endblock %}
 
 {% block branding %}
   <a href="https://fedorahosted.org/pulpdist/"><img src="{% pulpdist_image_dir %}pulpdist-logo.png"
-     alt="logo"/>
+     alt="logo" />
   </a>
 {% endblock %}
 
@@ -24,9 +24,9 @@
 {% block header %}
   <span class="main-content-header-text">
   {% if pulp_server %}
-    {% trans 'Pulp Server Administration for' %} {{ pulp_server.pulp_site }}
+    {% trans 'Pulp Server Status for' %} {{ pulp_server.pulp_site }}
   {% else %}
-    {% trans 'Pulp Server Administration' %}
+    {% trans 'Pulp Server Status' %}
   {% endif %}
   </span>
 {% endblock %}
