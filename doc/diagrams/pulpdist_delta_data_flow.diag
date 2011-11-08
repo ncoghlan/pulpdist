@@ -1,0 +1,35 @@
+diagram {
+  // Set node properties
+  node_width = 120;
+  node_height = 50;
+  default_shape = roundedbox;
+
+  // Set link properties
+  span_width = 120;
+  span_height = 50;
+
+  // Set fontsize
+  fontsize = 20;  // default value is 11
+
+
+  // Set up our nodes
+  Upstream [label = "Tree Source\n(e.g. central\nbuild system)"]
+  Import [label = "Import Site\n(Pulp instance)"];
+  Export [label = "Export Site\n(Pulp instance)", stacked];
+  Consumer [label = "Tree User\n(e.g. automated\ntest system)"];
+  VPN [shape = "cloud", label = "Internal WAN"];
+  Akamai [shape = "cloud", label = "External CDN"];
+
+  // Set up the connections
+  Upstream -> Import [label = "NFS"];
+  Import -> VPN, Akamai [label = "rsync deltas"];
+  VPN -> Export [label = "HTTP/rsync"];
+  Akamai -> Export [label = "HTTP/rsync"];
+  Export -> Consumer [label = "NFS/HTTP/etc"];
+
+  // Set up the boundaries
+  group {
+    label = "pulpdist Mirror Network"
+    Import; Export; VPN; Akamai;
+  }
+}

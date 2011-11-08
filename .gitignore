@@ -16,3 +16,4 @@ dist
 cover
 *~
 *djangoORM.db
+doc/_build
