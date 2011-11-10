@@ -1,0 +1,20 @@
+{"types": [
+    {"id" : "tree",
+     "display_name" : "Tree",
+     "description" : "Directory Tree",
+     "unique_indexes" : ["name"],
+     "search_indexes" : ["name"]
+    },
+    {"id" : "tree-delta",
+     "display_name" : "Tree Delta",
+     "description" : "Directory Tree Delta",
+     "unique_indexes" : ["id"],
+     "search_indexes" : ["tree", "seq"]
+    },
+    {"id" : "sync-log",
+     "display_name" : "Sync Log",
+     "description" : "Raw log data for CLI based imports",
+     "unique_indexes" : ["id"],
+     "search_indexes" : ["tree"]
+    }
+]}
