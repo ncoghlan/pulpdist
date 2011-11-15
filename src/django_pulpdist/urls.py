@@ -11,14 +11,11 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 """URL definitions for Pulp UI"""
 
-from django.conf.urls.defaults import *
+from django.conf.urls.defaults import url, patterns
 
 from .views import MainIndex, ServerView, RepoListView, RepoView
 
-from .restapi import (ResourceIndex,
-                      PulpServerResourceIndex, PulpServerResourceView,
-                      PulpRepoResourceIndex, PulpRepoResourceView,
-                      PulpContentTypeResourceIndex, PulpContentTypeResourceView)
+import restapi as api
 
 # Main site
 urlpatterns = patterns('',
@@ -33,19 +30,32 @@ urlpatterns = patterns('',
 )
 
 # REST API
+
 urlpatterns += patterns('',
-    url(r'^api/$',
-        ResourceIndex.as_view(), name=ResourceIndex.urlname),
-    url(r'^api/servers/$',
-        PulpServerResourceIndex.as_view(), name=PulpServerResourceIndex.urlname),
-    url(r'^api/servers/(?P<server_slug>[-\w]+)/$',
-        PulpServerResourceView.as_view(), name=PulpServerResourceView.urlname),
-    url(r'^api/servers/(?P<server_slug>[-\w]+)/repos/$',
-        PulpRepoResourceIndex.as_view(), name=PulpRepoResourceIndex.urlname),
-    url(r'^api/servers/(?P<server_slug>[-\w]+)/repos/(?P<repo_id>\w+)$',
-        PulpRepoResourceView.as_view(), name=PulpRepoResourceView.urlname),
-    url(r'^api/servers/(?P<server_slug>[-\w]+)/content_types/$',
-        PulpContentTypeResourceIndex.as_view(), name=PulpContentTypeResourceIndex.urlname),
-    url(r'^api/servers/(?P<server_slug>[-\w]+)/content_types/(?P<type_id>\w+)$',
-        PulpContentTypeResourceView.as_view(), name=PulpContentTypeResourceView.urlname),
+    api.ResourceIndex.make_url('api'),
+
+    api.PulpServerResourceIndex.make_url('api/servers'),
+    api.PulpServerResourceDetail.make_url('api/servers/<server_slug>'),
+    api.PulpRepoResourceIndex.make_alias('api/servers/<server_slug>/repos'),
+    api.PulpContentTypeResourceIndex.make_alias('api/servers/<server_slug>/content_types'),
+    api.PulpDistributorResourceIndex.make_alias('api/servers/<server_slug>/distributors'),
+    api.PulpImporterResourceIndex.make_alias('api/servers/<server_slug>/importers'),
+
+    # PulpRepoAggregateIndex.make_url('api/repos'),
+    api.PulpRepoResourceIndex.make_url('api/repos/<server_slug>'),
+    api.PulpRepoResourceDetail.make_url('api/repos/<server_slug>/<pulp_id>'),
+
+    # restapi.PulpContentTypeAggregateIndex.make_url('api/content_types'),
+    api.PulpContentTypeResourceIndex.make_url('api/content_types/<server_slug>'),
+    # api.PulpContentTypeResourceDetail.make_url('api/content_types/<server_slug>/<pulp_id>'),
+
+    # restapi.PulpDistributorAggregateIndex.make_url('api/distributors'),
+    api.PulpDistributorResourceIndex.make_url('api/distributors/<server_slug>'),
+    # api.PulpDistributorResourceDetail.make_url('api/distributors/<server_slug>/<pulp_id>'),
+
+    # restapi.PulpImporterAggregateIndex.make_url('api/importers'),
+    api.PulpImporterResourceIndex.make_url('api/importers/<server_slug>'),
+    # api.PulpImporterResourceDetail.make_url('api/importers/<server_slug>/<pulp_id>'),
+
 )
+

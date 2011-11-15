@@ -14,6 +14,7 @@ from django.templatetags.static import PrefixNode
 from django.conf import settings
 
 from .. import views
+from .. import util
 
 register = Library()
 
@@ -48,4 +49,4 @@ def pulpdist_script_dir():
 @register.simple_tag
 def pulpdist_version():
     """Version number"""
-    return "0.1a0"
+    return util.version()

@@ -17,6 +17,10 @@ from django.utils.safestring import mark_safe
 from django.core.urlresolvers import reverse
 from .models import PulpServer
 
+# Easy access to common version definition
+def version():
+    return "0.1a0"
+
 # Helpers for class-based views
 Breadcrumb = namedtuple("Breadcrumb", "label link")
 

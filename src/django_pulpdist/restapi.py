@@ -11,6 +11,7 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 """REST API definitions for Pulp UI"""
 import collections 
+from django.conf.urls.defaults import url
 from django.core.urlresolvers import reverse
 from django.template.defaultfilters import slugify
 from django.http import Http404
@@ -37,15 +38,42 @@ IMPORTER_RESOURCE = "resource/importer"
 DISTRIBUTOR_COLLECTION = "collection/distributors"
 DISTRIBUTOR_RESOURCE = "resource/distributor"
 
+
+class BaseView(View):
+    """Base class for all PulpDist REST API views"""
+    @classmethod
+    def _make_regex(cls, url_parts):
+        regex_parts = []
+        for part in url_parts.split('/'):
+            if part == '<server_slug>':
+                part = r'(?P<server_slug>[-\w]+)'
+            elif part.startswith('<'):
+                part = part.replace('<', r'(?P<')
+                part = part.replace('>', r'>\w+)')
+            regex_parts.append(part)
+        regex_parts.append('$')
+        return  '^' + '/'.join(regex_parts)
+
+    @classmethod
+    def make_url(cls, url_parts):
+        return url(cls._make_regex(url_parts), cls.as_view(), name=cls.urlname)
+
+    @classmethod
+    def make_alias(cls, url_parts):
+        return url(cls._make_regex(url_parts), cls.as_view())
+
 # Resource Index
 DocumentingHTMLRenderer.template = "pulpdist/browse_rest.tmpl"
 
-class ResourceIndex(View):
+VERSION = "0.1"
+
+class ResourceIndex(BaseView):
     urlname = "restapi_root"
 
     def get(self, request):
         return {
-            "description": "REST API for Pulp Web UI",
+            "description": "REST API for PulpDist",
+            "version": VERSION,
             "servers": api_link(
                 SERVER_COLLECTION,
                 reverse(PulpServerResourceIndex.urlname)),
@@ -57,7 +85,7 @@ class PulpServerResource(ModelResource):
     form = PulpServerForm
 
     def url(self, server):
-        return get_server_url(PulpServerResourceView.urlname, server.server_slug)
+        return get_server_url(PulpServerResourceDetail.urlname, server.server_slug)
 
     def serialize(self, obj):
         data = super(PulpServerResource, self).serialize(obj)
@@ -71,12 +99,12 @@ class PulpServerResource(ModelResource):
             data["content_types"] = api_link(
                 CONTENT_TYPE_COLLECTION,
                 get_server_url(PulpContentTypeResourceIndex.urlname, obj.server_slug))
-            #data["importers"] = api_link(
-                #IMPORTER_COLLECTION,
-                #get_server_url(PulpImporterResourceIndex.urlname, obj.server_slug))
-            #data["distributors"] = api_link(
-                #DISTRIBUTOR_COLLECTION,
-                #get_server_url(PulpDistributorResourceIndex.urlname, obj.server_slug))
+            data["importers"] = api_link(
+                IMPORTER_COLLECTION,
+                get_server_url(PulpImporterResourceIndex.urlname, obj.server_slug))
+            data["distributors"] = api_link(
+                DISTRIBUTOR_COLLECTION,
+                get_server_url(PulpDistributorResourceIndex.urlname, obj.server_slug))
         return data
 
     def get_server_slug(self, data):
@@ -108,69 +136,127 @@ class PulpServerResource(ModelResource):
                     return self.form(data=adjusted, instance=model)
         return super(PulpServerResource, self).get_bound_form(data, files, method)
 
-class PulpServerResourceIndex(ListOrCreateModelView):
+class PulpServerResourceIndex(ListOrCreateModelView, BaseView):
     resource = PulpServerResource
     urlname = "restapi_pulp_servers"
 
-class PulpServerResourceView(InstanceModelView):
+class PulpServerResourceDetail(InstanceModelView, BaseView):
     resource = PulpServerResource
     urlname = "restapi_pulp_server_detail"
 
 
+
+# Pass through cleaned up resources from the Pulp servers
+_DICT_ATTRS = dir(dict)
+
+class _IndirectResource(object):
+    """Indirect resources correspond to Pulp REST API resources"""
+    resource_type = None   # Set by subclass
+    index_urlname = None   # Set by subclass
+    detail_urlname = None  # Optionally set by subclass
+    pulp_path = None       # Set by subclass
+
+    @classmethod
+    def _make_metadata(cls, server_slug, raw):
+        # Extract the resource identifier
+        pulp_id = raw.pop("id")
+        # We always link back to the associated server detail API
+        backlink = get_server_url(PulpServerResourceDetail.urlname, server_slug)
+        # The REST framework gets upset if dict attributes are used as keys
+        # so we sanitise any affected Pulp keys by appending an underscore
+        for k in _DICT_ATTRS:
+            if k in raw:
+                safe_key = k + "_"
+                raw[safe_key] = raw.pop(k)
+        data = {
+            "_type": cls.resource_type,
+            "server": api_link(SERVER_RESOURCE, backlink),
+            "id": pulp_id,
+            "pulp_metadata": raw
+        }
+        detail_url = cls._get_detail_url(server_slug, pulp_id)
+        if detail_url is not None:
+            data["url"] = detail_url
+        return data
+
+
+    @classmethod
+    def _get_index_data(cls, pulp_server, server_slug):
+        path = cls.pulp_path
+        data = pulp_server.GET(path)[1]
+        return [cls._make_metadata(server_slug, detail) for detail in data]
+
+    @classmethod
+    def _get_detail_data(cls, pulp_server, server_slug, pulp_id):
+        path = cls.pulp_path + pulp_id
+        data = pulp_server.GET(path)[1]
+        return cls._make_metadata(server_slug, data)
+
+    @classmethod
+    def _get_detail_url(cls, server_slug, pulp_id):
+        urlname = cls.detail_urlname
+        if urlname is None:
+            return None
+        return get_server_url(urlname, server_slug, pulp_id=pulp_id)
+
+    @classmethod
+    def _make_index_view(cls):
+        class IndirectIndexView(BaseView):
+            urlname = cls.index_urlname
+            def get(self, request, server_slug):
+                pulp_server = get_server(server_slug).server
+                data = cls._get_index_data(pulp_server, server_slug)
+                return data
+        IndirectIndexView.__name__ = cls.__name__ + "Index"
+        return IndirectIndexView
+
+    @classmethod
+    def _make_detail_view(cls):
+        class IndirectDetailView(BaseView):
+            urlname = cls.detail_urlname
+            def get(self, request, server_slug, pulp_id):
+                pulp_server = get_server(server_slug).server
+                data = cls._get_detail_data(pulp_server, server_slug, pulp_id)
+                return data
+        IndirectDetailView.__name__ = cls.__name__ + "Detail"
+        return IndirectDetailView
+
 # Pulp Repos
-class PulpRepoResource(Resource):
-    pass
+class PulpRepoResource(_IndirectResource):
+    resource_type = "pulp_repo"
+    index_urlname = "restapi_pulp_repos"
+    detail_urlname = "restapi_pulp_repo_detail"
+    pulp_path = "/repositories/"
 
-def make_repo_metadata(server_slug, raw):
-    backlink = get_server_url(PulpServerResourceView.urlname, server_slug)
-    repo_id = raw.pop("id")
-    raw["keys_ref"] = raw.pop("keys")
-    raw.pop("_id")
-    return {
-      "_type": "pulp_repo",
-      "id": repo_id,
-      "url": get_repo_url(PulpRepoResourceView.urlname, server_slug, repo_id),
-      "server": api_link(SERVER_RESOURCE, backlink),
-      "other_metadata": raw,
-    }
-
-class PulpRepoResourceIndex(View):
-    urlname = "restapi_pulp_repos"
-    def get(self, request, server_slug):
-        data = get_server(server_slug).server.get_repos()
-        return [make_repo_metadata(server_slug, repo) for repo in data]
-
-class PulpRepoResourceView(View):
-    urlname = "restapi_pulp_repo_detail"
-    def get(self, request, server_slug, repo_id):
-        repo = get_server(server_slug).server.get_repo(repo_id)
-        return make_repo_metadata(server_slug, repo)
+PulpRepoResourceIndex = PulpRepoResource._make_index_view()
+PulpRepoResourceDetail = PulpRepoResource._make_detail_view()
 
 # Pulp Content Types
-class PulpContentTypeResource(Resource):
-    pass
+class PulpContentTypeResource(_IndirectResource):
+    resource_type = "pulp_content_type"
+    index_urlname = "restapi_pulp_content_types"
+    # detail_urlname = "restapi_pulp_content_type_detail"
+    pulp_path = "/plugins/types/"
 
-def make_content_type_metadata(server_slug, raw):
-    backlink = get_server_url(PulpServerResourceView.urlname, server_slug)
-    type_id = raw.pop("id")
-    raw.pop("_id")
-    return {
-      "_type": "pulp_content_type",
-      "id": type_id,
-      "url": get_server_url(PulpContentTypeResourceView.urlname, server_slug, type_id=type_id),
-      "server": api_link(SERVER_RESOURCE, backlink),
-      "other_metadata": raw,
-    }
+PulpContentTypeResourceIndex = PulpContentTypeResource._make_index_view()
+PulpContentTypeResourceDetail = PulpContentTypeResource._make_detail_view()
 
-class PulpContentTypeResourceIndex(View):
-    urlname = "restapi_pulp_content_types"
-    def get(self, request, server_slug):
-        data = get_server(server_slug).server.get_generic_types()
-        return [make_content_type_metadata(server_slug, content_type) for content_type in data]
+# Pulp Distributor Plugins
+class PulpDistributorResource(_IndirectResource):
+    resource_type = "pulp_distributor"
+    index_urlname = "restapi_pulp_distributors"
+    # detail_urlname = "restapi_pulp_distributor_detail"
+    pulp_path = "/plugins/distributors/"
 
-class PulpContentTypeResourceView(View):
-    urlname = "restapi_pulp_content_type_detail"
-    def get(self, request, server_slug, type_id):
-        content_type = get_server(server_slug).server.get_generic_type(type_id)
-        return make_content_type_metadata(server_slug, content_type)
-        
+PulpDistributorResourceIndex = PulpDistributorResource._make_index_view()
+PulpDistributorResourceDetail = PulpDistributorResource._make_detail_view()
+
+# Pulp Importer Plugins
+class PulpImporterResource(_IndirectResource):
+    resource_type = "pulp_importer"
+    index_urlname = "restapi_pulp_importers"
+    # detail_urlname = "restapi_pulp_importer_detail"
+    pulp_path = "/plugins/importers/"
+
+PulpImporterResourceIndex = PulpImporterResource._make_index_view()
+PulpImporterResourceDetail = PulpImporterResource._make_detail_view()
