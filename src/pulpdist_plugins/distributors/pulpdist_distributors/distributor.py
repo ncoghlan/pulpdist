@@ -14,15 +14,15 @@
 
 from pulp.server.content.plugins.distributor import Distributor
 
-def SnapshotDeltaDistributor(Distributor):
-    pulp_id = "snapshot-delta"
+class SnapshotDeltaDistributor(Distributor):
+    pulp_id = "snapshot_delta"
     display_name = "Snapshot Delta Importer"
-    content_types = ["tree-delta"]
+    content_types = ["tree_delta"]
 
     @classmethod
     def metadata(cls):
         return {
             "id" : cls.pulp_id,
             "display_name": cls.display_name,
-            "types" : cls.content_types + ["sync-log"]
+            "types" : cls.content_types + ["sync_log"]
         }

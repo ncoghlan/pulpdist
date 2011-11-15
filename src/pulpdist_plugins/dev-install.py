@@ -46,6 +46,8 @@ def unlink_names():
 if __name__ == "__main__":
     import sys
     if sys.argv[1:2] == ["--install"]:
+        print "Installing symlinks"
         link_names()
     else:
+        print "Removing symlinks"
         unlink_names()
