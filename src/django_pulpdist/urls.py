@@ -17,7 +17,8 @@ from .views import MainIndex, ServerView, RepoListView, RepoView
 
 from .restapi import (ResourceIndex,
                       PulpServerResourceIndex, PulpServerResourceView,
-                      PulpRepoResourceIndex, PulpRepoResourceView)
+                      PulpRepoResourceIndex, PulpRepoResourceView,
+                      PulpContentTypeResourceIndex, PulpContentTypeResourceView)
 
 # Main site
 urlpatterns = patterns('',
@@ -43,4 +44,8 @@ urlpatterns += patterns('',
         PulpRepoResourceIndex.as_view(), name=PulpRepoResourceIndex.urlname),
     url(r'^api/servers/(?P<server_slug>[-\w]+)/repos/(?P<repo_id>\w+)$',
         PulpRepoResourceView.as_view(), name=PulpRepoResourceView.urlname),
+    url(r'^api/servers/(?P<server_slug>[-\w]+)/content_types/$',
+        PulpContentTypeResourceIndex.as_view(), name=PulpContentTypeResourceIndex.urlname),
+    url(r'^api/servers/(?P<server_slug>[-\w]+)/content_types/(?P<type_id>\w+)$',
+        PulpContentTypeResourceView.as_view(), name=PulpContentTypeResourceView.urlname),
 )

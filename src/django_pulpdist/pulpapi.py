@@ -28,22 +28,43 @@ pulp.client.lib.logutil.getLogger = logging.getLogger
     
 
 import pulp.client.api.server
-import pulp.client.api.repository
 
-
-class RepositoryAPI(pulp.client.api.repository.RepositoryAPI):
+class _PulpCollection(object):
     def __init__(self, server):
         self._server = server
-        
+
     @property
     def server(self):
         return self._server
+
+    def get_list(self, queries=None):
+        path = self.collection_path
+        if queries is None:
+            return self.server.GET(path)[1]
+        return self.server.GET(path, queries)[1]
+
+    def get_entry(self, entry_id):
+        path = "%s/%s/" % (self.collection_path, entry_id)
+        return self.server.GET(path)[1]
+
+
+class PulpRepositories(_PulpCollection):
+    collection_path = "/repositories/"
+
+class GenericContentTypes(_PulpCollection):
+    collection_path = "/plugins/types/"
+
+class GenericContentImporters(_PulpCollection):
+    collection_path = "/plugins/importers/"
+
+class GenericContentDistributors(_PulpCollection):
+    collection_path = "/plugins/distributors/"
 
 
 class PulpServer(pulp.client.api.server.PulpServer):
     # Unlike the standard Pulp client, we support only OAuth over https
     def __init__(self, hostname, oauth_key, oauth_secret):
-        super(PulpServer, self).__init__(hostname)
+        super(PulpServer, self).__init__(hostname, path_prefix="/pulp/api/v2")
         self.oauth_consumer = oauth.Consumer(oauth_key, oauth_secret)
         self.oauth_sign_method = oauth.SignatureMethod_HMAC_SHA1
 
@@ -52,6 +73,16 @@ class PulpServer(pulp.client.api.server.PulpServer):
         connection = httpslib.HTTPSConnection(self.host, self.port, ssl_context=context)
         connection.connect()
         return connection
+
+    def _build_url(self, path, queries=()):
+        # base class gets this wrong when path starts with '/'
+        if not path.startswith(self.path_prefix):
+            if path.startswith('/'):
+                sep = ''
+            else:
+                sep = '/'
+            path = sep.join((self.path_prefix, path))
+        return super(PulpServer, self)._build_url(path, queries)
 
     def _request(self, method, path, queries=(), body=None):
         # make a request to the pulp server and return the response
@@ -69,7 +100,25 @@ class PulpServer(pulp.client.api.server.PulpServer):
         return super(PulpServer, self)._request(method, path, queries, body)
 
     def get_repos(self):
-        return RepositoryAPI(self).repositories({})
+        return PulpRepositories(self).get_list()
 
     def get_repo(self, repo_id):
-        return RepositoryAPI(self).repository(repo_id)
+        return PulpRepositories(self).get_entry(repo_id)
+
+    def get_generic_types(self):
+        return GenericContentTypes(self).get_list()
+
+    def get_generic_type(self, type_id):
+        return GenericContentTypes(self).get_entry(type_id)
+
+    def get_generic_importers(self):
+        return GenericContentImporters(self).get_list()
+
+    def get_generic_importer(self, plugin_id):
+        return GenericContentImporters(self).get_entry(plugin_id)
+
+    def get_generic_distributors(self):
+        return GenericContentDistributors(self).get_list()
+
+    def get_generic_distributor(self, plugin_id):
+        return GenericContentTypes(self).get_entry(plugin_id)

@@ -84,12 +84,17 @@ class PulpServer(models.Model):
         super(PulpServer, self).save(*args, **kwds)
 
     def get_repos(self):
-        repos = self.server.get_repos()
-        for repo in repos:
-            repo['server_slug'] = self.server_slug
-        return repos
+        return self.add_slug_seq(self.server.get_repos())
 
     def get_repo(self, repo_id):
-        repo = self.server.get_repo(repo_id)
-        repo['server_slug'] = self.server_slug
-        return repo
+        return self.add_slug(self.server.get_repo(repo_id))
+
+    def add_slug_seq(self, data):
+        for item in data:
+            self.add_slug(item)
+        return data
+
+    def add_slug(self, data):
+        data['server_slug'] = self.server_slug
+        return data
+        

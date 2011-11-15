@@ -21,7 +21,7 @@ from djangorestframework.renderers import DocumentingHTMLRenderer
 
 from .models import PulpServer
 from .forms import PulpServerForm
-from .util import get_server, get_server_url, get_repo_url
+from .util import get_server, get_server_url, get_repo_url, get_url
 
 def api_link(relationship, url):
     return dict(_type="link", url=url, rel=relationship)
@@ -30,6 +30,8 @@ SERVER_COLLECTION = "collection/servers"
 SERVER_RESOURCE = "resource/server"
 REPO_COLLECTION = "collection/repos"
 REPO_RESOURCE = "resource/repo"
+CONTENT_TYPE_COLLECTION = "collection/content_types"
+CONTENT_TYPE_RESOURCE = "resource/content_type"
 IMPORTER_COLLECTION = "collection/importers"
 IMPORTER_RESOURCE = "resource/importer"
 DISTRIBUTOR_COLLECTION = "collection/distributors"
@@ -66,6 +68,15 @@ class PulpServerResource(ModelResource):
             data["repositories"] = api_link(
                 REPO_COLLECTION,
                 get_server_url(PulpRepoResourceIndex.urlname, obj.server_slug))
+            data["content_types"] = api_link(
+                CONTENT_TYPE_COLLECTION,
+                get_server_url(PulpContentTypeResourceIndex.urlname, obj.server_slug))
+            #data["importers"] = api_link(
+                #IMPORTER_COLLECTION,
+                #get_server_url(PulpImporterResourceIndex.urlname, obj.server_slug))
+            #data["distributors"] = api_link(
+                #DISTRIBUTOR_COLLECTION,
+                #get_server_url(PulpDistributorResourceIndex.urlname, obj.server_slug))
         return data
 
     def get_server_slug(self, data):
@@ -114,7 +125,6 @@ def make_repo_metadata(server_slug, raw):
     backlink = get_server_url(PulpServerResourceView.urlname, server_slug)
     repo_id = raw.pop("id")
     raw["keys_ref"] = raw.pop("keys")
-    raw.pop("server_slug")
     raw.pop("_id")
     return {
       "_type": "pulp_repo",
@@ -122,18 +132,45 @@ def make_repo_metadata(server_slug, raw):
       "url": get_repo_url(PulpRepoResourceView.urlname, server_slug, repo_id),
       "server": api_link(SERVER_RESOURCE, backlink),
       "other_metadata": raw,
-      "importer": api_link(IMPORTER_RESOURCE, "TBD"),
-      "distributors":  api_link(DISTRIBUTOR_COLLECTION, "TBD"),
     }
 
 class PulpRepoResourceIndex(View):
     urlname = "restapi_pulp_repos"
     def get(self, request, server_slug):
-        data = get_server(server_slug).get_repos()
+        data = get_server(server_slug).server.get_repos()
         return [make_repo_metadata(server_slug, repo) for repo in data]
 
 class PulpRepoResourceView(View):
     urlname = "restapi_pulp_repo_detail"
     def get(self, request, server_slug, repo_id):
-        repo = get_server(server_slug).get_repo(repo_id)
+        repo = get_server(server_slug).server.get_repo(repo_id)
         return make_repo_metadata(server_slug, repo)
+
+# Pulp Content Types
+class PulpContentTypeResource(Resource):
+    pass
+
+def make_content_type_metadata(server_slug, raw):
+    backlink = get_server_url(PulpServerResourceView.urlname, server_slug)
+    type_id = raw.pop("id")
+    raw.pop("_id")
+    return {
+      "_type": "pulp_content_type",
+      "id": type_id,
+      "url": get_server_url(PulpContentTypeResourceView.urlname, server_slug, type_id=type_id),
+      "server": api_link(SERVER_RESOURCE, backlink),
+      "other_metadata": raw,
+    }
+
+class PulpContentTypeResourceIndex(View):
+    urlname = "restapi_pulp_content_types"
+    def get(self, request, server_slug):
+        data = get_server(server_slug).server.get_generic_types()
+        return [make_content_type_metadata(server_slug, content_type) for content_type in data]
+
+class PulpContentTypeResourceView(View):
+    urlname = "restapi_pulp_content_type_detail"
+    def get(self, request, server_slug, type_id):
+        content_type = get_server(server_slug).server.get_generic_type(type_id)
+        return make_content_type_metadata(server_slug, content_type)
+        

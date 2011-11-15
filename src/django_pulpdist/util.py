@@ -23,15 +23,17 @@ Breadcrumb = namedtuple("Breadcrumb", "label link")
 def get_server(server_slug):
     return get_object_or_404(PulpServer, server_slug=server_slug)
 
-def get_server_url(urlname, server_slug):
-    kwargs = {'server_slug' : server_slug}
-    return reverse(urlname, kwargs=kwargs)
+def get_url(urlname, **kwds):
+    return reverse(urlname, kwargs=kwds)
 
-def get_repo_url(urlname, server_slug, repo_id):
-    kwargs = {'server_slug' : server_slug,
-              'repo_id' : repo_id,
-             }
-    return reverse(urlname, kwargs=kwargs)
+def get_server_url(urlname, server_slug, **kwds):
+    kwds['server_slug'] = server_slug
+    return reverse(urlname, kwargs=kwds)
+
+def get_repo_url(urlname, server_slug, repo_id, **kwds):
+    kwds['server_slug'] = server_slug
+    kwds['repo_id'] = repo_id
+    return reverse(urlname, kwargs=kwds)
 
 class ServerMixin(object):
     @property
