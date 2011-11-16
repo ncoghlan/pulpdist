@@ -40,12 +40,12 @@ else:
     ADMINS = (
         ('Nick Coghlan', 'ncoghlan@redhat.com'),
     )
-    # This file is src/pulpdist/settings.py in Git, set VAR_ROOT accordingly
+    # This file is src/pulpdist/django_site/settings.py in Git, set VAR_ROOT accordingly
     import os.path
     _this_dir = os.path.dirname(__file__)
     VAR_ROOT = os.path.abspath(
                   os.path.normpath(
-                     os.path.join(_this_dir, '../..', VAR_RELPATH)))
+                     os.path.join(_this_dir, '../../..', VAR_RELPATH)))
 
 TEMPLATE_DEBUG = DEBUG
 MANAGERS = ADMINS
@@ -149,7 +149,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
 )
 
-ROOT_URLCONF = 'pulpdist.urls'
+ROOT_URLCONF = 'pulpdist.django_site.urls'
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
@@ -180,7 +180,7 @@ INSTALLED_APPS = (
     'south',
     'djangorestframework',
     'django_tables2',
-    'django_pulpdist',
+    'pulpdist.django_app',
 )
 
 # A sample logging configuration. The only tangible logging
@@ -209,11 +209,6 @@ LOGGING = {
             'propagate': True,
         },
         'pulp': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-        'django_pulpdist': {
             'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': True,

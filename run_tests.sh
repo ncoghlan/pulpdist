@@ -1,3 +1,3 @@
-pushd src/pulpdist/django_site
-./manage.py test $*
+pushd src/
+./manage_site.py test $*
 popd

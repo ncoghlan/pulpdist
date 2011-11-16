@@ -16,7 +16,7 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('',
-    url(r'^pulpdist/', include('django_pulpdist.urls')),
+    url(r'^pulpdist/', include('pulpdist.django_app.urls')),
 
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
 
