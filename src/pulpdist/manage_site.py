@@ -13,6 +13,10 @@
 
 # This breaks if you try to use it to run the tests via -m pulpdist.manage_site
 # It seems to be an issue with the nose import emulation :P
+# It's not related to the differences between the values of sys.argv[0], sys.path[0]
+# or __main__.__file__ when run via the switch - experimentation with forcing those
+# to the same values still resulted in errors under -m, but successful direct
+# execution
 
 if __name__ == "__main__":
     import os, sys
