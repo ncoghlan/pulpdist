@@ -11,11 +11,13 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-"""dev-install - link the pulpdist plugins into an installed Pulp instance"""
+"""plugin-dev - link the pulpdist plugins into an installed Pulp instance"""
 
 import os
 
 PULP_INSTALL_PREFIX = "/var/lib/pulp/plugins"
+_this_dir = os.path.abspath(os.path.dirname(__file__))
+LOCAL_PREFIX = os.path.join(_this_dir, "src/pulpdist/pulp_plugins")
 
 TYPE_SPEC = "types/pulpdist.json"
 IMPORTER = "importers/pulpdist_importers"
@@ -25,7 +27,7 @@ LINKS = (TYPE_SPEC, IMPORTER, DISTRIBUTOR)
 
 def link_names():
     for target in LINKS:
-        link_target = os.path.abspath(target)
+        link_target = os.path.join(LOCAL_PREFIX, target)
         link_origin = os.path.join(PULP_INSTALL_PREFIX, target)
         print ("{} -> {}".format(link_origin, link_target))
         os.symlink(link_target, link_origin)
