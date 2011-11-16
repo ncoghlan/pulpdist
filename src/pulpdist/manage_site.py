@@ -11,9 +11,17 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
+# This breaks if you try to use it to run the tests via -m pulpdist.manage_site
+# It seems to be an issue with the nose import emulation :P
+
 if __name__ == "__main__":
     import os, sys
     from django.core.management import execute_from_command_line
+
+    # Allow direct execution without stuffing up the import state...
+    _pkg_dir = os.path.abspath(os.path.dirname(__file__))
+    if sys.path[0] == _pkg_dir:
+        sys.path[0] = os.path.dirname(_pkg_dir)
 
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pulpdist.django_site.settings")
     execute_from_command_line(sys.argv)

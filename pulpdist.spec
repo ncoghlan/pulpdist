@@ -7,12 +7,8 @@
 # leading 'python-' until they have been packaged
 # properly for Fedora/EPEL/etc
 
-%define app_name django_pulpdist
-%define app_package Django-pulpdist
-
-# -- headers - PulpDist deployment  -------------------------------------------------
+# -- headers - pulpdist Python package  -------------------------------------------------
 Name:           pulpdist
-Summary:        Basic Django site definition to serve %{app_name} on Apache
 Version:        0.0.1
 Release:        1%{?dist}
 Group:          Development/Tools
@@ -21,25 +17,6 @@ Source0:        %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildArch:      noarch
-BuildRequires:  rpm-python
-BuildRequires:  python2-devel
-BuildRequires:  python-setuptools
-# BuildRequires:  python-setuptools-git (PyPI)
-
-Requires: %{app_package} = %{version}
-Requires: httpd
-Requires: mod_ssl
-Requires: mod_wsgi
-Requires: mod_auth_kerb
-
-%description -n %{deploy_package}
-The necessary infrastructure to deploy and serve %{app_name} as a standalone
-Django site on Apache
-
-# -- headers - PulpDist Django App ---------------------------------------
-
-%package -n %{app_package}
-Summary:        A Django app to manage a network of Pulp servers
 BuildRequires:  rpm-python
 BuildRequires:  python2-devel
 BuildRequires:  python-setuptools
@@ -66,28 +43,49 @@ Requires: python-ldap
 Requires: python-setuptools
 Requires: Django-south
 
+%define deploy_package %{name}-httpd
+%define plugin_package %{name}-plugins
+
 %description
-The PulpDist Django application provides a web frontend for managing and
-monitoring a network of Pulp servers used as a private mirroring network.
+The PulpDist Python package includes all of the Python components needed by
+%{deploy_package} and %{plugin_package}.
 
+# -- headers - PulpDist Django App ---------------------------------------
 
-# TODO: Actually create the plugins package
-# # -- headers - PulpDist plugins for Pulp  -------------------------------------------------
-# 
-# # %define plugin_package %{name}-plugins
-# %package -n %{plugin_package}
-# Summary:        Pulp plugins to support PulpDist mirroring network
-# 
-# BuildRequires:  rpm-python
-# BuildRequires:  python2-devel
-# BuildRequires:  python-setuptools
-# # BuildRequires:  python-setuptools-git (PyPI)
-# 
-# Requires: pulp
-# Requires: rsync
-# 
-# %description -n %{plugin_package}
-# The Pulp plugins to be installed on each Pulp server in a PulpDist mirroring network
+%package -n %{deploy_package}
+Summary:        Basic Django site definition to serve %{name} on Apache
+BuildRequires:  rpm-python
+BuildRequires:  python2-devel
+BuildRequires:  python-setuptools
+# BuildRequires:  python-setuptools-git (PyPI)
+
+Requires: %{name} = %{version}
+Requires: httpd
+Requires: mod_ssl
+Requires: mod_wsgi
+Requires: mod_auth_kerb
+
+%description -n %{deploy_package}
+A web frontend for managing and monitoring a network of Pulp servers used
+as a private mirroring network. Deploys and serves %{name} as a standalone
+Django site on Apache. 
+
+# -- headers - PulpDist plugins for Pulp  -------------------------------------------------
+
+%package -n %{plugin_package}
+Summary:        Pulp plugins to support PulpDist mirroring network
+
+BuildRequires:  rpm-python
+BuildRequires:  python2-devel
+BuildRequires:  python-setuptools
+# BuildRequires:  python-setuptools-git (PyPI)
+
+Requires: %{name} = %{version}
+Requires: pulp
+Requires: rsync
+
+%description -n %{plugin_package}
+The Pulp plugins to be installed on each Pulp server in a PulpDist mirroring network
 
 # -- build -------------------------------------------------------------------
 
@@ -106,7 +104,6 @@ pushd src
 %{__python} setup.py install -O1 --skip-build --root %{buildroot}
 popd
 # Remove egg info
-rm -rf %{buildroot}/%{python_sitelib}/%{app_name}*.egg-info
 rm -rf %{buildroot}/%{python_sitelib}/%{name}*.egg-info
 
 # Configuration
@@ -124,8 +121,8 @@ mkdir -p %{buildroot}/var/lib/%{name}
 # for the static media files and other components put in
 # place as part of the build process
 mkdir -p %{buildroot}/var/www/pub/%{name}
-pushd src/%{name}
-export DJANGO_RPM_ROOT=%{buildroot}; %{__python} manage.py collectstatic --noinput
+pushd src
+export DJANGO_RPM_ROOT=%{buildroot}; %{__python} manage_site.py collectstatic --noinput
 popd
 
 # Apache Configuration
@@ -148,9 +145,9 @@ rm -rf %{buildroot}
 # Django ORM
 pushd %{python_sitelib}/%{name}/
 if [ "$1" = "1" ]; then
-  %{__python} manage.py syncdb --noinput
+  %{__python} manage_site.py syncdb --noinput
 fi
-%{__python} manage.py migrate
+%{__python} manage_site.py migrate
 chown apache:apache %{database_file}
 popd
 
@@ -164,7 +161,7 @@ popd
 %doc
 # For noarch packages: sitelib
 %{python_sitelib}/%{name}/
-%attr(755,root,root) %{python_sitelib}/%{name}/manage.py
+%attr(755,root,root) %{python_sitelib}/%{name}/manage_site.py
 %defattr(644,apache,apache,755)
 /srv/%{name}/
 %attr(750, apache, apache) /srv/%{name}/django.wsgi

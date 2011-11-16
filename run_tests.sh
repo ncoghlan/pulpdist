@@ -1,3 +1,3 @@
 pushd src/
-./manage_site.py test $*
+pulpdist/manage_site.py test $*
 popd
