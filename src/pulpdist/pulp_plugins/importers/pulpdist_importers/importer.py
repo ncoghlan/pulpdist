@@ -13,15 +13,15 @@
 """PulpDist importer plugins"""
 
 try:
-    from pulpdist_plugins import sync_trees
+    from pulpdist.pulp_plugins import sync_trees
 except ImportError:
     # Hack for development installations
     import os, sys
-    # We're in pulpdist_plugins/importers/pulpdist_importers, so need to go up 3 dirs
+    # We're in pulpdist.pulp_plugins/importers/pulpdist_importers, so need to go up 4 dirs
     this_dir = os.path.realpath(os.path.dirname(__file__))
-    plugin_dir = os.path.abspath(this_dir + "/../../..")
+    plugin_dir = os.path.abspath(this_dir + "/../../../..")
     sys.path.append(plugin_dir)
-    from pulpdist_plugins import sync_trees
+    from pulpdist.pulp_plugins import sync_trees
     
 
 from pulp.server.content.plugins.importer import Importer
