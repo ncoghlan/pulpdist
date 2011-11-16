@@ -15,20 +15,22 @@
 import sys
 from setuptools import setup, find_packages
 
-# Generates two Python packages which can be turned
-# into distinct RPMs
-#   - django_pulpdist (the Django app)
-#   - pulpdist (deployment of the above on a dedicated Apache instance)
+# Generates a single Python package which may be turned
+# into multiple distinct RPMs
+#   - pulpdist.core
+#   - pulpdist.pulp_plugins
+#   - pulpdist.django_app
+#   - pulpdist.django_site
 
 
-# I suspect there are some 2.7'isms in the current codebase
+# There is some 2.7 specific code in the current codebase
 # but it's at least *supposed* to run on 2.6
 major, minor, micro = sys.version_info[:3]
 if major != '2' or minor not in ['6', '7']:
-    raise Exception('unsupported version of python')
+    raise Exception('Unsupported version of Python (need 2.6/7, not %s)'
+                        % (sys.version_info,))
 
 project_name             = 'pulpdist'
-django_app_name          = 'django_pulpdist'
 project_url              = 'https://fedorahosted.org/pulpdist/'
 project_author           = 'Red Hat, Inc.'
 project_maintainer       = 'Nick Coghlan'

@@ -1,2 +1,2 @@
-recursive-include django_pulpdist/templates *
-recursive-include django_pulpdist/static *
+recursive-include pulpdist/django_app/templates *
+recursive-include pulpdist/django_app/static *
