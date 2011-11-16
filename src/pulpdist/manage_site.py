@@ -22,6 +22,7 @@ if __name__ == "__main__":
     _pkg_dir = os.path.abspath(os.path.dirname(__file__))
     if sys.path[0] == _pkg_dir:
         sys.path[0] = os.path.dirname(_pkg_dir)
+        import pulpdist
 
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pulpdist.django_site.settings")
     execute_from_command_line(sys.argv)
