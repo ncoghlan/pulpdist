@@ -89,6 +89,7 @@ The Pulp plugins to be installed on each Pulp server in a PulpDist mirroring net
 
 # -- build -------------------------------------------------------------------
 
+%define run_manage_site %{__python} -m %{name}.manage_site
 
 %prep
 %setup -q
@@ -106,6 +107,28 @@ popd
 # Remove egg info
 rm -rf %{buildroot}/%{python_sitelib}/%{name}*.egg-info
 
+%clean
+rm -rf %{buildroot}
+
+# -- files - Main Python package -----------------------------------------------------
+
+%define database_file /var/lib/%{name}/djangoORM.db
+
+%post
+# Django ORM
+if [ "$1" = "1" ]; then
+  %{run_manage_site} syncdb --noinput
+fi
+%{run_manage_site} migrate
+chown apache:apache %{database_file}
+popd
+
+%postun
+# TODO
+
+# -- files - Apache deployment -----------------------------------------------------
+
+%post -n %{deploy_package}
 # Configuration
 mkdir -p %{buildroot}/etc/%{name}
 cp -R etc/%{name}/* %{buildroot}/etc/%{name}
@@ -122,7 +145,7 @@ mkdir -p %{buildroot}/var/lib/%{name}
 # place as part of the build process
 mkdir -p %{buildroot}/var/www/pub/%{name}
 pushd src
-export DJANGO_RPM_ROOT=%{buildroot}; %{__python} manage_site.py collectstatic --noinput
+export DJANGO_RPM_ROOT=%{buildroot}; %{run_manage_site} collectstatic --noinput
 popd
 
 # Apache Configuration
@@ -133,28 +156,7 @@ cp etc/httpd/conf.d/%{name}.conf %{buildroot}/etc/httpd/conf.d/
 mkdir -p %{buildroot}/srv/%{name}
 cp srv/%{name}/django.wsgi %{buildroot}/srv/%{name}/django.wsgi
 
-
-%clean
-rm -rf %{buildroot}
-
-# -- post ------------------------------------------------------
-
-%define database_file /var/lib/%{name}/djangoORM.db
-
-%post
-# Django ORM
-pushd %{python_sitelib}/%{name}/
-if [ "$1" = "1" ]; then
-  %{__python} manage_site.py syncdb --noinput
-fi
-%{__python} manage_site.py migrate
-chown apache:apache %{database_file}
-popd
-
-%postun
-# TODO
-
-# -- files - Django site and Apache deployment -----------------------------------------------------
+# -- files - Main Python package -----------------------------------------------------
 
 %files
 %defattr(644,root,root,755)
@@ -162,6 +164,13 @@ popd
 # For noarch packages: sitelib
 %{python_sitelib}/%{name}/
 %attr(755,root,root) %{python_sitelib}/%{name}/manage_site.py
+
+# -- files - Apache deployment ----------------------------------------------------------
+
+%files -n %{deploy_package}
+%defattr(-,root,root,-)
+%doc
+%config(noreplace) /etc/httpd/conf.d/%{name}.conf
 %defattr(644,apache,apache,755)
 /srv/%{name}/
 %attr(750, apache, apache) /srv/%{name}/django.wsgi
@@ -171,13 +180,6 @@ popd
 /var/log/%{name}/
 /etc/%{name}/
 %config(noreplace) /etc/%{name}/*.conf
-
-# -- files - Apache deployment ----------------------------------------------------------
-
-%files -n %{app_package}
-%defattr(-,root,root,-)
-%doc
-%config(noreplace) /etc/httpd/conf.d/%{name}.conf
 
 # -- changelog ---------------------------------------------------------------
 
