@@ -20,6 +20,7 @@ import optparse
 import os
 import shutil
 import sys
+import site
 
 DIRS = (
     '/etc/httpd/conf.d',
@@ -85,8 +86,15 @@ def create_dirs(opts):
             continue
         os.makedirs(d, 0777)
 
+def get_package_link(opts):
+    site_dir = site.getsitepackages()[0]
+    if '64' in site_dir:
+        site_dir = site.getsitepackages()[1]
+    debug(opts, 'site package dir: %s' % site_dir)
+    dst = os.path.join(site_dir, 'pulpdist')
+    return 'src/pulpdist', dst
 
-def getlinks():
+def getlinks(opts):
     links = []
     for l in LINKS:
         if isinstance(l, (list, tuple)):
@@ -96,13 +104,14 @@ def getlinks():
             src = l
             dst = os.path.join('/', l)
         links.append((src, dst))
+    links.append(get_package_link(opts))
     return links
 
 
 def install(opts):
     create_dirs(opts)
     currdir = os.path.abspath(os.path.dirname(__file__))
-    for src, dst in getlinks():
+    for src, dst in getlinks(opts):
         debug(opts, 'creating link: %s' % dst)
         try:
             os.symlink(os.path.join(currdir, src), dst)
@@ -131,7 +140,7 @@ def install(opts):
 
 
 def uninstall(opts):
-    for src, dst in getlinks():
+    for src, dst in getlinks(opts):
         debug(opts, 'removing link: %s' % dst)
         if not os.path.exists(dst):
             debug(opts, '%s does not exist, skipping' % dst)
