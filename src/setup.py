@@ -26,7 +26,7 @@ from setuptools import setup, find_packages
 # There is some 2.7 specific code in the current codebase
 # but it's at least *supposed* to run on 2.6
 major, minor, micro = sys.version_info[:3]
-if major != '2' or minor not in ['6', '7']:
+if major != 2 or minor not in [6, 7]:
     raise Exception('Unsupported version of Python (need 2.6/7, not %s)'
                         % (sys.version_info,))
 
