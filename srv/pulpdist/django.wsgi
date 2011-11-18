@@ -11,7 +11,7 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 import os
-os.environ['DJANGO_SETTINGS_MODULE'] = 'pulpdist.settings'
+os.environ['DJANGO_SETTINGS_MODULE'] = 'pulpdist.django_site.settings'
 
 try:
     import pulpdist
