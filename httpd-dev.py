@@ -25,7 +25,7 @@ DIRS = (
     '/etc/httpd/conf.d',
     '/srv',
     '/var/lib',
-    '/var/www/pub',
+    '/var/www/pub/pulpdist',
     '/var/log/pulpdist',
 )
 
@@ -126,7 +126,7 @@ def install(opts):
     #if os.path.exists('/etc/httpd/conf.d/ssl.conf'):
     #    shutil.move('/etc/httpd/conf.d/ssl.conf', '/etc/httpd/conf.d/ssl.off')
 
-    print "Don't forget to run './manage.py collectstatic' on pulpdist"
+    print "Don't forget to run 'python -m pulpdist.manage_site collectstatic'"
     return os.EX_OK
 
 
