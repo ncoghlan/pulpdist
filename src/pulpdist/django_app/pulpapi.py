@@ -90,9 +90,9 @@ class PulpServer(pulp.client.api.server.PulpServer):
         connection = self._connect()
         url = self._build_url(path, queries)
         # Oauth setup
-        self._log.debug('signing %r request to %r', method, url)
         consumer = self.oauth_consumer
         https_url = 'https://' + self.host + url
+        self._log.debug('signing %r request to %r', method, https_url)
         oauth_request = oauth.Request.from_consumer_and_token(consumer, http_method=method, http_url=https_url)
         oauth_request.sign_request(self.oauth_sign_method(), consumer, None)
         self.headers.update(oauth_request.to_header())
