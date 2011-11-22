@@ -47,9 +47,9 @@ def check_rsync_filter(allow_none=False):
 
 # We seriously need some better URL handling infrastructure in the stdlib...
 # From http://stackoverflow.com/questions/106179/regular-expression-to-match-hostname-or-ip-address
-IP_REGEX = "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$";
+IPv4_REGEX = "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$";
 HOSTNAME_REGEX = "^(([a-zA-Z]|[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9])$";
-VALID_HOST_REGEX = "({})|({})".format(IP_REGEX, HOSTNAME_REGEX)
+VALID_HOST_REGEX = "({})|({})".format(IPv4_REGEX, HOSTNAME_REGEX)
 
 def check_host(allow_none=False):
     return check_regex(VALID_HOST_REGEX, 'valid host', allow_none)
