@@ -10,11 +10,5 @@
      "description" : "Directory Tree Delta",
      "unique_indexes" : ["id"],
      "search_indexes" : ["tree", "seq"]
-    },
-    {"id" : "sync_log",
-     "display_name" : "Sync Log",
-     "description" : "Raw log data for CLI based imports",
-     "unique_indexes" : ["id"],
-     "search_indexes" : ["tree"]
     }
 ]}
