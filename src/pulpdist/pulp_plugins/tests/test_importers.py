@@ -13,8 +13,32 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 """Basic test suite for sync transfer plugins"""
+import unittest
+import socket
+
 from ...core import pulpapi, sync_trees
 from ...core.tests import example_trees
+
+IMPORTERS = ["simple_tree", "versioned_tree", "snapshot_tree", "delta_tree", "snapshot_delta"]
+
+class PulpTestCase(unittest.TestCase):
+    def setUp(self):
+        localhost = socket.gethostname()
+        oauth_key = "example-oauth-key"
+        oauth_secret = "example-oauth-secret"
+        self.server = pulpapi.PulpServer(localhost, oauth_key, oauth_secret)
+
+
+class TestConfiguration(PulpTestCase):
+    # Test configuration of importers without
+    # actually trying to sync anything
+    def test_importers_loaded(self):
+       importers = self.server.get_generic_importers()
+       expected = set(IMPORTERS)
+       for importer in importers:
+           expected.remove(importer["id"])
+       if expected:
+           self.fail("Missing expected importers: {}".format(list(expected)))
 
 class TestSyncTree(example_trees.TreeTestCase):
 
@@ -28,5 +52,4 @@ class TestSyncTree(example_trees.TreeTestCase):
 
 
 if __name__ == '__main__':
-    import unittest
     unittest.main()
