@@ -17,7 +17,7 @@ from django.conf import settings
 from django.template.defaultfilters import slugify
 from django.core.exceptions import ValidationError
 
-import pulpapi
+from ..core import pulpapi
 
 from .fields import EncryptedCharField
 

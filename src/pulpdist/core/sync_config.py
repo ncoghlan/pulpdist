@@ -41,9 +41,13 @@ class TreeSyncConfig(object):
         "log_path": None,
     }
 
-    def __init__(self, config):
+    def __init__(self, config=None):
         self.config = saved = self._DEFAULTS.copy()
-        saved.update(config)
+        if config is not None:
+            saved.update(config)
+
+    def __iter__(self):
+        return self._SPEC.iterkeys()
 
     def validate(self):
         validation.validate_config(self.config, self._SPEC)

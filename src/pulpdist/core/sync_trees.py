@@ -94,12 +94,12 @@ _remote_ls_entry_pattern = re.compile(
 
 class BaseSyncCommand(object):
 
-    _CONFIG_TYPE = None
+    CONFIG_TYPE = None
 
     def __init__(self, config):
-        config_type = self._CONFIG_TYPE
+        config_type = self.CONFIG_TYPE
         if config_type is None:
-            raise NotImplementedError("_CONFIG_TYPE not set by subclass")
+            raise NotImplementedError("CONFIG_TYPE not set by subclass")
         config_data = config_type(config)
         config_data.validate()
         self.__dict__.update(config_data.config)
@@ -293,7 +293,7 @@ class BaseSyncCommand(object):
 
 class SyncTree(BaseSyncCommand):
     """Sync the contents of a directory"""
-    _CONFIG_TYPE = sync_config.TreeSyncConfig
+    CONFIG_TYPE = sync_config.TreeSyncConfig
 
     def _do_transfer(self):
         remote_source_path = "rsync://{}{}".format(self.remote_server, self.remote_path)
@@ -302,7 +302,7 @@ class SyncTree(BaseSyncCommand):
 
 class SyncVersionedTree(BaseSyncCommand):
     """Sync the contents of a directory containing multiple versions of a tree"""
-    _CONFIG_TYPE = sync_config.VersionedSyncConfig
+    CONFIG_TYPE = sync_config.VersionedSyncConfig
 
     def _build_remote_ls_rsync_params(self, remote_ls_path):
         """Construct rsync parameters to get a remote directory listing"""
@@ -404,7 +404,7 @@ class SyncVersionedTree(BaseSyncCommand):
 
 class SyncSnapshotTree(SyncVersionedTree):
     """Sync the contents of a directory containing multiple snapshots of a tree"""
-    _CONFIG_TYPE = sync_config.SnapshotSyncConfig
+    CONFIG_TYPE = sync_config.SnapshotSyncConfig
 
     def _already_retrieved(self, local_dest_path):
         local_status_path = os.path.join(local_dest_path, "STATUS")

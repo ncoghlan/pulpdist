@@ -13,52 +13,58 @@
 """PulpDist importer plugins"""
 
 try:
-    from pulpdist.core import sync_trees
+    from pulpdist.core import sync_trees, validation
 except ImportError:
-    # Hack for development installations
+    # Hack to allow running from a source checkout
     import os, sys
     # We're in pulpdist/pulp_plugins/importers/pulpdist_importers, so need to go up 4 dirs
     this_dir = os.path.realpath(os.path.dirname(__file__))
     plugin_dir = os.path.abspath(this_dir + "/../../../..")
     sys.path.append(plugin_dir)
-    from pulpdist.core import sync_trees
-    
+    from pulpdist.core import sync_trees, validation
+
 
 from pulp.server.content.plugins.importer import Importer
 
 class _BaseImporter(Importer):
-    content_types = ["tree"]
+    CONTENT_TYPES = ["tree"]
 
     @classmethod
     def metadata(cls):
         return {
-            "id" : cls.pulp_id,
-            "display_name": cls.display_name,
-            "types" : cls.content_types + ["sync_log"]
+            "id" : cls.PULP_ID,
+            "display_name": cls.DISPLAY_NAME,
+            "types" : cls.CONTENT_TYPES
         }
-    
+
+    def validate_config(self, repo, config):
+        command = self.SYNC_COMMAND.CONFIG_TYPE()
+        for key in command:
+            command.config[key] = config.get(key)
+        try:
+            command.validate()
 
 class SimpleTreeImporter(_BaseImporter):
-    pulp_id = "simple_tree"
-    display_name = "Simple Tree Importer"
+    PULP_ID = "simple_tree"
+    DISPLAY_NAME = "Simple Tree Importer"
 
 
 class VersionedTreeImporter(_BaseImporter):
-    pulp_id = "versioned_tree"
-    display_name = "Versioned Tree Importer"
+    PULP_ID = "versioned_tree"
+    DISPLAY_NAME = "Versioned Tree Importer"
 
 
 class SnapshotTreeImporter(_BaseImporter):
-    pulp_id = "snapshot_tree"
-    display_name = "Snapshot Tree Importer"
+    PULP_ID = "snapshot_tree"
+    DISPLAY_NAME = "Snapshot Tree Importer"
 
 
 class SnapshotDeltaImporter(_BaseImporter):
-    pulp_id = "snapshot_delta"
-    display_name = "Snapshot Delta Importer"
-    content_types = ["tree_delta"]
+    PULP_ID = "snapshot_delta"
+    DISPLAY_NAME = "Snapshot Delta Importer"
+    CONTENT_TYPES = ["tree_delta"]
 
 
 class DeltaTreeImporter(_BaseImporter):
-    pulp_id = "delta_tree"
-    display_name = "Delta Tree Importer"
+    PULP_ID = "delta_tree"
+    DISPLAY_NAME = "Delta Tree Importer"
