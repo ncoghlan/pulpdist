@@ -23,7 +23,7 @@ from .. import validation
 TEST_SPEC = {
     "string": validation.check_type(str),
     "number": validation.check_type(int),
-    "sequence": validation.check_list(validation.check_type(int)),
+    "sequence": validation.check_sequence(validation.check_type(int)),
 }
 
 class TestValidation(unittest.TestCase):
@@ -43,39 +43,39 @@ class TestValidation(unittest.TestCase):
             self.assertIn(setting, details)
 
     def test_check_type(self):
-        self.check_validator(validation.check_type(str), [''], [1])
-        self.check_validator(validation.check_type(int), [1], [''])
+        self.check_validator(validation.check_type(str), [''], [None, 1])
+        self.check_validator(validation.check_type(int), [1], [None, ''])
 
     def test_check_pulp_id(self):
         valid = ['hello', 'hello_world']
-        invalid = ['hello-world', 'hello world', 1]
+        invalid = [None, 'hello-world', 'hello world', 1]
         self.check_validator(validation.check_pulp_id(), valid, invalid)
 
     def test_check_rsync_filter(self):
         valid = ['hello', 'hello_world', 'hello-world', 'he??o*/w*rld.joy']
-        invalid = ['hello world', 1]
+        invalid = [None, 'hello world', 1]
         self.check_validator(validation.check_rsync_filter(), valid, invalid)
 
     def test_check_host(self):
         valid = ['hello', 'hello-world', 'hello.world', '1.2.3.4']
-        invalid = ['hello_world', 'he??o*/w*rld.joy', 'hello/world', 'hello world', '1.2', 1]
+        invalid = [None, 'hello_world', 'he??o*/w*rld.joy', 'hello/world', 'hello world', '1.2', 1]
         self.check_validator(validation.check_host(), valid, invalid)
 
     def test_check_path(self):
         valid = ['hello', 'hello_world', 'hello-world', 'hello/world']
-        invalid = ['he??o*/w*rld.joy', 'hello world', 1]
+        invalid = [None, 'he??o*/w*rld.joy', 'hello world', 1]
         self.check_validator(validation.check_path(), valid, invalid)
 
     def test_check_remote_path(self):
         valid = ['/hello/', '/hello_world/', '/hello-world/', '/hello/world/']
-        invalid = ['hello', '/hello', 'hello/', 'he??o*/w*rld.joy', 'hello world', 1]
+        invalid = [None, 'hello', '/hello', 'hello/', 'he??o*/w*rld.joy', 'hello world', 1]
         self.check_validator(validation.check_remote_path(), valid, invalid)
 
-    def test_check_list(self):
-        validator = validation.check_list(validation.check_type(str))
+    def test_check_sequence(self):
+        validator = validation.check_sequence(validation.check_type(str))
         valid = [[], [''], ['', '']]
         invalid_subscripts = [[1, ''], ['', 1]]
-        invalid = [1, ''] + invalid_subscripts
+        invalid = [None, 1, '', {}] + invalid_subscripts
         self.check_validator(validator, valid, invalid)
         for i, entry in enumerate(invalid_subscripts):
             with self.assertRaises(validation.ValidationError) as exc:
@@ -92,7 +92,8 @@ class TestValidation(unittest.TestCase):
         invalid_sequence = dict(string='', number='', sequence=[''])
         extra = dict(string='', number=1, sequence=[1], hello='world')
         missing = [{}, dict(string=''), dict(number=1), dict(sequence=[1])]
-        invalid = [1, '', invalid_string, invalid_number, invalid_sequence, extra] + missing
+        invalid = [None, 1, '', invalid_string, invalid_number,
+                   invalid_sequence, extra] + missing
         self.check_validator(validator, valid, invalid)
         invalid_subscripts = dict(string=invalid_string,
                                   number=invalid_number,
@@ -156,6 +157,20 @@ class TestValidation(unittest.TestCase):
                 validation.validate_config(config, spec)
             details = str(exc.exception)
             self.assertIn('config[{!r}]'.format(key), details)
+
+    def test_allow_none(self):
+        validators = [
+            validation.check_type(int, allow_none=True),
+            validation.check_pulp_id(allow_none=True),
+            validation.check_rsync_filter(allow_none=True),
+            validation.check_host(allow_none=True),
+            validation.check_path(allow_none=True),
+            validation.check_remote_path(allow_none=True),
+            validation.check_sequence(validation.check_type(str), allow_none=True),
+            validation.check_mapping(TEST_SPEC, allow_none=True),
+        ]
+        for validator in validators:
+            validator(None)
 
 
 if __name__ == '__main__':

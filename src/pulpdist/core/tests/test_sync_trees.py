@@ -153,7 +153,7 @@ class TestSyncTree(unittest.TestCase):
         local_path = self.local_path
         params = self.params
         params.update(TEST_CASE_SYNC)
-        task = sync_trees.SyncTree(**params)
+        task = sync_trees.SyncTree(params)
         task.run_sync()
         self.check_tree_layout(local_path)
 
@@ -161,7 +161,7 @@ class TestSyncTree(unittest.TestCase):
         local_path = self.local_path
         params = self.params
         params.update(TEST_CASE_VERSIONED_SYNC)
-        task = sync_trees.SyncVersionedTree(**params)
+        task = sync_trees.SyncVersionedTree(params)
         task.run_sync()
         for tree in _expected_versioned_trees:
             tree_path = os.path.join(local_path, tree)
@@ -184,7 +184,7 @@ class TestSyncTree(unittest.TestCase):
         skip_not_ready = _expected_versioned_trees[-1]
         not_ready_path = os.path.join(local_path, skip_not_ready)
         # Run the sync task
-        task = sync_trees.SyncSnapshotTree(**params)
+        task = sync_trees.SyncSnapshotTree(params)
         task.run_sync()
         # The tree locally marked as complete should not get updated
         self.assertExists(finished_path)
@@ -214,7 +214,7 @@ class TestSyncTree(unittest.TestCase):
         # Set up all the remote trees as FINISHED
         rsyncd_path = self.rsyncd.tmp_dir + params["remote_path"]
         self.mark_trees_finished(rsyncd_path, _expected_versioned_trees)
-        task = sync_trees.SyncSnapshotTree(**params)
+        task = sync_trees.SyncSnapshotTree(params)
         task.run_sync()
         # Symlink should exist and point to the last tree
         self.assertTrue(os.path.islink(link_path))
@@ -229,7 +229,7 @@ class TestSyncTree(unittest.TestCase):
         local_path = self.local_path
         params = self.params
         params.update(TEST_CASE_SYNC)
-        task = sync_trees.SyncTree(**params)
+        task = sync_trees.SyncTree(params)
         protected_path = os.path.join(local_path, "safe")
         protected_fname = os.path.join(protected_path, "PROTECTED")
         os.makedirs(protected_path)
@@ -249,7 +249,7 @@ class TestSyncTree(unittest.TestCase):
         # the base class
         params = self.params
         params.update(TEST_CASE_SYNC)
-        task = sync_trees.SyncTree(**params)
+        task = sync_trees.SyncTree(params)
         rsyncd_path = self.rsyncd.tmp_dir + params["remote_path"]
         extra_path = os.path.join(rsyncd_path, "extra.txt")
         copied_path = os.path.join(rsyncd_path, "copied.txt")

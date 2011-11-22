@@ -25,6 +25,8 @@ import re
 import tempfile
 import contextlib
 
+from . import sync_config
+
 _OLD_DAEMON = True
 
 _BASE_FETCH_DIR_PARAMS = """
@@ -92,16 +94,15 @@ _remote_ls_entry_pattern = re.compile(
 
 class BaseSyncCommand(object):
 
-    _error_if_string = ()
+    _CONFIG_TYPE = None
 
-    def _init_from_params(self, params):
-        for k in self._error_if_string:
-            v = params[k]
-            if isinstance(v, basestring):
-                msg = "{} should be a sequence of strings, not a string"
-                raise ValueError(msg.format(k))
-        del params["self"]
-        self.__dict__.update(params)
+    def __init__(self, config):
+        config_type = self._CONFIG_TYPE
+        if config_type is None:
+            raise NotImplementedError("_CONFIG_TYPE not set by subclass")
+        config_data = config_type(config)
+        config_data.validate()
+        self.__dict__.update(config_data.config)
 
     def _init_run_log(self):
         self._run_log_indent_level = 0
@@ -292,13 +293,7 @@ class BaseSyncCommand(object):
 
 class SyncTree(BaseSyncCommand):
     """Sync the contents of a directory"""
-    def __init__(self, tree_name, local_path, remote_server, remote_path,
-                       excluded_files=(), sync_filters=(), bandwidth_limit=0,
-                       is_test_run=False, old_remote_daemon=False, rsync_port=None,
-                       log_path=None):
-        self._init_from_params(locals())
-
-    _error_if_string = ("excluded_files", "sync_filters")
+    _CONFIG_TYPE = sync_config.TreeSyncConfig
 
     def _do_transfer(self):
         remote_source_path = "rsync://{}{}".format(self.remote_server, self.remote_path)
@@ -307,14 +302,7 @@ class SyncTree(BaseSyncCommand):
 
 class SyncVersionedTree(BaseSyncCommand):
     """Sync the contents of a directory containing multiple versions of a tree"""
-    def __init__(self, tree_name, local_path, remote_server, remote_path,
-                       version_pattern='*', excluded_versions=(), subdir_filters=(),
-                       excluded_files=(), sync_filters=(), bandwidth_limit=0,
-                       is_test_run=False, old_remote_daemon=False, rsync_port=None,
-                       log_path=None):
-        self._init_from_params(locals())
-
-    _error_if_string = ("excluded_versions", "subdir_filters", "excluded_files", "sync_filters")
+    _CONFIG_TYPE = sync_config.VersionedSyncConfig
 
     def _build_remote_ls_rsync_params(self, remote_ls_path):
         """Construct rsync parameters to get a remote directory listing"""
@@ -416,13 +404,7 @@ class SyncVersionedTree(BaseSyncCommand):
 
 class SyncSnapshotTree(SyncVersionedTree):
     """Sync the contents of a directory containing multiple snapshots of a tree"""
-    def __init__(self, tree_name, local_path, remote_server, remote_path,
-                       version_pattern='*', excluded_versions=(), subdir_filters=(),
-                       excluded_files=(), sync_filters=(), bandwidth_limit=0,
-                       is_test_run=False, old_remote_daemon=False, rsync_port=None,
-                       log_path=None, latest_link_name=None):
-        self._init_from_params(locals())
-        self.excluded_files = list(excluded_files) + ["STATUS", ".STATUS"]
+    _CONFIG_TYPE = sync_config.SnapshotSyncConfig
 
     def _already_retrieved(self, local_dest_path):
         local_status_path = os.path.join(local_dest_path, "STATUS")

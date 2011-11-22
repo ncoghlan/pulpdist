@@ -12,31 +12,65 @@
 """Config definitions and helpers for pulpdist importer plugins"""
 from . import validation
 
-TREE_SYNC_CONFIG = {
-    "tree_name": validation.check_type(str),
-    "remote_server": validation.check_hostname(),
-    "remote_path": validation.check_remote_path(),
-    "excluded_files": validation.check_seq(validation.check_rsync_filter()),
-    "sync_filters": validation.check_seq(validation.check_rsync_filter()),
-    "bandwidth_limit": validation.check_type(int),
-    "is_test_run": validation.check_type(int),
-    "old_remote_daemon": validation.check_type(int),
-    "rsync_port": validation.check_type(int),
-    "log_path": validation.check_path(),
-}
+def _updated(original, additions):
+    new = original.copy()
+    new.update(additions)
+    return new
 
-VERSIONED_SYNC_CONFIG = TREE_SYNC_CONFIG + {
-    "version_pattern": validation.check_rsync_filter(),
-    "excluded_versions": validation.check_seq(validation.check_rsync_filter()),
-}
+class TreeSyncConfig(object):
+    _SPEC = {
+        "tree_name": validation.check_type(str),
+        "remote_server": validation.check_host(),
+        "remote_path": validation.check_remote_path(),
+        "local_path": validation.check_path(),
+        "excluded_files": validation.check_sequence(validation.check_rsync_filter()),
+        "sync_filters": validation.check_sequence(validation.check_rsync_filter()),
+        "bandwidth_limit": validation.check_type(int),
+        "is_test_run": validation.check_type(int),
+        "old_remote_daemon": validation.check_type(int),
+        "rsync_port": validation.check_type(int, allow_none=True),
+        "log_path": validation.check_path(allow_none=True),
+    }
+    _DEFAULTS = {
+        "excluded_files": (),
+        "sync_filters": (),
+        "bandwidth_limit": 0,
+        "is_test_run": False,
+        "old_remote_daemon": False,
+        "rsync_port": None,
+        "log_path": None,
+    }
 
-SNAPSHOT_SYNC_CONFIG = dict(
-    tree_name = "Snapshot Tree",
-    remote_server = "localhost",
-    remote_path = "/test_data/versioned/",
-    version_pattern = "relevant*",
-    excluded_versions = "relevant-but*".split(),
-    excluded_files = "*skip*".split(),
-    sync_filters = "exclude_irrelevant/ exclude_dull/".split(),
-    log_path = _default_log
-)
+    def __init__(self, config):
+        self.config = saved = self._DEFAULTS.copy()
+        saved.update(config)
+
+    def validate(self):
+        validation.validate_config(self.config, self._SPEC)
+
+class VersionedSyncConfig(TreeSyncConfig):
+    _SPEC = _updated(TreeSyncConfig._SPEC, {
+        "version_pattern": validation.check_rsync_filter(),
+        "excluded_versions": validation.check_sequence(validation.check_rsync_filter()),
+        "subdir_filters": validation.check_sequence(validation.check_rsync_filter()),
+    })
+    _DEFAULTS = _updated(TreeSyncConfig._DEFAULTS, {
+        "version_pattern": '*',
+        "excluded_versions": (),
+        "subdir_filters": (),
+    })
+
+class SnapshotSyncConfig(VersionedSyncConfig):
+    _SPEC = _updated(VersionedSyncConfig._SPEC, {
+        "latest_link_name": validation.check_path(allow_none=True),
+    })
+    _DEFAULTS = _updated(VersionedSyncConfig._DEFAULTS, {
+        "latest_link_name": None,
+    })
+
+    def __init__(self, config):
+        super(SnapshotSyncConfig, self).__init__(config)
+        excluded_files = list(self.config["excluded_files"])
+        excluded_files += ["STATUS", ".STATUS"]
+        self.config["excluded_files"] = excluded_files
+
