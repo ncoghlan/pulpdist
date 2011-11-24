@@ -25,6 +25,7 @@ except ImportError:
 
 
 from pulp.server.content.plugins.importer import Importer
+from pulp.server.managers.repo._exceptions import InvalidImporterConfiguration
 
 class _BaseImporter(Importer):
     CONTENT_TYPES = ["tree"]
@@ -40,23 +41,28 @@ class _BaseImporter(Importer):
     def validate_config(self, repo, config):
         command = self.SYNC_COMMAND.CONFIG_TYPE()
         for key in command:
-            command.config[key] = config.get(key)
-        try:
-            command.validate()
+            setting = config.get(key)
+            if setting is not None:
+                command.config[key] = setting
+        command.validate()
+        return True
 
 class SimpleTreeImporter(_BaseImporter):
     PULP_ID = "simple_tree"
     DISPLAY_NAME = "Simple Tree Importer"
+    SYNC_COMMAND = sync_trees.SyncTree
 
 
 class VersionedTreeImporter(_BaseImporter):
     PULP_ID = "versioned_tree"
     DISPLAY_NAME = "Versioned Tree Importer"
+    SYNC_COMMAND = sync_trees.SyncVersionedTree
 
 
 class SnapshotTreeImporter(_BaseImporter):
     PULP_ID = "snapshot_tree"
     DISPLAY_NAME = "Snapshot Tree Importer"
+    SYNC_COMMAND = sync_trees.SyncSnapshotTree
 
 
 class SnapshotDeltaImporter(_BaseImporter):

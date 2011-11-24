@@ -25,9 +25,11 @@ import oauth2 as oauth
 import pulp.client.lib.logutil
 import logging
 pulp.client.lib.logutil.getLogger = logging.getLogger
-    
+
 
 import pulp.client.api.server
+
+ServerRequestError = pulp.client.api.server.ServerRequestError
 
 class _PulpCollection(object):
     def __init__(self, server):
@@ -44,12 +46,35 @@ class _PulpCollection(object):
         return self.server.GET(path, queries)[1]
 
     def get_entry(self, entry_id):
-        path = "%s/%s/" % (self.collection_path, entry_id)
+        path = "%s%s/" % (self.collection_path, entry_id)
         return self.server.GET(path)[1]
+
+    def create_entry(self, entry_id, settings):
+        path = self.collection_path
+        settings["id"] = entry_id
+        return self.server.POST(path, settings)[1]
+
+    def save_entry(self, entry_id, settings):
+        path = "%s%s/" % (self.collection_path, entry_id)
+        return self.server.PUT(path, settings)[1]
+
+    def delete_entry(self, entry_id):
+        path = "%s%s/" % (self.collection_path, entry_id)
+        return self.server.DELETE(path)[0] == 200
+
 
 
 class PulpRepositories(_PulpCollection):
     collection_path = "/repositories/"
+
+    def add_importer(self, repo_id, settings):
+        path = "%s%s/importers/" % (self.collection_path, repo_id)
+        return self.server.POST(path, settings)[1]
+
+    def get_importers(self, repo_id):
+        path = "%s%s/importers/" % (self.collection_path, repo_id)
+        return self.server.GET(path)[1]
+
 
 class GenericContentTypes(_PulpCollection):
     collection_path = "/plugins/types/"
@@ -104,6 +129,35 @@ class PulpServer(pulp.client.api.server.PulpServer):
 
     def get_repo(self, repo_id):
         return PulpRepositories(self).get_entry(repo_id)
+
+    def _repo_settings(self, display_name, description):
+        result = {}
+        if display_name is not None:
+            result[u'display_name'] = display_name
+        if description is not None:
+            result[u'description'] = description
+        return result
+
+    def create_repo(self, repo_id, display_name=None, description=None):
+        settings = self._repo_settings(display_name, description)
+        return PulpRepositories(self).create_entry(repo_id, settings)
+
+    def save_repo(self, repo_id, display_name=None, description=None):
+        settings = self._repo_settings(display_name, description)
+        return PulpRepositories(self).save_entry(repo_id, settings)
+
+    def delete_repo(self, repo_id):
+        return PulpRepositories(self).delete_entry(repo_id)
+
+    def get_importers(self, repo_id):
+        return PulpRepositories(self).get_importers(repo_id)
+
+    def add_importer(self, repo_id, importer_id, config):
+        settings = {
+            u'importer_type_id': importer_id,
+            u'importer_config': config,
+        }
+        return PulpRepositories(self).add_importer(repo_id, settings)
 
     def get_generic_types(self):
         return GenericContentTypes(self).get_list()
