@@ -15,6 +15,7 @@
 """Basic test suite for sync transfer plugins"""
 import unittest
 import socket
+import time
 
 from ...core import pulpapi, sync_trees
 from ...core.tests import example_trees
@@ -92,7 +93,7 @@ class TestConfiguration(PulpTestCase):
         self.assertEqual(imp["id"], importer_id)
         self.assertEqual(imp["importer_type_id"], importer_id)
         self.assertFalse(imp["sync_in_progress"])
-        self.assertIs(imp["last_sync"], None)
+        self.assertIsNone(imp["last_sync"])
         self.check_get_importer(repo_id, imp)
 
     def check_get_importer(self, repo_id, imp):
@@ -134,8 +135,54 @@ class TestLocalSync(example_trees.TreeTestCase):
     def tearDown(self):
         self.server.delete_repo(self.repo["id"])
 
+    def _add_importer(self, importer_id, params):
+        params.update(self.params)
+        repo_id = self.repo["id"]
+        return self.server.add_importer(repo_id, importer_id, params)
+
+    def _get_importer(self):
+        return self.server.get_importer(self.repo["id"])
+
+    def _sync_repo(self):
+        return self.server.sync_repo(self.repo["id"])
+
+    def _wait_for_sync(self):
+        deadline = time.time() + 10
+        sync_started = False
+        while time.time() < deadline:
+            imp = self._get_importer()
+            if imp["last_sync"] is not None:
+                break
+            if sync_started:
+                self.assertTrue(imp["sync_in_progress"])
+            else:
+                sync_started = imp["sync_in_progress"]
+        else:
+            self.fail("Timed out waiting for sync")
+
+    def check_presync(self, imp, importer_id, params):
+        repo_id = self.repo["id"]
+        self.assertEqual(imp["config"], params)
+        self.assertEqual(imp["repo_id"], repo_id)
+        self.assertEqual(imp["id"], importer_id)
+        self.assertEqual(imp["importer_type_id"], importer_id)
+        self.assertFalse(imp["sync_in_progress"])
+        self.assertIsNone(imp["last_sync"])
+
+    def check_postsync(self):
+        imp = self._get_importer()
+        self.assertFalse(imp["sync_in_progress"])
+        self.assertIsNotNone(imp["last_sync"])
+
     def test_simple_tree_sync(self):
-        self.fail("Test under development!")
+        importer_id = 'simple_tree'
+        params = example_trees.CONFIG_TREE_SYNC.copy()
+        imp = self._add_importer(importer_id, params)
+        self.check_presync(imp, importer_id, params)
+        self.assertIsNone(self._sync_repo())
+        self._wait_for_sync()
+        self.check_postsync()
+        self.check_tree_layout(self.local_path)
 
 
 if __name__ == '__main__':

@@ -75,6 +75,10 @@ class PulpRepositories(_PulpCollection):
         path = "%s%s/importers/" % (self.collection_path, repo_id)
         return self.server.GET(path)[1]
 
+    def sync_repo(self, repo_id):
+        path = "%s%s/actions/sync/" % (self.collection_path, repo_id)
+        print(path)
+        return self.server.POST(path)[1]
 
 class GenericContentTypes(_PulpCollection):
     collection_path = "/plugins/types/"
@@ -150,6 +154,9 @@ class PulpServer(pulp.client.api.server.PulpServer):
         return PulpRepositories(self).delete_entry(repo_id)
 
     def get_importers(self, repo_id):
+        return self.get_importers(repo_id)[0]
+
+    def get_importers(self, repo_id):
         return PulpRepositories(self).get_importers(repo_id)
 
     def add_importer(self, repo_id, importer_id, config):
@@ -158,6 +165,9 @@ class PulpServer(pulp.client.api.server.PulpServer):
             u'importer_config': config,
         }
         return PulpRepositories(self).add_importer(repo_id, settings)
+
+    def sync_repo(self, repo_id):
+        return PulpRepositories(self).sync_repo(repo_id)
 
     def get_generic_types(self):
         return GenericContentTypes(self).get_list()
