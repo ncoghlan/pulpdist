@@ -72,7 +72,7 @@ class SnapshotSyncConfig(VersionedSyncConfig):
         "latest_link_name": None,
     })
 
-    def __init__(self, config):
+    def __init__(self, config=None):
         super(SnapshotSyncConfig, self).__init__(config)
         excluded_files = list(self.config["excluded_files"])
         excluded_files += ["STATUS", ".STATUS"]

@@ -27,7 +27,9 @@ def _local_test_server():
     oauth_secret = "example-oauth-secret"
     return pulpapi.PulpServer(localhost, oauth_key, oauth_secret)
 
+
 class PulpTestCase(unittest.TestCase):
+
     def setUp(self):
         self.server = _local_test_server()
 
@@ -70,6 +72,7 @@ class TestConfiguration(PulpTestCase):
     # Test configuration of importers without
     # actually trying to sync anything
     REPO_ID = "test_repo"
+
     def setUp(self):
         super(TestConfiguration, self).setUp()
         self.repo = self.server.create_repo(self.REPO_ID)
@@ -77,7 +80,13 @@ class TestConfiguration(PulpTestCase):
     def tearDown(self):
         self.server.delete_repo(self.repo["id"])
 
-    def check_importer(self, imp, repo_id, importer_id, params):
+    def _add_importer(self, importer_id, params):
+        params['local_path'] = 'test_path'
+        repo_id = self.repo["id"]
+        return self.server.add_importer(repo_id, importer_id, params)
+
+    def check_importer(self, imp, importer_id, params):
+        repo_id = self.repo["id"]
         self.assertEqual(imp["config"], params)
         self.assertEqual(imp["repo_id"], repo_id)
         self.assertEqual(imp["id"], importer_id)
@@ -96,28 +105,37 @@ class TestConfiguration(PulpTestCase):
         self.assertEqual(self.server.get_importers(repo_id), [])
 
     def test_simple_tree(self):
-        params = example_trees.CONFIG_TREE_SYNC.copy()
-        params['local_path'] = 'test_path'
-        repo_id = self.repo["id"]
         importer_id = 'simple_tree'
-        imp = self.server.add_importer(repo_id, importer_id, params)
-        self.check_importer(imp, repo_id, importer_id, params)
+        params = example_trees.CONFIG_TREE_SYNC.copy()
+        imp = self._add_importer(importer_id, params)
+        self.check_importer(imp, importer_id, params)
 
     def test_versioned_tree(self):
-        params = example_trees.CONFIG_VERSIONED_SYNC.copy()
-        params['local_path'] = 'test_path'
-        repo_id = self.repo["id"]
         importer_id = 'versioned_tree'
-        imp = self.server.add_importer(repo_id, importer_id, params)
-        self.check_importer(imp, repo_id, importer_id, params)
+        params = example_trees.CONFIG_VERSIONED_SYNC.copy()
+        imp = self._add_importer(importer_id, params)
+        self.check_importer(imp, importer_id, params)
 
     def test_snapshot_tree(self):
+        importer_id = 'snapshot_tree'
         params = example_trees.CONFIG_SNAPSHOT_SYNC.copy()
-        params['local_path'] = 'test_path'
-        repo_id = self.repo["id"]
-        importer_id = 'versioned_tree'
-        imp = self.server.add_importer(repo_id, importer_id, params)
-        self.check_importer(imp, repo_id, importer_id, params)
+        imp = self._add_importer(importer_id, params)
+        self.check_importer(imp, importer_id, params)
+
+class TestLocalSync(example_trees.TreeTestCase):
+    # Actually test synchronisation
+    REPO_ID = "test_repo"
+
+    def setUp(self):
+        super(TestLocalSync, self).setUp()
+        self.server = _local_test_server()
+        self.repo = self.server.create_repo(self.REPO_ID)
+
+    def tearDown(self):
+        self.server.delete_repo(self.repo["id"])
+
+    def test_simple_tree_sync(self):
+        self.fail("Test under development!")
 
 
 if __name__ == '__main__':
