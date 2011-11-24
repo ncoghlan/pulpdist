@@ -21,13 +21,15 @@ from ...core.tests import example_trees
 
 IMPORTERS = ["simple_tree", "versioned_tree", "snapshot_tree", "delta_tree", "snapshot_delta"]
 
+def _local_test_server():
+    localhost = socket.gethostname()
+    oauth_key = "example-oauth-key"
+    oauth_secret = "example-oauth-secret"
+    return pulpapi.PulpServer(localhost, oauth_key, oauth_secret)
+
 class PulpTestCase(unittest.TestCase):
     def setUp(self):
-        localhost = socket.gethostname()
-        oauth_key = "example-oauth-key"
-        oauth_secret = "example-oauth-secret"
-        self.server = pulpapi.PulpServer(localhost, oauth_key, oauth_secret)
-
+        self.server = _local_test_server()
 
 class TestServerAccess(PulpTestCase):
     # Test basic access to the local Pulp server
