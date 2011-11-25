@@ -17,6 +17,9 @@ import unittest
 import socket
 import time
 import os
+from datetime import datetime, timedelta
+from dateutil.parser import parse as parse_date
+from dateutil.tz import tzutc
 
 from ...core import pulpapi, sync_trees
 from ...core.tests import example_trees
@@ -29,6 +32,8 @@ def _local_test_server():
     oauth_secret = "example-oauth-secret"
     return pulpapi.PulpServer(localhost, oauth_key, oauth_secret)
 
+def _naive_utc(dt):
+    return dt.astimezone(tzutc()).replace(tzinfo=None)
 
 class PulpTestCase(unittest.TestCase):
 
@@ -162,6 +167,7 @@ class TestLocalSync(example_trees.TreeTestCase):
                 self.assertTrue(imp[u"sync_in_progress"])
             else:
                 sync_started = imp[u"sync_in_progress"]
+            time.sleep(0.1)
         else:
             self.fail("Timed out waiting for sync")
 
@@ -177,8 +183,11 @@ class TestLocalSync(example_trees.TreeTestCase):
     def check_postsync(self):
         imp = self._get_importer()
         self.assertFalse(imp[u"sync_in_progress"])
-        self.assertIsNotNone(imp[u"last_sync"])
-        print(imp)
+        last_sync = imp[u"last_sync"]
+        self.assertIsNotNone(last_sync)
+        sync_time = _naive_utc(parse_date(last_sync))
+        now = datetime.utcnow()
+        self.assertLess(now - sync_time, timedelta(seconds=2))
 
     def test_simple_tree_sync(self):
         importer_id = u"simple_tree"
@@ -189,6 +198,27 @@ class TestLocalSync(example_trees.TreeTestCase):
         self._wait_for_sync()
         self.check_postsync()
         self.check_tree_layout(self.local_path)
+
+    def test_versioned_tree_sync(self):
+        importer_id = u"versioned_tree"
+        params = example_trees.CONFIG_VERSIONED_SYNC.copy()
+        imp = self._add_importer(importer_id, params)
+        self.check_presync(imp, importer_id, params)
+        self.assertTrue(self._sync_repo())
+        self._wait_for_sync()
+        self.check_postsync()
+        self.check_versioned_layout(self.local_path)
+
+    def test_snapshot_tree_sync(self):
+        importer_id = u"snapshot_tree"
+        params = example_trees.CONFIG_SNAPSHOT_SYNC.copy()
+        details = self.setup_snapshot_layout(self.local_path, params["remote_path"])
+        imp = self._add_importer(importer_id, params)
+        self.check_presync(imp, importer_id, params)
+        self.assertTrue(self._sync_repo())
+        self._wait_for_sync()
+        self.check_postsync()
+        self.check_snapshot_layout(self.local_path, *details)
 
 
 if __name__ == '__main__':

@@ -33,6 +33,7 @@ Requires: python >= 2.6
 Requires: Django >= 1.3
 Requires: python-oauth2
 Requires: python-httplib2
+Requires: python-dateutil
 Requires: m2crypto
 Requires: openssl
 Requires: python-ldap
