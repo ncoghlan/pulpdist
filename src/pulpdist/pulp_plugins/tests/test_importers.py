@@ -134,6 +134,8 @@ class TestLocalSync(example_trees.TreeTestCase):
         self.repo = self.server.create_repo(self.REPO_ID)
         # Ensure Pulp server can write to our data dir
         os.chmod(self.local_path, 0o777)
+        # Use the server's default logging option
+        self.params["log_path"] = None
 
     def tearDown(self):
         self.server.delete_repo(self.repo[u"id"])
@@ -176,6 +178,7 @@ class TestLocalSync(example_trees.TreeTestCase):
         imp = self._get_importer()
         self.assertFalse(imp[u"sync_in_progress"])
         self.assertIsNotNone(imp[u"last_sync"])
+        print(imp)
 
     def test_simple_tree_sync(self):
         importer_id = u"simple_tree"

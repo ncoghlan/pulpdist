@@ -11,6 +11,7 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 """PulpDist importer plugins"""
+import tempfile
 
 try:
     from pulpdist.core import sync_trees, validation
@@ -25,7 +26,7 @@ except ImportError:
 
 
 from pulp.server.content.plugins.importer import Importer
-from pulp.server.managers.repo._exceptions import InvalidImporterConfiguration
+from pulp.server.content.plugins.data import SyncReport
 
 class _BaseImporter(Importer):
     CONTENT_TYPES = ["tree"]
@@ -53,8 +54,14 @@ class _BaseImporter(Importer):
 
     def sync_repo(self, repo, sync_conduit, config):
         sync_config = self._build_sync_config(config)
-        command = self.SYNC_COMMAND(sync_config.config)
-        command.run_sync()
+        with tempfile.NamedTemporaryFile() as sync_log:
+            sync_config.config["log_path"] = sync_log.name
+            command = self.SYNC_COMMAND(sync_config.config)
+            # TODO: Refactor to support progress reporting
+            # TODO: Refactor to populate content unit metadata
+            command.run_sync()
+            report = SyncReport(0, 0, sync_log.read())
+        return report
 
 class SimpleTreeImporter(_BaseImporter):
     PULP_ID = "simple_tree"

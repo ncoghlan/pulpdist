@@ -46,7 +46,7 @@ unexpected_dirs = [
 
 source_layout = expected_layout + unexpected_dirs
 
-expected_versioned_trees = [u"relevant-{}".format(i) for i in range(1, 5)]
+_expected_versioned_trees = [u"relevant-{}".format(i) for i in range(1, 5)]
 
 source_trees = [
     u"simple",
@@ -54,7 +54,7 @@ source_trees = [
     u"versioned/relevant-but-not-really",
 ]
 
-source_trees.extend(os.path.join(u"versioned", tree) for tree in expected_versioned_trees)
+source_trees.extend(os.path.join(u"versioned", tree) for tree in _expected_versioned_trees)
 
 test_data_layout = [
     os.path.join(tree_dir, subdir)
@@ -135,6 +135,46 @@ class TreeTestCase(unittest.TestCase):
         for dname in unexpected_dirs:
             dpath = os.path.join(tree_path, dname)
             self.assertNotExists(dpath)
+
+    def check_versioned_layout(self, versioned_path):
+        for tree in _expected_versioned_trees:
+            tree_path = os.path.join(versioned_path, tree)
+            self.check_tree_layout(tree_path)
+
+    def setup_snapshot_layout(self, local_path, remote_path):
+        # Set up one local tree as already FINISHED
+        skip_finished = _expected_versioned_trees[0]
+        finished_path = os.path.join(local_path, skip_finished)
+        os.makedirs(finished_path)
+        self.mark_trees_finished(local_path, [skip_finished])
+        # Set up all bar one remote tree as FINISHED
+        rsyncd_path = self.rsyncd.tmp_dir + remote_path
+        expect_sync = _expected_versioned_trees[1:-1]
+        self.mark_trees_finished(rsyncd_path, [skip_finished] + expect_sync)
+        # The last tree we expect to be skipped
+        skip_not_ready = _expected_versioned_trees[-1]
+        not_ready_path = os.path.join(local_path, skip_not_ready)
+        return finished_path, expect_sync, not_ready_path
+
+    def check_snapshot_layout(self, snapshot_path, finished_path,
+                                    expected_paths, not_ready_path):
+        # The tree locally marked as complete should not get updated
+        self.assertExists(finished_path)
+        self.assertEqual(os.listdir(finished_path), ["STATUS"])
+        # The tree not remotely marked as complete should not get updated
+        self.assertNotExists(not_ready_path)
+        # The other trees should all get synchronised
+        previous_tree_path = None
+        for tree in expected_paths:
+            tree_path = os.path.join(snapshot_path, tree)
+            self.check_tree_layout(tree_path)
+            if previous_tree_path is not None:
+                self.check_tree_cross_links(tree_path, previous_tree_path)
+            previous_tree_path = tree_path
+            status_path = os.path.join(tree_path, "STATUS")
+            self.assertExists(status_path)
+            with open(status_path) as f:
+                self.assertEqual(f.read().strip(), "FINISHED")
 
     def check_tree_cross_links(self, tree_path_A, tree_path_B):
         trees = (tree_path_A, tree_path_B)
