@@ -81,7 +81,7 @@ class TestSyncTree(TreeTestCase):
         local_path = self.local_path
         params = self.params
         params.update(CONFIG_SNAPSHOT_SYNC)
-        link_name = "latest-relevant"
+        link_name = u"latest-relevant"
         link_path = os.path.join(local_path, link_name)
         params["latest_link_name"] = link_name
         # Set up all the remote trees as FINISHED

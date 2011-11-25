@@ -47,28 +47,30 @@ class TestValidation(unittest.TestCase):
         self.check_validator(validation.check_type(int), [1], [None, ''])
 
     def test_check_pulp_id(self):
-        valid = ['hello', 'hello_world']
+        valid = [u'hello', u'hello_world']
         invalid = [None, 'hello-world', 'hello world', 1]
         self.check_validator(validation.check_pulp_id(), valid, invalid)
 
     def test_check_rsync_filter(self):
-        valid = ['hello', 'hello_world', 'hello-world', 'he??o*/w*rld.joy']
+        valid = [u'hello', u'hello_world', u'hello-world', u'he??o*/w*rld.joy']
         invalid = [None, 'hello world', 1]
         self.check_validator(validation.check_rsync_filter(), valid, invalid)
 
     def test_check_host(self):
-        valid = ['hello', 'hello-world', 'hello.world', '1.2.3.4']
-        invalid = [None, 'hello_world', 'he??o*/w*rld.joy', 'hello/world', 'hello world', '1.2', 1]
+        valid = [u'hello', u'hello-world', u'hello.world', u'1.2.3.4']
+        invalid = [None, 'hello_world', 'he??o*/w*rld.joy',
+                   'hello/world', 'hello world', '1.2', 1]
         self.check_validator(validation.check_host(), valid, invalid)
 
     def test_check_path(self):
-        valid = ['hello', 'hello_world', 'hello-world', 'hello/world']
+        valid = [u'hello', u'hello_world', u'hello-world', u'hello/world']
         invalid = [None, 'he??o*/w*rld.joy', 'hello world', 1]
         self.check_validator(validation.check_path(), valid, invalid)
 
     def test_check_remote_path(self):
-        valid = ['/hello/', '/hello_world/', '/hello-world/', '/hello/world/']
-        invalid = [None, 'hello', '/hello', 'hello/', 'he??o*/w*rld.joy', 'hello world', 1]
+        valid = [u'/hello/', u'/hello_world/', u'/hello-world/', u'/hello/world/']
+        invalid = [None, 'hello', '/hello', 'hello/',
+                   'he??o*/w*rld.joy', 'hello world', 1]
         self.check_validator(validation.check_remote_path(), valid, invalid)
 
     def test_check_sequence(self):

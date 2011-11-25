@@ -48,7 +48,7 @@ def _get_open_port():
 class RsyncDaemon(object):
     def __init__(self, dir_layout, filenames):
         self.port = port = _get_open_port()
-        self.tmp_dir = tmp_dir = tempfile.mkdtemp()
+        self.tmp_dir = tmp_dir = tempfile.mkdtemp().decode("utf-8")
         self.rsync_dir = rsync_dir = os.path.join(tmp_dir, "rsync_data")
         self.data_dir = data_dir = os.path.join(tmp_dir, "test_data")
         self.pid = None

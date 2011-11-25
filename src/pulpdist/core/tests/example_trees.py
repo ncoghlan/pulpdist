@@ -21,40 +21,40 @@ import os.path
 from . import rsync_daemon
 
 expected_files = [
-    "data.txt",
-    "data2.txt",
+    u"data.txt",
+    u"data2.txt",
 ]
 
 unexpected_files = [
-    "skip.txt",
+    u"skip.txt",
 ]
 
 test_files = expected_files + unexpected_files
 
 expected_layout = [
-    "",
-    "subdir",
-    "subdir/subdir",
-    "subdir2",
+    u"",
+    u"subdir",
+    u"subdir/subdir",
+    u"subdir2",
 ]
 
 unexpected_dirs = [
-    "subdir/irrelevant",
-    "subdir/subdir/irrelevant",
-    "subdir2/dull",
+    u"subdir/irrelevant",
+    u"subdir/subdir/irrelevant",
+    u"subdir2/dull",
 ]
 
 source_layout = expected_layout + unexpected_dirs
 
-expected_versioned_trees = ["relevant-{}".format(i) for i in range(1, 5)]
+expected_versioned_trees = [u"relevant-{}".format(i) for i in range(1, 5)]
 
 source_trees = [
-    "simple",
-    "versioned/ignored",
-    "versioned/relevant-but-not-really",
+    u"simple",
+    u"versioned/ignored",
+    u"versioned/relevant-but-not-really",
 ]
 
-source_trees.extend(os.path.join("versioned", tree) for tree in expected_versioned_trees)
+source_trees.extend(os.path.join(u"versioned", tree) for tree in expected_versioned_trees)
 
 test_data_layout = [
     os.path.join(tree_dir, subdir)
@@ -62,36 +62,36 @@ test_data_layout = [
             for subdir in source_layout
 ]
 
-_default_log = "/dev/null"
+_default_log = u"/dev/null"
 
 CONFIG_TREE_SYNC = dict(
-    tree_name = "Simple Tree",
-    remote_server = "localhost",
-    remote_path = "/test_data/simple/",
-    excluded_files = "*skip*".split(),
-    sync_filters = "exclude_irrelevant/ exclude_dull/".split(),
+    tree_name = u"Simple Tree",
+    remote_server = u"localhost",
+    remote_path = u"/test_data/simple/",
+    excluded_files = u"*skip*".split(),
+    sync_filters = u"exclude_irrelevant/ exclude_dull/".split(),
     log_path = _default_log
 )
 
 CONFIG_VERSIONED_SYNC = dict(
-    tree_name = "Versioned Tree",
-    remote_server = "localhost",
-    remote_path = "/test_data/versioned/",
-    version_pattern = "relevant*",
-    excluded_versions = "relevant-but*".split(),
-    excluded_files = "*skip*".split(),
-    sync_filters = "exclude_irrelevant/ exclude_dull/".split(),
+    tree_name = u"Versioned Tree",
+    remote_server = u"localhost",
+    remote_path = u"/test_data/versioned/",
+    version_pattern = u"relevant*",
+    excluded_versions = u"relevant-but*".split(),
+    excluded_files = u"*skip*".split(),
+    sync_filters = u"exclude_irrelevant/ exclude_dull/".split(),
     log_path = _default_log
 )
 
 CONFIG_SNAPSHOT_SYNC = dict(
-    tree_name = "Snapshot Tree",
-    remote_server = "localhost",
-    remote_path = "/test_data/versioned/",
-    version_pattern = "relevant*",
-    excluded_versions = "relevant-but*".split(),
-    excluded_files = "*skip*".split(),
-    sync_filters = "exclude_irrelevant/ exclude_dull/".split(),
+    tree_name = u"Snapshot Tree",
+    remote_server = u"localhost",
+    remote_path = u"/test_data/versioned/",
+    version_pattern = u"relevant*",
+    excluded_versions = u"relevant-but*".split(),
+    excluded_files = u"*skip*".split(),
+    sync_filters = u"exclude_irrelevant/ exclude_dull/".split(),
     log_path = _default_log
 )
 
@@ -103,7 +103,7 @@ def start_rsyncd():
 class TreeTestCase(unittest.TestCase):
     def setUp(self):
         self.rsyncd = rsyncd = start_rsyncd()
-        self.local_path = local_path = tempfile.mkdtemp()
+        self.local_path = local_path = tempfile.mkdtemp().decode("utf-8")
         self.params = dict(rsync_port = rsyncd.port,
                            local_path = local_path+'/')
 
@@ -148,7 +148,7 @@ class TreeTestCase(unittest.TestCase):
 
     def mark_trees_finished(self, base_path, trees):
         for tree in trees:
-            status_path = os.path.join(base_path, tree, "STATUS")
+            status_path = os.path.join(base_path, tree, u"STATUS")
             with open(status_path, 'w') as f:
                 f.write("FINISHED\n")
 

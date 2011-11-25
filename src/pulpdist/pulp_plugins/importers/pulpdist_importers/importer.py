@@ -38,14 +38,23 @@ class _BaseImporter(Importer):
             "types" : cls.CONTENT_TYPES
         }
 
-    def validate_config(self, repo, config):
-        command = self.SYNC_COMMAND.CONFIG_TYPE()
-        for key in command:
+    def _build_sync_config(self, config):
+        sync_config = self.SYNC_COMMAND.CONFIG_TYPE()
+        for key in sync_config:
             setting = config.get(key)
             if setting is not None:
-                command.config[key] = setting
-        command.validate()
+                sync_config.config[key] = setting
+        return sync_config
+
+    def validate_config(self, repo, config):
+        sync_config = self._build_sync_config(config)
+        sync_config.validate()
         return True
+
+    def sync_repo(self, repo, sync_conduit, config):
+        sync_config = self._build_sync_config(config)
+        command = self.SYNC_COMMAND(sync_config.config)
+        command.run_sync()
 
 class SimpleTreeImporter(_BaseImporter):
     PULP_ID = "simple_tree"

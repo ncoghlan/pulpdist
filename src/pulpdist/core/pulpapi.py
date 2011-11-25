@@ -77,7 +77,6 @@ class PulpRepositories(_PulpCollection):
 
     def sync_repo(self, repo_id):
         path = "%s%s/actions/sync/" % (self.collection_path, repo_id)
-        print(path)
         return self.server.POST(path)[1]
 
 class GenericContentTypes(_PulpCollection):
@@ -153,7 +152,7 @@ class PulpServer(pulp.client.api.server.PulpServer):
     def delete_repo(self, repo_id):
         return PulpRepositories(self).delete_entry(repo_id)
 
-    def get_importers(self, repo_id):
+    def get_importer(self, repo_id):
         return self.get_importers(repo_id)[0]
 
     def get_importers(self, repo_id):

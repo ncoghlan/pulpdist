@@ -19,26 +19,26 @@ def _updated(original, additions):
 
 class TreeSyncConfig(object):
     _SPEC = {
-        "tree_name": validation.check_type(str),
-        "remote_server": validation.check_host(),
-        "remote_path": validation.check_remote_path(),
-        "local_path": validation.check_path(),
-        "excluded_files": validation.check_sequence(validation.check_rsync_filter()),
-        "sync_filters": validation.check_sequence(validation.check_rsync_filter()),
-        "bandwidth_limit": validation.check_type(int),
-        "is_test_run": validation.check_type(int),
-        "old_remote_daemon": validation.check_type(int),
-        "rsync_port": validation.check_type(int, allow_none=True),
-        "log_path": validation.check_path(allow_none=True),
+        u"tree_name": validation.check_text(),
+        u"remote_server": validation.check_host(),
+        u"remote_path": validation.check_remote_path(),
+        u"local_path": validation.check_path(),
+        u"excluded_files": validation.check_sequence(validation.check_rsync_filter()),
+        u"sync_filters": validation.check_sequence(validation.check_rsync_filter()),
+        u"bandwidth_limit": validation.check_type(int),
+        u"is_test_run": validation.check_type(int),
+        u"old_remote_daemon": validation.check_type(int),
+        u"rsync_port": validation.check_type(int, allow_none=True),
+        u"log_path": validation.check_path(allow_none=True),
     }
     _DEFAULTS = {
-        "excluded_files": (),
-        "sync_filters": (),
-        "bandwidth_limit": 0,
-        "is_test_run": False,
-        "old_remote_daemon": False,
-        "rsync_port": None,
-        "log_path": None,
+        u"excluded_files": (),
+        u"sync_filters": (),
+        u"bandwidth_limit": 0,
+        u"is_test_run": False,
+        u"old_remote_daemon": False,
+        u"rsync_port": None,
+        u"log_path": None,
     }
 
     def __init__(self, config=None):
@@ -54,27 +54,27 @@ class TreeSyncConfig(object):
 
 class VersionedSyncConfig(TreeSyncConfig):
     _SPEC = _updated(TreeSyncConfig._SPEC, {
-        "version_pattern": validation.check_rsync_filter(),
-        "excluded_versions": validation.check_sequence(validation.check_rsync_filter()),
-        "subdir_filters": validation.check_sequence(validation.check_rsync_filter()),
+        u"version_pattern": validation.check_rsync_filter(),
+        u"excluded_versions": validation.check_sequence(validation.check_rsync_filter()),
+        u"subdir_filters": validation.check_sequence(validation.check_rsync_filter()),
     })
     _DEFAULTS = _updated(TreeSyncConfig._DEFAULTS, {
-        "version_pattern": '*',
-        "excluded_versions": (),
-        "subdir_filters": (),
+        u"version_pattern": u'*',
+        u"excluded_versions": (),
+        u"subdir_filters": (),
     })
 
 class SnapshotSyncConfig(VersionedSyncConfig):
     _SPEC = _updated(VersionedSyncConfig._SPEC, {
-        "latest_link_name": validation.check_path(allow_none=True),
+        u"latest_link_name": validation.check_path(allow_none=True),
     })
     _DEFAULTS = _updated(VersionedSyncConfig._DEFAULTS, {
-        "latest_link_name": None,
+        u"latest_link_name": None,
     })
 
     def __init__(self, config=None):
         super(SnapshotSyncConfig, self).__init__(config)
-        excluded_files = list(self.config["excluded_files"])
-        excluded_files += ["STATUS", ".STATUS"]
-        self.config["excluded_files"] = excluded_files
+        excluded_files = list(self.config[u"excluded_files"])
+        excluded_files += [u"STATUS", u".STATUS"]
+        self.config[u"excluded_files"] = excluded_files
 
