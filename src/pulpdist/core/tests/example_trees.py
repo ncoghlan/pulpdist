@@ -59,6 +59,8 @@ source_trees = [
 source_trees.extend(os.path.join(u"versioned", tree) for tree in _expected_versioned_trees)
 source_trees.extend(os.path.join(u"snapshot", tree) for tree in _expected_versioned_trees)
 
+test_trees_finished = [os.path.join(u"snapshot", tree) for tree in _expected_versioned_trees[:-1]]
+
 test_data_layout = [
     os.path.join(tree_dir, subdir)
         for tree_dir in source_trees
@@ -98,7 +100,18 @@ CONFIG_SNAPSHOT_SYNC = dict(
     log_path = _default_log
 )
 
-def make_layout(base_dir, dir_layout=test_data_layout, filenames=test_files):
+
+def mark_trees_finished(base_dir, trees):
+    for tree in trees:
+        status_path = os.path.join(base_dir, tree, u"STATUS")
+        with open(status_path, 'w') as f:
+            f.write("FINISHED\n")
+
+
+def make_layout(base_dir,
+                dir_layout=test_data_layout,
+                filenames=test_files,
+                finished_trees=test_trees_finished):
     for data_dir in dir_layout:
         dpath = os.path.join(base_dir, data_dir)
         os.makedirs(dpath)
@@ -107,7 +120,9 @@ def make_layout(base_dir, dir_layout=test_data_layout, filenames=test_files):
             with open(fpath, 'w') as f:
                 f.write("PulpDist test data!\n")
             # print("Created {!r})".format(fpath))
-
+    # For better snapshot testing, only some trees are
+    # flagged as being complete
+    mark_trees_finished(base_dir, finished_trees)
 
 def start_rsyncd():
     rsyncd = rsync_daemon.RsyncDaemon(make_layout)
@@ -155,20 +170,19 @@ class TreeTestCase(unittest.TestCase):
             tree_path = os.path.join(versioned_path, tree)
             self.check_tree_layout(tree_path)
 
-    def setup_snapshot_layout(self, local_path, remote_path):
+    def setup_snapshot_layout(self, local_path):
         # Set up one local tree as already FINISHED
         skip_finished = _expected_versioned_trees[0]
         finished_path = os.path.join(local_path, skip_finished)
         os.makedirs(finished_path)
-        self.mark_trees_finished(local_path, [skip_finished])
-        # Set up all bar one remote tree as FINISHED
-        rsyncd_path = self.rsyncd.tmp_dir + remote_path
+        mark_trees_finished(local_path, [skip_finished])
+        # We expect most of the trees to be sync'ed
         expect_sync = _expected_versioned_trees[1:-1]
-        self.mark_trees_finished(rsyncd_path, [skip_finished] + expect_sync)
         # The last tree we expect to be skipped
         skip_not_ready = _expected_versioned_trees[-1]
         not_ready_path = os.path.join(local_path, skip_not_ready)
         return finished_path, expect_sync, not_ready_path
+
 
     def check_snapshot_layout(self, snapshot_path, finished_path,
                                     expected_paths, not_ready_path):
@@ -199,10 +213,3 @@ class TreeTestCase(unittest.TestCase):
                 fpaths = [os.path.join(dpath, fname) for dpath in dpaths]
                 msg = "{} are different files".format(fpaths)
                 self.assertTrue(os.path.samefile(*fpaths))
-
-    def mark_trees_finished(self, base_path, trees):
-        for tree in trees:
-            status_path = os.path.join(base_path, tree, u"STATUS")
-            with open(status_path, 'w') as f:
-                f.write("FINISHED\n")
-

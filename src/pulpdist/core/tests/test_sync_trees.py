@@ -19,7 +19,7 @@ import os.path
 from .. import sync_trees
 from . example_trees import (CONFIG_TREE_SYNC, CONFIG_VERSIONED_SYNC,
                              CONFIG_SNAPSHOT_SYNC,
-                             TreeTestCase, _expected_versioned_trees)
+                             TreeTestCase)
 
 class TestSyncTree(TreeTestCase):
     def test_sync(self):
@@ -42,7 +42,7 @@ class TestSyncTree(TreeTestCase):
         local_path = self.local_path
         params = self.params
         params.update(CONFIG_SNAPSHOT_SYNC)
-        details = self.setup_snapshot_layout(local_path, params["remote_path"])
+        details = self.setup_snapshot_layout(local_path)
         task = sync_trees.SyncSnapshotTree(params)
         task.run_sync()
         self.check_snapshot_layout(local_path, *details)
@@ -54,16 +54,12 @@ class TestSyncTree(TreeTestCase):
         link_name = u"latest-relevant"
         link_path = os.path.join(local_path, link_name)
         params["latest_link_name"] = link_name
-        # Set up all the remote trees as FINISHED
-        rsyncd_path = self.rsyncd.tmp_dir + params["remote_path"]
-        self.mark_trees_finished(rsyncd_path, _expected_versioned_trees)
+        __, expect_sync, __ = self.setup_snapshot_layout(local_path)
         task = sync_trees.SyncSnapshotTree(params)
         task.run_sync()
-        # Symlink should exist and point to the last tree
+        # Symlink should exist and point to the last sync'ed tree
         self.assertTrue(os.path.islink(link_path))
-        expected_target = _expected_versioned_trees[-1]
-        self.assertEqual(os.readlink(link_path), expected_target)
-
+        self.assertEqual(os.readlink(link_path), expect_sync[-1])
 
     def test_dir_protection(self):
         # We only test this with a simple sync
