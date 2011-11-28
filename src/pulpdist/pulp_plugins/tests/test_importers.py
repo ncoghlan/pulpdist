@@ -24,21 +24,43 @@ from dateutil.tz import tzutc
 from ...core import pulpapi, sync_trees
 from ...core.tests import example_trees
 
-IMPORTERS = [u"simple_tree", u"versioned_tree", u"snapshot_tree", u"delta_tree", u"snapshot_delta"]
+# Required setup on local machine to run plugin tests
+#
+# - Pulp instance running on default port (i.e. 80)
+# - default admin/admin account still in place
+# - OAuth enabled with keys as seen below
+# - "pulp-admin auth login localhost --username admin --password admin"
 
-def _local_test_server():
-    localhost = socket.gethostname()
-    oauth_key = "example-oauth-key"
-    oauth_secret = "example-oauth-secret"
-    return pulpapi.PulpServer(localhost, oauth_key, oauth_secret)
+
+IMPORTERS = [u"simple_tree", u"versioned_tree", u"snapshot_tree",
+             u"delta_tree", u"snapshot_delta"]
 
 def _naive_utc(dt):
     return dt.astimezone(tzutc()).replace(tzinfo=None)
 
 class PulpTestCase(unittest.TestCase):
 
+    def _local_test_server(self):
+        localhost = socket.gethostname()
+        oauth_key = "example-oauth-key"
+        oauth_secret = "example-oauth-secret"
+        return pulpapi.PulpServer(localhost, oauth_key, oauth_secret)
+
     def setUp(self):
-        self.server = _local_test_server()
+        self.server = self._local_test_server()
+
+class BasicAuthMixin(object):
+    def _local_test_server(self):
+        localhost = socket.gethostname()
+        username = "admin"
+        password = "admin"
+        return pulpapi.PulpServerClient(localhost, username, password)
+
+class LocalCertMixin(object):
+    def _local_test_server(self):
+        localhost = socket.gethostname()
+        return pulpapi.PulpServerClient(localhost)
+
 
 class TestServerAccess(PulpTestCase):
     # Test basic access to the local Pulp server
@@ -74,6 +96,9 @@ class TestServerAccess(PulpTestCase):
             self.server.get_repo(self.REPO_ID)
         exc = details.exception
         self.assertEqual(exc.args[0], 404)
+
+class TestBasicAuthServerAccess(BasicAuthMixin, TestServerAccess): pass
+class TestLocalCertServerAccess(LocalCertMixin, TestServerAccess): pass
 
 class TestConfiguration(PulpTestCase):
     # Test configuration of importers without
@@ -129,13 +154,16 @@ class TestConfiguration(PulpTestCase):
         imp = self._add_importer(importer_id, params)
         self.check_importer(imp, importer_id, params)
 
-class TestLocalSync(example_trees.TreeTestCase):
+class TestBasicAuthConfiguration(BasicAuthMixin, TestConfiguration): pass
+class TestLocalCertConfiguration(LocalCertMixin, TestConfiguration): pass
+
+class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
     # Actually test synchronisation
     REPO_ID = u"test_repo"
 
     def setUp(self):
         super(TestLocalSync, self).setUp()
-        self.server = _local_test_server()
+        self.server = self._local_test_server()
         self.repo = self.server.create_repo(self.REPO_ID)
         # Ensure Pulp server can write to our data dir
         os.chmod(self.local_path, 0o777)
@@ -231,6 +259,8 @@ class TestLocalSync(example_trees.TreeTestCase):
         self.check_postsync()
         self.check_snapshot_layout(self.local_path, *details)
 
+class TestBasicAuthLocalSync(BasicAuthMixin, TestLocalSync): pass
+class TestLocalCertLocalSync(LocalCertMixin, TestLocalSync): pass
 
 if __name__ == '__main__':
     unittest.main()

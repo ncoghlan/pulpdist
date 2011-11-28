@@ -28,6 +28,7 @@ pulp.client.lib.logutil.getLogger = logging.getLogger
 
 
 import pulp.client.api.server
+import pulp.client.admin.credentials
 
 ServerRequestError = pulp.client.api.server.ServerRequestError
 
@@ -88,19 +89,21 @@ class GenericContentImporters(_PulpCollection):
 class GenericContentDistributors(_PulpCollection):
     collection_path = "/plugins/distributors/"
 
+class PulpServerClient(pulp.client.api.server.PulpServer):
+    # Add some convenience methods around the standard
+    # pulp-admin client API. Can pass username and password
+    # to use Basic Auth, otherwise relies on the certfile
+    # created by "pulp-admin auth login"
+    def __init__(self, hostname, username=None, password=None):
+        super(PulpServerClient, self).__init__(hostname, path_prefix="/pulp/api/v2")
+        if None in (username, password):
+            # Rely on certfile
+            certfile = pulp.client.admin.credentials.Login().crtpath()
+            self.set_ssl_credentials(certfile)
+        else:
+            # Use basic auth
+            self.set_basic_auth_credentials(username, password)
 
-class PulpServer(pulp.client.api.server.PulpServer):
-    # Unlike the standard Pulp client, we support only OAuth over https
-    def __init__(self, hostname, oauth_key, oauth_secret):
-        super(PulpServer, self).__init__(hostname, path_prefix="/pulp/api/v2")
-        self.oauth_consumer = oauth.Consumer(oauth_key, oauth_secret)
-        self.oauth_sign_method = oauth.SignatureMethod_HMAC_SHA1
-
-    def _connect(self):
-        context = SSL.Context("sslv3")
-        connection = httpslib.HTTPSConnection(self.host, self.port, ssl_context=context)
-        connection.connect()
-        return connection
 
     def _build_url(self, path, queries=()):
         # base class gets this wrong when path starts with '/'
@@ -110,22 +113,7 @@ class PulpServer(pulp.client.api.server.PulpServer):
             else:
                 sep = '/'
             path = sep.join((self.path_prefix, path))
-        return super(PulpServer, self)._build_url(path, queries)
-
-    def _request(self, method, path, queries=(), body=None):
-        # make a request to the pulp server and return the response
-        # NOTE this throws a ServerRequestError if the request did not succeed
-        connection = self._connect()
-        url = self._build_url(path, queries)
-        # Oauth setup
-        consumer = self.oauth_consumer
-        https_url = 'https://' + self.host + url
-        self._log.debug('signing %r request to %r', method, https_url)
-        oauth_request = oauth.Request.from_consumer_and_token(consumer, http_method=method, http_url=https_url)
-        oauth_request.sign_request(self.oauth_sign_method(), consumer, None)
-        self.headers.update(oauth_request.to_header())
-        self.headers.update(pulp_user='admin') # TODO: use Django login (eventually Kerberos)
-        return super(PulpServer, self)._request(method, path, queries, body)
+        return super(PulpServerClient, self)._build_url(path, queries)
 
     def get_repos(self):
         return PulpRepositories(self).get_list()
@@ -185,3 +173,33 @@ class PulpServer(pulp.client.api.server.PulpServer):
 
     def get_generic_distributor(self, plugin_id):
         return GenericContentTypes(self).get_entry(plugin_id)
+
+
+class PulpServer(PulpServerClient):
+    # Unlike the standard Pulp client, we support only OAuth over https
+    def __init__(self, hostname, oauth_key, oauth_secret):
+        # Slightly dodgy - want to bypass the PulpServerClient init function
+        super(PulpServerClient, self).__init__(hostname, path_prefix="/pulp/api/v2")
+        self.oauth_consumer = oauth.Consumer(oauth_key, oauth_secret)
+        self.oauth_sign_method = oauth.SignatureMethod_HMAC_SHA1
+
+    def _connect(self):
+        context = SSL.Context("sslv3")
+        connection = httpslib.HTTPSConnection(self.host, self.port, ssl_context=context)
+        connection.connect()
+        return connection
+
+    def _request(self, method, path, queries=(), body=None):
+        # make a request to the pulp server and return the response
+        # NOTE this throws a ServerRequestError if the request did not succeed
+        connection = self._connect()
+        url = self._build_url(path, queries)
+        # Oauth setup
+        consumer = self.oauth_consumer
+        https_url = 'https://' + self.host + url
+        self._log.debug('signing %r request to %r', method, https_url)
+        oauth_request = oauth.Request.from_consumer_and_token(consumer, http_method=method, http_url=https_url)
+        oauth_request.sign_request(self.oauth_sign_method(), consumer, None)
+        self.headers.update(oauth_request.to_header())
+        self.headers.update(pulp_user='admin') # TODO: use Django login (eventually Kerberos)
+        return super(PulpServer, self)._request(method, path, queries, body)

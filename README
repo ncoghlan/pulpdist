@@ -7,3 +7,9 @@ https://fedorahosted.org/pulpdist/
 For more information on Pulp itself, check out the Pulp website:
 
 http://pulpproject.org
+
+
+Testing
+=======
+
+See comments in the individual test files in the source tree for the environmental setup needed to run those tests.
