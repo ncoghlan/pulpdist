@@ -46,24 +46,13 @@ def _get_open_port():
 
 
 class RsyncDaemon(object):
-    def __init__(self, dir_layout, filenames):
+    def __init__(self, make_layout):
         self.port = port = _get_open_port()
         self.tmp_dir = tmp_dir = tempfile.mkdtemp().decode("utf-8")
         self.rsync_dir = rsync_dir = os.path.join(tmp_dir, "rsync_data")
         self.data_dir = data_dir = os.path.join(tmp_dir, "test_data")
         self.pid = None
-        self._create_test_data(dir_layout, filenames)
-
-    def _create_test_data(self, dir_layout, filenames):
-        base_dir = self.data_dir
-        for data_dir in dir_layout:
-            dpath = os.path.join(base_dir, data_dir)
-            os.makedirs(dpath)
-            for fname in filenames:
-                fpath = os.path.join(dpath, fname)
-                with open(fpath, 'w') as f:
-                    f.write("GSv3 test data!\n")
-                # print("Created {!r})".format(fpath))
+        make_layout(self.data_dir)
 
     @contextlib.contextmanager
     def _wait_for_pid_file(self, pid_path):

@@ -52,9 +52,12 @@ source_trees = [
     u"simple",
     u"versioned/ignored",
     u"versioned/relevant-but-not-really",
+    u"snapshot/ignored",
+    u"snapshot/relevant-but-not-really",
 ]
 
 source_trees.extend(os.path.join(u"versioned", tree) for tree in _expected_versioned_trees)
+source_trees.extend(os.path.join(u"snapshot", tree) for tree in _expected_versioned_trees)
 
 test_data_layout = [
     os.path.join(tree_dir, subdir)
@@ -87,7 +90,7 @@ CONFIG_VERSIONED_SYNC = dict(
 CONFIG_SNAPSHOT_SYNC = dict(
     tree_name = u"Snapshot Tree",
     remote_server = u"localhost",
-    remote_path = u"/test_data/versioned/",
+    remote_path = u"/test_data/snapshot/",
     version_pattern = u"relevant*",
     excluded_versions = u"relevant-but*".split(),
     excluded_files = u"*skip*".split(),
@@ -95,8 +98,19 @@ CONFIG_SNAPSHOT_SYNC = dict(
     log_path = _default_log
 )
 
+def make_layout(base_dir, dir_layout=test_data_layout, filenames=test_files):
+    for data_dir in dir_layout:
+        dpath = os.path.join(base_dir, data_dir)
+        os.makedirs(dpath)
+        for fname in filenames:
+            fpath = os.path.join(dpath, fname)
+            with open(fpath, 'w') as f:
+                f.write("PulpDist test data!\n")
+            # print("Created {!r})".format(fpath))
+
+
 def start_rsyncd():
-    rsyncd = rsync_daemon.RsyncDaemon(test_data_layout, test_files)
+    rsyncd = rsync_daemon.RsyncDaemon(make_layout)
     rsyncd.start()
     return rsyncd
 
