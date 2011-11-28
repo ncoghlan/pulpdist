@@ -150,6 +150,9 @@ class TestLocalSync(example_trees.TreeTestCase):
         repo_id = self.repo[u"id"]
         return self.server.add_importer(repo_id, importer_id, params)
 
+    def _get_repo(self):
+        return self.server.get_repo(self.repo[u"id"])
+
     def _get_importer(self):
         return self.server.get_importer(self.repo[u"id"])
 
@@ -179,6 +182,7 @@ class TestLocalSync(example_trees.TreeTestCase):
         self.assertEqual(imp[u"importer_type_id"], importer_id)
         self.assertFalse(imp[u"sync_in_progress"])
         self.assertIsNone(imp[u"last_sync"])
+        self.assertIsNone(imp[u"scratchpad"])
 
     def check_postsync(self):
         imp = self._get_importer()
@@ -188,6 +192,13 @@ class TestLocalSync(example_trees.TreeTestCase):
         sync_time = _naive_utc(parse_date(last_sync))
         now = datetime.utcnow()
         self.assertLess(now - sync_time, timedelta(seconds=2))
+        repo = self._get_repo()
+        sync_meta = imp[u"last_sync_details"]
+        print sync_meta
+        self.assertIsNotNone(sync_meta)
+        self.assertIsNotNone(sync_meta["start_time"])
+        self.assertIsNotNone(sync_meta["finish_time"])
+        self.assertIsNotNone(sync_meta["stats"])
 
     def test_simple_tree_sync(self):
         importer_id = u"simple_tree"

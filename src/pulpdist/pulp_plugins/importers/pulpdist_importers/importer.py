@@ -59,8 +59,16 @@ class _BaseImporter(Importer):
             command = self.SYNC_COMMAND(sync_config.config)
             # TODO: Refactor to support progress reporting
             # TODO: Refactor to populate content unit metadata
-            command.run_sync()
+            sync_details = command.run_sync()
             report = SyncReport(0, 0, sync_log.read())
+        sync_meta = {
+            "start_time": sync_details[0],
+            "finish_time": sync_details[1],
+            "stats": dict(sync_details[2]._asdict()),
+        }
+        print(sync_meta)
+        # raise Exception(str(sync_meta))
+        # sync_conduit.add_repo_metadata_values({"last_sync_details":sync_meta})
         return report
 
 class SimpleTreeImporter(_BaseImporter):
