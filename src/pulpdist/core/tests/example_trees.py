@@ -13,10 +13,11 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 """Basic test suite for sync transfer operations"""
 
-import unittest
 import shutil
 import tempfile
 import os.path
+
+from .compat import unittest
 
 from . import rsync_daemon
 
@@ -46,7 +47,7 @@ unexpected_dirs = [
 
 source_layout = expected_layout + unexpected_dirs
 
-_expected_versioned_trees = [u"relevant-{}".format(i) for i in range(1, 5)]
+_expected_versioned_trees = [u"relevant-{0}".format(i) for i in range(1, 5)]
 
 source_trees = [
     u"simple",
@@ -119,7 +120,7 @@ def make_layout(base_dir,
             fpath = os.path.join(dpath, fname)
             with open(fpath, 'w') as f:
                 f.write("PulpDist test data!\n")
-            # print("Created {!r})".format(fpath))
+            # print("Created {0:!r})".format(fpath))
     # For better snapshot testing, only some trees are
     # flagged as being complete
     mark_trees_finished(base_dir, finished_trees)
@@ -142,13 +143,13 @@ class TreeTestCase(unittest.TestCase):
         shutil.rmtree(self.local_path)
 
     def assertExists(self, full_path):
-        err = "{} does not exist".format(full_path)
-        # print ("Checking {} exists".format(full_path))
+        err = "{0} does not exist".format(full_path)
+        # print ("Checking {0} exists".format(full_path))
         self.assertTrue(os.path.exists(full_path), err)
 
     def assertNotExists(self, full_path):
-        err = "{} exists".format(full_path)
-        # print ("Checking {} does not exist".format(full_path))
+        err = "{0} exists".format(full_path)
+        # print ("Checking {0} does not exist".format(full_path))
         self.assertFalse(os.path.exists(full_path), err)
 
     def check_tree_layout(self, tree_path):
@@ -211,5 +212,5 @@ class TreeTestCase(unittest.TestCase):
             map(self.assertExists, dpaths)
             for fname in expected_files:
                 fpaths = [os.path.join(dpath, fname) for dpath in dpaths]
-                msg = "{} are different files".format(fpaths)
+                msg = "{0} are different files".format(fpaths)
                 self.assertTrue(os.path.samefile(*fpaths))

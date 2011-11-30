@@ -74,7 +74,7 @@ class TestServerAccess(PulpTestCase):
        for importer in importers:
            expected.remove(importer[u"id"])
        if expected:
-           self.fail("Missing expected importers: {}".format(list(expected)))
+           self.fail("Missing expected importers: {0}".format(list(expected)))
 
     def test_missing_repo(self):
         with self.assertRaises(pulpapi.ServerRequestError) as details:

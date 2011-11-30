@@ -58,11 +58,11 @@ def filtered_walk(top, file_pattern=None, dir_pattern=None,
        as normal.
     """
     if depth is not None and depth < 0:
-        msg = "Depth limit must be None or greater than 0 ({!r} provided)"
+        msg = "Depth limit must be None or greater than 0 ({0!r} provided)"
         raise ValueError(msg.format(depth))
     if onloop is None:
         def onloop(path):
-            msg = "Symlink {!r} refers to a parent directory, skipping\n"
+            msg = "Symlink {0!r} refers to a parent directory, skipping\n"
             sys.stderr.write(msg.format(path))
             sys.stderr.flush()
     if followlinks:

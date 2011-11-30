@@ -22,7 +22,7 @@ def check_type(expected_type, allow_none=False):
         if allow_none and value is None:
             return
         if not isinstance(value, expected_type):
-            _fail_validation("Expected {!r} for {}, got {!r}",
+            _fail_validation("Expected {0!r} for {1}, got {2!r}",
                              expected_type, setting, type(value))
     return validator
 
@@ -41,7 +41,7 @@ def check_regex(pattern, expected, allow_none=False):
         # We use Unicode storage, but stick with the ASCII rules
         # for pattern matching on whitespace etc.
         if re.match(pattern, value) is None:
-            _fail_validation("Expected {} for {}, got {!r}",
+            _fail_validation("Expected {0} for {1}, got {2!r}",
                              expected, setting, value)
     return validator
 
@@ -58,7 +58,7 @@ def check_rsync_filter(allow_none=False):
 IPv4_REGEX = "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$";
 # TODO: Allow IPv6 addresses as well (for now: just use hostnames if you need to access an IPv6-only host)
 HOSTNAME_REGEX = "^(([a-zA-Z]|[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9])$";
-VALID_HOST_REGEX = "({})|({})".format(IPv4_REGEX, HOSTNAME_REGEX)
+VALID_HOST_REGEX = "({0})|({1})".format(IPv4_REGEX, HOSTNAME_REGEX)
 
 def check_host(allow_none=False):
     return check_regex(VALID_HOST_REGEX, 'valid host', allow_none)
@@ -74,8 +74,8 @@ def check_remote_path(allow_none=False):
             return
         _validate_path(value, setting)
         if not value.startswith('/') or not value.endswith('/'):
-            _fail_validation("{!r} must start and end with '/' "
-                             "characters, got {!r}",
+            _fail_validation("{0!r} must start and end with '/' "
+                             "characters, got {1!r}",
                              setting, value)
     return validator
 
@@ -85,19 +85,19 @@ def check_sequence(item_validator, allow_none=False):
             return
         # Check we've been given a sequence
         if isinstance(value, basestring):
-            _fail_validation("Strings not accepted for {!r}, got {!r}",
+            _fail_validation("Strings not accepted for {0!r}, got {1!r}",
                               setting, value)
         if hasattr(value, 'keys'):
-            _fail_validation("Mappings not accepted for {!r}, got {!r}",
+            _fail_validation("Mappings not accepted for {0!r}, got {1!r}",
                               setting, type(value))
         try:
             itr = iter(value)
         except (TypeError, AttributeError):
-            _fail_validation("Expected sequence for {!r}, got {!r}",
+            _fail_validation("Expected sequence for {0!r}, got {1!r}",
                               setting, type(value))
         # Check individual items
         for i, item in enumerate(itr):
-            item_setting = setting + "[{}]".format(i)
+            item_setting = setting + "[{0}]".format(i)
             item_validator(item, item_setting)
     return validator
 
@@ -109,22 +109,22 @@ def check_mapping(spec, allow_none=False):
         try:
             value_items = value.items()
         except (AttributeError, TypeError):
-            _fail_validation("Expected mapping for {}, got {!r}",
+            _fail_validation("Expected mapping for {0}, got {1!r}",
                                 setting, type(value))
         # Check for missing and extra attributes
         provided = set(value)
         expected = set(spec)
         missing = expected - provided
         if missing:
-            _fail_validation("{!r} missing from {}, got {!r}",
+            _fail_validation("{0!r} missing from {1}, got {2!r}",
                             sorted(missing), setting, value)
         extra = provided - expected
         if extra:
-            _fail_validation("{!r} unexpected in {}, got {!r}",
+            _fail_validation("{0!r} unexpected in {1}, got {2!r}",
                             sorted(extra), setting, value)
         # Check the validation of the individual items
         for key, value in value_items:
-            value_setting = setting + "[{!r}]".format(key)
+            value_setting = setting + "[{0!r}]".format(key)
             spec[key](value, value_setting)
     return validator
 

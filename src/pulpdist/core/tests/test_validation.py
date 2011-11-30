@@ -13,11 +13,11 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 """Basic test suite for sync transfer operations"""
 
-import unittest
 import shutil
 import tempfile
 import os.path
 
+from .compat import unittest
 from .. import validation
 
 TEST_SPEC = {
@@ -83,7 +83,7 @@ class TestValidation(unittest.TestCase):
             with self.assertRaises(validation.ValidationError) as exc:
                 validator(entry)
             details = str(exc.exception)
-            self.assertIn('[{}]'.format(i), details)
+            self.assertIn('[{0}]'.format(i), details)
 
     def test_check_mapping(self):
         spec= TEST_SPEC
@@ -104,7 +104,7 @@ class TestValidation(unittest.TestCase):
             with self.assertRaises(validation.ValidationError) as exc:
                 validator(entry)
             details = str(exc.exception)
-            self.assertIn('[{!r}]'.format(key), details)
+            self.assertIn('[{0!r}]'.format(key), details)
 
     def test_valid_config(self):
         spec= TEST_SPEC
@@ -139,7 +139,7 @@ class TestValidation(unittest.TestCase):
         expected = set(spec)
         for config in missing:
             missing = sorted(expected - set(config))
-            error = "{!r} missing from config".format(missing)
+            error = "{0!r} missing from config".format(missing)
             with self.assertRaises(validation.ValidationError) as exc:
                 validation.validate_config(config, spec)
             details = str(exc.exception)
@@ -158,7 +158,7 @@ class TestValidation(unittest.TestCase):
             with self.assertRaises(validation.ValidationError) as exc:
                 validation.validate_config(config, spec)
             details = str(exc.exception)
-            self.assertIn('config[{!r}]'.format(key), details)
+            self.assertIn('config[{0!r}]'.format(key), details)
 
     def test_allow_none(self):
         validators = [

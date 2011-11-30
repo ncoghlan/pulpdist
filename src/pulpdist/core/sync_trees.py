@@ -128,7 +128,7 @@ class BaseSyncCommand(object):
 
     def _log_shell_output(self, cmd, output_path=None):
         if output_path:
-            cmd += ' | tee "{}"; exit ${{PIPESTATUS[0]}}'.format(output_path)
+            cmd += ' | tee "{0}"; exit ${{PIPESTATUS[0]}}'.format(output_path)
         with self._indent_run_log(0):
             self._update_run_log("_"*75)
             self._update_run_log("Getting shell output for:\n\n  %s\n", cmd)
@@ -197,7 +197,7 @@ class BaseSyncCommand(object):
         if self.old_remote_daemon:
             params.append("--old-d")
         if self.rsync_port:
-            params.append("--port={}".format(self.rsync_port))
+            params.append("--port={0}".format(self.rsync_port))
         return params
         
     def _build_fetch_dir_rsync_params(self, remote_source_path, local_dest_path,
@@ -208,22 +208,22 @@ class BaseSyncCommand(object):
         if self.is_test_run:
             params.append("-n")
         if self.bandwidth_limit:
-            params.append("--bwlimit={}".format(self.bandwidth_limit))
+            params.append("--bwlimit={0}".format(self.bandwidth_limit))
         # Add sync filters
         for rsync_filter in self.sync_filters:
-            params.append("--filter={}".format(rsync_filter))
+            params.append("--filter={0}".format(rsync_filter))
         # Add exclude filters
         for excluded_file in self.excluded_files:
-            params.append("--exclude={}".format(excluded_file))
+            params.append("--exclude={0}".format(excluded_file))
         # Protect directories from deletion if they contain a file called PROTECTED
         for dir_info in shellutil.filtered_walk(local_dest_path, file_pattern='PROTECTED'):
             if dir_info.files:
                 rel_path = dir_info.path
                 if os.path.isabs(rel_path):
                     rel_path = os.path.relpath(rel_path, local_dest_path)
-                params.append("--filter='protect {}'".format(rel_path))
+                params.append("--filter='protect {0}'".format(rel_path))
         for seed_path in local_seed_paths:
-            params.append("--link-dest={}".format(seed_path))
+            params.append("--link-dest={0}".format(seed_path))
         params.append(remote_source_path)
         params.append(local_dest_path)
         return params
@@ -268,7 +268,8 @@ class BaseSyncCommand(object):
         if not self.is_test_run and not os.path.exists(local_dest_path):
             self._update_run_log("Creating destination directory %r", local_dest_path)
             os.makedirs(local_dest_path)
-        with shellutil.temp_dir() as capture_dir, self._indent_run_log():
+        with shellutil.temp_dir() as capture_dir:
+          with self._indent_run_log():
             capture_path = os.path.join(capture_dir, "rsync_fetch_dir.log")
             try:
                 return_code = self._log_shell_output(rsync_fetch_command, capture_path)
@@ -278,7 +279,8 @@ class BaseSyncCommand(object):
             else:
                 if return_code == 0:
                     result_msg = "Successfully updated %r from %r"
-                    with open(capture_path) as rsync_log, self._indent_run_log():
+                    with open(capture_path) as rsync_log:
+                      with self._indent_run_log():
                         rsync_stats = self._scrape_fetch_dir_rsync_stats(rsync_log.read())
                         self._update_run_log("Retrieved rsync stats:")
                         with self._indent_run_log():
@@ -286,7 +288,7 @@ class BaseSyncCommand(object):
                                 self._update_run_log("%s=%s", field, value)
                     self._fetch_dir_complete(remote_source_path, local_dest_path)
                 else:
-                    result_msg = "Non-zero return code ({:d}) updating %r from %r".format(return_code)
+                    result_msg = "Non-zero return code ({0:d}) updating %r from %r".format(return_code)
             self._update_run_log(result_msg, local_dest_path, remote_source_path)
         return rsync_stats
 
@@ -296,7 +298,7 @@ class SyncTree(BaseSyncCommand):
     CONFIG_TYPE = sync_config.TreeSyncConfig
 
     def _do_transfer(self):
-        remote_source_path = "rsync://{}{}".format(self.remote_server, self.remote_path)
+        remote_source_path = "rsync://{0}{1}".format(self.remote_server, self.remote_path)
         local_dest_path = self.local_path
         return self.fetch_dir(remote_source_path, local_dest_path)
 
@@ -310,9 +312,9 @@ class SyncVersionedTree(BaseSyncCommand):
         params.extend(self._build_common_rsync_params())
         # Filter out unwanted directories
         for subdir_filter in self.subdir_filters:
-            params.append("--filter={}".format(subdir_filter))
+            params.append("--filter={0}".format(subdir_filter))
         for excluded_version in self.excluded_versions:
-            params.append("--exclude={}".format(excluded_version))
+            params.append("--exclude={0}".format(excluded_version))
         params.append(remote_ls_path)
         return params
 
@@ -334,7 +336,8 @@ class SyncVersionedTree(BaseSyncCommand):
         rsync_ls_command = "rsync " + " ".join(params)
         self._update_run_log("Getting remote listing for %r", remote_ls_path)
         dir_entries = link_entries = ()
-        with shellutil.temp_dir() as capture_dir, self._indent_run_log():
+        with shellutil.temp_dir() as capture_dir:
+          with self._indent_run_log():
             capture_path = os.path.join(capture_dir, "rsync_remote_ls.log")
             try:
                 return_code = self._log_shell_output(rsync_ls_command, capture_path)
@@ -344,10 +347,11 @@ class SyncVersionedTree(BaseSyncCommand):
             else:
                 if return_code == 0:
                     result_msg = "Successfully listed %r"
-                    with open(capture_path) as rsync_log, self._indent_run_log():
+                    with open(capture_path) as rsync_log:
+                      with self._indent_run_log():
                         dir_entries, link_entries = self._scrape_rsync_remote_ls(rsync_log.read())
                 else:
-                    result_msg = "Non-zero return code ({:d}) listing %r".format(return_code)
+                    result_msg = "Non-zero return code ({0:d}) listing %r".format(return_code)
             self._update_run_log(result_msg, remote_ls_path)
         return dir_entries, link_entries
 
@@ -364,7 +368,7 @@ class SyncVersionedTree(BaseSyncCommand):
         seed_paths = ()
         for mtime, version in sorted(remote_dir_entries):
             remote_version = self.remote_path + version
-            remote_source_path = "rsync://{}{}/".format(self.remote_server, remote_version)
+            remote_source_path = "rsync://{0}{1}/".format(self.remote_server, remote_version)
             local_dest_path = os.path.join(self.local_path, version)
             yield remote_source_path, local_dest_path, seed_paths
             # Use the previous tree as the seed for the next one
@@ -387,7 +391,7 @@ class SyncVersionedTree(BaseSyncCommand):
     def _do_transfer(self):
         sync_stats = _null_sync_stats
         remote_pattern = os.path.join(self.remote_path, self.version_pattern)
-        remote_ls_path = "rsync://{}{}".format(self.remote_server, remote_pattern)
+        remote_ls_path = "rsync://{0}{1}".format(self.remote_server, remote_pattern)
         dir_entries, link_entries = self.remote_ls(remote_ls_path)
         for remote_source_path, local_dest_path, local_seed_paths in self._iter_remote_versions(dir_entries):
             self._update_run_log("Preparing to download %r -> %r", remote_source_path, local_dest_path)
@@ -421,7 +425,8 @@ class SyncSnapshotTree(SyncVersionedTree):
         return False
 
     def _should_retrieve(self, remote_source_path):
-        with shellutil.temp_dir() as tmpdir, self._indent_run_log():
+        with shellutil.temp_dir() as tmpdir:
+          with self._indent_run_log():
             tmp_local_status = os.path.join(tmpdir, "STATUS")
             remote_status_path = os.path.join(remote_source_path, "STATUS")
             params = self._build_common_rsync_params()

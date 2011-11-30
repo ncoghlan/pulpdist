@@ -81,7 +81,7 @@ class RsyncDaemon(object):
                                             test_data_path=self.data_dir)
             f.write(config)
 
-        config_option = "--config={}".format(rsync_config_path)
+        config_option = "--config={0}".format(rsync_config_path)
         command = ["rsync", "--daemon", "-v", config_option]
         # print command
         if subprocess.call(command) == 0:
