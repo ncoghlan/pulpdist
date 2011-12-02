@@ -10,11 +10,7 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 import httplib
-
-try:
-    import json
-except ImportError:
-    import simplejson as json
+import json
 
 from M2Crypto import SSL, httpslib
 import oauth2 as oauth
@@ -32,6 +28,13 @@ import pulp.client.admin.credentials
 
 ServerRequestError = pulp.client.api.server.ServerRequestError
 
+def _response_data(response):
+    data = response[1]
+    if not isinstance(data, (list, dict)) and data is not True:
+        msg = "Expected formatted data, got {0!r}"
+        raise ServerRequestError(response[0], msg.format(data))
+    return data
+
 class _PulpCollection(object):
     def __init__(self, server):
         self._server = server
@@ -43,21 +46,21 @@ class _PulpCollection(object):
     def get_list(self, queries=None):
         path = self.collection_path
         if queries is None:
-            return self.server.GET(path)[1]
-        return self.server.GET(path, queries)[1]
+            return _response_data(self.server.GET(path))
+        return _response_data(self.server.GET(path, queries))
 
     def get_entry(self, entry_id):
         path = "%s%s/" % (self.collection_path, entry_id)
-        return self.server.GET(path)[1]
+        return _response_data(self.server.GET(path))
 
     def create_entry(self, entry_id, settings):
         path = self.collection_path
         settings["id"] = entry_id
-        return self.server.POST(path, settings)[1]
+        return _response_data(self.server.POST(path, settings))
 
     def save_entry(self, entry_id, settings):
         path = "%s%s/" % (self.collection_path, entry_id)
-        return self.server.PUT(path, settings)[1]
+        return _response_data(self.server.PUT(path, settings))
 
     def delete_entry(self, entry_id):
         path = "%s%s/" % (self.collection_path, entry_id)
@@ -70,15 +73,15 @@ class PulpRepositories(_PulpCollection):
 
     def add_importer(self, repo_id, settings):
         path = "%s%s/importers/" % (self.collection_path, repo_id)
-        return self.server.POST(path, settings)[1]
+        return _response_data(self.server.POST(path, settings))
 
     def get_importers(self, repo_id):
         path = "%s%s/importers/" % (self.collection_path, repo_id)
-        return self.server.GET(path)[1]
+        return _response_data(self.server.GET(path))
 
     def sync_repo(self, repo_id):
         path = "%s%s/actions/sync/" % (self.collection_path, repo_id)
-        return self.server.POST(path)[1]
+        return _response_data(self.server.POST(path))
 
 class GenericContentTypes(_PulpCollection):
     collection_path = "/plugins/types/"
@@ -95,7 +98,8 @@ class PulpServerClient(pulp.client.api.server.PulpServer):
     # to use Basic Auth, otherwise relies on the certfile
     # created by "pulp-admin auth login"
     def __init__(self, hostname, username=None, password=None):
-        super(PulpServerClient, self).__init__(hostname, path_prefix="/pulp/api/v2")
+        super(PulpServerClient, self).__init__(hostname,
+                                               path_prefix="/pulp/api/v2")
         if None in (username, password):
             # Rely on certfile
             certfile = pulp.client.admin.credentials.Login().crtpath()
@@ -179,6 +183,7 @@ class PulpServer(PulpServerClient):
     # Unlike the standard Pulp client, we support only OAuth over https
     def __init__(self, hostname, oauth_key, oauth_secret):
         # Slightly dodgy - want to bypass the PulpServerClient init function
+        # TODO: use an API Mixin to make this less dodgy
         super(PulpServerClient, self).__init__(hostname, path_prefix="/pulp/api/v2")
         self.oauth_consumer = oauth.Consumer(oauth_key, oauth_secret)
         self.oauth_sign_method = oauth.SignatureMethod_HMAC_SHA1
@@ -192,7 +197,6 @@ class PulpServer(PulpServerClient):
     def _request(self, method, path, queries=(), body=None):
         # make a request to the pulp server and return the response
         # NOTE this throws a ServerRequestError if the request did not succeed
-        connection = self._connect()
         url = self._build_url(path, queries)
         # Oauth setup
         consumer = self.oauth_consumer
@@ -200,6 +204,6 @@ class PulpServer(PulpServerClient):
         self._log.debug('signing %r request to %r', method, https_url)
         oauth_request = oauth.Request.from_consumer_and_token(consumer, http_method=method, http_url=https_url)
         oauth_request.sign_request(self.oauth_sign_method(), consumer, None)
-        self.headers.update(oauth_request.to_header())
+        self.headers['Authorization'] = oauth_request.to_header()['Authorization'].encode('ascii')
         self.headers.update(pulp_user='admin') # TODO: use Django login (eventually Kerberos)
         return super(PulpServer, self)._request(method, path, queries, body)
