@@ -54,7 +54,7 @@ class RepoTable(Table):
         }
         repo_name = escape(repo_id)
         url = reverse(RepoView.urlname, kwargs=kwargs)
-        link = '<a href="{}">{}</a>'.format(url, repo_name)
+        link = '<a href="{0}">{1}</a>'.format(url, repo_name)
         return mark_safe(link)
 
 
@@ -98,7 +98,7 @@ class ServerView(ServerMixin, DetailView):
     def make_link(cls, link_text, server_slug):
         url = cls.get_url(server_slug)
         link_text = escape(link_text)
-        link = '<a href="{}">{}</a>'.format(url, link_text)
+        link = '<a href="{0}">{1}</a>'.format(url, link_text)
         return mark_safe(link)
 
 

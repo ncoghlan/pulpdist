@@ -152,5 +152,5 @@ class EncryptedCharField(models.CharField):
         qualified_name = self.__module__ + '.' + self.__class__.__name__
         args = [repr(self._passphrase_setting)]
         args += map(repr, self._south_args)
-        kwds = {k:repr(v) for k, v in self._south_kwds.iteritems()}
+        kwds = dict((k, repr(v)) for k, v in self._south_kwds.iteritems())
         return qualified_name, args, kwds
