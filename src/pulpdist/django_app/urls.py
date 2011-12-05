@@ -44,18 +44,19 @@ urlpatterns += patterns('',
     # PulpRepoAggregateIndex.make_url('api/repos'),
     api.PulpRepoResourceIndex.make_url('api/repos/<server_slug>'),
     api.PulpRepoResourceDetail.make_url('api/repos/<server_slug>/<pulp_id>'),
+    api.PulpRepoImporterDetail.make_url('api/repos/<server_slug>/<pulp_id>/importer'),
 
     # restapi.PulpContentTypeAggregateIndex.make_url('api/content_types'),
     api.PulpContentTypeResourceIndex.make_url('api/content_types/<server_slug>'),
-    # api.PulpContentTypeResourceDetail.make_url('api/content_types/<server_slug>/<pulp_id>'),
+    api.PulpContentTypeResourceDetail.make_url('api/content_types/<server_slug>/<pulp_id>'),
 
     # restapi.PulpDistributorAggregateIndex.make_url('api/distributors'),
     api.PulpDistributorResourceIndex.make_url('api/distributors/<server_slug>'),
-    # api.PulpDistributorResourceDetail.make_url('api/distributors/<server_slug>/<pulp_id>'),
+    api.PulpDistributorResourceDetail.make_url('api/distributors/<server_slug>/<pulp_id>'),
 
     # restapi.PulpImporterAggregateIndex.make_url('api/importers'),
     api.PulpImporterResourceIndex.make_url('api/importers/<server_slug>'),
-    # api.PulpImporterResourceDetail.make_url('api/importers/<server_slug>/<pulp_id>'),
+    api.PulpImporterResourceDetail.make_url('api/importers/<server_slug>/<pulp_id>'),
 
 )
 

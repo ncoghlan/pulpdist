@@ -31,6 +31,7 @@ SERVER_COLLECTION = "collection/servers"
 SERVER_RESOURCE = "resource/server"
 REPO_COLLECTION = "collection/repos"
 REPO_RESOURCE = "resource/repo"
+REPO_IMPORTER_RESOURCE = "resource/repo_importer"
 CONTENT_TYPE_COLLECTION = "collection/content_types"
 CONTENT_TYPE_RESOURCE = "resource/content_type"
 IMPORTER_COLLECTION = "collection/importers"
@@ -155,11 +156,14 @@ class _IndirectResource(object):
     index_urlname = None   # Set by subclass
     detail_urlname = None  # Optionally set by subclass
     pulp_path = None       # Set by subclass
+    detail_suffix = '/'    # Optionally overridden by subclass
+    pulp_id_field = 'id'   # Optionally overridden by subclass
+    pulp_fields = ()       # Optionally overridden by subclass
 
     @classmethod
     def _make_metadata(cls, server_slug, raw):
         # Extract the resource identifier
-        pulp_id = raw.pop("id")
+        pulp_id = raw.pop(cls.pulp_id_field)
         # We always link back to the associated server detail API
         backlink = get_server_url(PulpServerResourceDetail.urlname, server_slug)
         # The REST framework gets upset if dict attributes are used as keys
@@ -171,14 +175,20 @@ class _IndirectResource(object):
         data = {
             "_type": cls.resource_type,
             "server": api_link(SERVER_RESOURCE, backlink),
-            "id": pulp_id,
+            cls.pulp_id_field: pulp_id,
             "pulp_metadata": raw
         }
+        # Lift fields out of the Pulp reply
+        for field in cls.pulp_fields:
+            data[field] = raw.pop(field)
         detail_url = cls._get_detail_url(server_slug, pulp_id)
         if detail_url is not None:
             data["url"] = detail_url
-        return data
+        return cls._postprocess_metadata(server_slug, pulp_id, data)
 
+    @classmethod
+    def _postprocess_metadata(cls, server_slug, pulp_id, data):
+        return data
 
     @classmethod
     def _get_index_data(cls, pulp_server, server_slug):
@@ -188,7 +198,7 @@ class _IndirectResource(object):
 
     @classmethod
     def _get_detail_data(cls, pulp_server, server_slug, pulp_id):
-        path = cls.pulp_path + pulp_id
+        path = cls.pulp_path + pulp_id + cls.detail_suffix
         data = pulp_server.GET(path)[1]
         return cls._make_metadata(server_slug, data)
 
@@ -228,14 +238,49 @@ class PulpRepoResource(_IndirectResource):
     detail_urlname = "restapi_pulp_repo_detail"
     pulp_path = "/repositories/"
 
+    @classmethod
+    def _postprocess_metadata(cls, server_slug, pulp_id, data):
+        importer_link = PulpRepoImporter._get_detail_url(server_slug, pulp_id)
+        data["importer"] = api_link(REPO_IMPORTER_RESOURCE, importer_link)
+        return data
+
+
 PulpRepoResourceIndex = PulpRepoResource._make_index_view()
 PulpRepoResourceDetail = PulpRepoResource._make_detail_view()
+
+# Repo sub-resources
+class _RepoSubResource(_IndirectResource):
+    pulp_path = "/repositories/"
+    pulp_id_field = "repo_id"
+
+    @classmethod
+    def _postprocess_metadata(cls, server_slug, pulp_id, data):
+        del data["server"]
+        repo_link = PulpRepoResource._get_detail_url(server_slug, pulp_id)
+        data["repo"] = api_link(REPO_RESOURCE, repo_link)
+        return data
+
+
+# Pulp Repo Importer
+class PulpRepoImporter(_RepoSubResource):
+    resource_type = "pulp_repo_importer"
+    detail_urlname = "restapi_pulp_repo_importer"
+    detail_suffix = "/importers/"
+    pulp_fields = "config importer_type_id last_sync sync_in_progress".split()
+
+    @classmethod
+    def _make_metadata(cls, server_slug, raw):
+        return super(PulpRepoImporter, cls)._make_metadata(server_slug,
+                                                           raw[0])
+
+
+PulpRepoImporterDetail = PulpRepoImporter._make_detail_view()
 
 # Pulp Content Types
 class PulpContentTypeResource(_IndirectResource):
     resource_type = "pulp_content_type"
     index_urlname = "restapi_pulp_content_types"
-    # detail_urlname = "restapi_pulp_content_type_detail"
+    detail_urlname = "restapi_pulp_content_type_detail"
     pulp_path = "/plugins/types/"
 
 PulpContentTypeResourceIndex = PulpContentTypeResource._make_index_view()
@@ -245,7 +290,7 @@ PulpContentTypeResourceDetail = PulpContentTypeResource._make_detail_view()
 class PulpDistributorResource(_IndirectResource):
     resource_type = "pulp_distributor"
     index_urlname = "restapi_pulp_distributors"
-    # detail_urlname = "restapi_pulp_distributor_detail"
+    detail_urlname = "restapi_pulp_distributor_detail"
     pulp_path = "/plugins/distributors/"
 
 PulpDistributorResourceIndex = PulpDistributorResource._make_index_view()
@@ -255,7 +300,7 @@ PulpDistributorResourceDetail = PulpDistributorResource._make_detail_view()
 class PulpImporterResource(_IndirectResource):
     resource_type = "pulp_importer"
     index_urlname = "restapi_pulp_importers"
-    # detail_urlname = "restapi_pulp_importer_detail"
+    detail_urlname = "restapi_pulp_importer_detail"
     pulp_path = "/plugins/importers/"
 
 PulpImporterResourceIndex = PulpImporterResource._make_index_view()
