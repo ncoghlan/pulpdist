@@ -32,6 +32,7 @@ from ...core.tests.compat import unittest
 # - "pulp-admin auth login localhost --username admin --password admin"
 
 # TODO: Parts of the below should become pulpdist.core.tests.test_pulpapi
+#       (Although it's handy that the core tests don't need the server...)
 
 
 IMPORTERS = [u"simple_tree", u"versioned_tree", u"snapshot_tree",

@@ -2,13 +2,13 @@
     {"id" : "tree",
      "display_name" : "Tree",
      "description" : "Directory Tree",
-     "unique_indexes" : ["name"],
+     "unit_key" : ["name"],
      "search_indexes" : ["name"]
     },
     {"id" : "tree_delta",
      "display_name" : "Tree Delta",
      "description" : "Directory Tree Delta",
-     "unique_indexes" : ["id"],
+     "unit_key" : ["id"],
      "search_indexes" : ["tree", "seq"]
     }
 ]}

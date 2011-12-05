@@ -26,7 +26,6 @@ except ImportError:
 
 
 from pulp.server.content.plugins.importer import Importer
-from pulp.server.content.plugins.data import SyncReport
 
 class _BaseImporter(Importer):
     CONTENT_TYPES = ["tree"]
@@ -59,17 +58,17 @@ class _BaseImporter(Importer):
             command = self.SYNC_COMMAND(sync_config.config)
             # TODO: Refactor to support progress reporting
             # TODO: Refactor to populate content unit metadata
-            sync_details = command.run_sync()
-            report = SyncReport(0, 0, sync_log.read())
-        sync_meta = {
-            "start_time": sync_details[0],
-            "finish_time": sync_details[1],
-            "stats": dict(sync_details[2]._asdict()),
+            sync_info = command.run_sync()
+            sync_log_data = sync_log.read()
+        summary = {
+            "start_time": sync_info[0],
+            "finish_time": sync_info[1],
+            "stats": sync_info[2]._asdict(),
         }
-        print(sync_meta)
-        # raise Exception(str(sync_meta))
-        # sync_conduit.add_repo_metadata_values({"last_sync_details":sync_meta})
-        return report
+        details = {
+            "sync_log": sync_log_data,
+        }
+        return sync_conduit.build_report(summary, details)
 
 class SimpleTreeImporter(_BaseImporter):
     PULP_ID = "simple_tree"
