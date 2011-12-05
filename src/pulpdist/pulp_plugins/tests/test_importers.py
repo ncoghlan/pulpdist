@@ -194,6 +194,9 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
     def _sync_repo(self):
         return self.server.sync_repo(self.repo[u"id"])
 
+    def _get_sync_history(self):
+        return self.server.get_sync_history(self.repo[u"id"])
+
     def _wait_for_sync(self):
         deadline = time.time() + 10
         sync_started = False
@@ -227,14 +230,18 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         sync_time = parse_date(last_sync)
         now = datetime.utcnow()
         self.assertLess(now - sync_time, timedelta(seconds=2))
-        return # Skip sync history checks, not yet implemented
-        repo = self._get_repo()
-        sync_meta = repo[u"last_sync_summary"]
-        print sync_meta
+        history = self._get_sync_history()
+        self.assertGreaterEqual(len(history), 1)
+        sync_meta = history[0]
         self.assertIsNotNone(sync_meta)
-        self.assertIsNotNone(sync_meta["start_time"])
-        self.assertIsNotNone(sync_meta["finish_time"])
-        self.assertIsNotNone(sync_meta["stats"])
+        self.assertEqual(sync_meta["result"], "success")
+        self.assertIsNotNone(sync_meta["started"])
+        self.assertIsNotNone(sync_meta["added_count"])
+        self.assertIsNotNone(sync_meta["removed_count"])
+        completed = sync_meta["completed"]
+        self.assertIsNotNone(completed)
+        completed_time = parse_date(completed)
+        self.assertEqual(sync_time, completed_time)
 
     def test_simple_tree_sync(self):
         importer_id = u"simple_tree"
