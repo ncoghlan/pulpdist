@@ -45,6 +45,7 @@ urlpatterns += patterns('',
     api.PulpRepoResourceIndex.make_url('api/repos/<server_slug>'),
     api.PulpRepoResourceDetail.make_url('api/repos/<server_slug>/<pulp_id>'),
     api.PulpRepoImporterDetail.make_url('api/repos/<server_slug>/<pulp_id>/importer'),
+    api.PulpRepoSyncHistoryDetail.make_url('api/repos/<server_slug>/<pulp_id>/sync_history'),
 
     # restapi.PulpContentTypeAggregateIndex.make_url('api/content_types'),
     api.PulpContentTypeResourceIndex.make_url('api/content_types/<server_slug>'),

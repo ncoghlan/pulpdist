@@ -32,6 +32,7 @@ SERVER_RESOURCE = "resource/server"
 REPO_COLLECTION = "collection/repos"
 REPO_RESOURCE = "resource/repo"
 REPO_IMPORTER_RESOURCE = "resource/repo_importer"
+SYNC_HISTORY_RESOURCE = "resource/sync_history"
 CONTENT_TYPE_COLLECTION = "collection/content_types"
 CONTENT_TYPE_RESOURCE = "resource/content_type"
 IMPORTER_COLLECTION = "collection/importers"
@@ -242,6 +243,8 @@ class PulpRepoResource(_IndirectResource):
     def _postprocess_metadata(cls, server_slug, pulp_id, data):
         importer_link = PulpRepoImporter._get_detail_url(server_slug, pulp_id)
         data["importer"] = api_link(REPO_IMPORTER_RESOURCE, importer_link)
+        sync_link = PulpRepoSyncHistory._get_detail_url(server_slug, pulp_id)
+        data["sync_history"] = api_link(SYNC_HISTORY_RESOURCE, sync_link)
         return data
 
 
@@ -273,8 +276,22 @@ class PulpRepoImporter(_RepoSubResource):
         return super(PulpRepoImporter, cls)._make_metadata(server_slug,
                                                            raw[0])
 
-
 PulpRepoImporterDetail = PulpRepoImporter._make_detail_view()
+
+# Pulp Repo Sync History
+class PulpRepoSyncHistory(_RepoSubResource):
+    resource_type = "pulp_repo_importer"
+    detail_urlname = "restapi_pulp_repo_sync_history"
+    detail_suffix = "/sync_history/"
+    pulp_fields = ("added_count removed_count started completed "
+                   "result error_message exception traceback".split())
+
+    @classmethod
+    def _make_metadata(cls, server_slug, raw):
+        _super = super(PulpRepoSyncHistory, cls)._make_metadata
+        return [_super(server_slug, item) for item in raw]
+
+PulpRepoSyncHistoryDetail = PulpRepoSyncHistory._make_detail_view()
 
 # Pulp Content Types
 class PulpContentTypeResource(_IndirectResource):

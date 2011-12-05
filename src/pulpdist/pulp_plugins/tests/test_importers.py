@@ -229,7 +229,7 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         self.assertLess(now - sync_time, timedelta(seconds=2))
         return # Skip sync history checks, not yet implemented
         repo = self._get_repo()
-        sync_meta = imp[u"last_sync_details"]
+        sync_meta = repo[u"last_sync_summary"]
         print sync_meta
         self.assertIsNotNone(sync_meta)
         self.assertIsNotNone(sync_meta["start_time"])

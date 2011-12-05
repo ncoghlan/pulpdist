@@ -31,9 +31,9 @@ application (``/pulpdist/`` by default)::
     api/repos                                      # All repos on all servers
     api/repos/<server_id>/                         # All repos on server
     api/repos/<server_id>/<repo_id>/               # Specific repo
-    api/repos/<server_id>/<repo_id>/importer       # Assigned importer
+    api/repos/<server_id>/<repo_id>/importer       # Importer config & status
     api/repos/<server_id>/<repo_id>/distributors   # Assigned distributors
-    api/repos/<server_id>/<repo_id>/sync           # Sync config & status
+    api/repos/<server_id>/<repo_id>/sync_history   # Past sync operations
 
     api/content_types                         # All content types on all servers
     api/content_types/<server_id>/            # All content types on server
