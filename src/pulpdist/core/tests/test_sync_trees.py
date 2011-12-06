@@ -15,42 +15,70 @@
 
 import shutil
 import os.path
+from datetime import datetime, timedelta
 
 from .. import sync_trees
-from . example_trees import (CONFIG_TREE_SYNC, CONFIG_VERSIONED_SYNC,
-                             CONFIG_SNAPSHOT_SYNC,
-                             TreeTestCase)
+from . example_trees import TreeTestCase
 
 class TestSyncTree(TreeTestCase):
+    def check_datetime(self, actual, reference, max_error_seconds=2):
+        max_delta = timedelta(seconds=max_error_seconds)
+        self.assertLessEqual(reference - actual, max_delta)
+
+    def check_sync_details(self, details, expected_stats):
+        start_time, finish_time, stats = details
+        now = datetime.utcnow()
+        self.check_datetime(start_time, now, 60)
+        self.check_datetime(finish_time, now)
+        # print(stats)
+        for k, expected in expected_stats.iteritems():
+            v = getattr(stats, k)
+            msg = "sync stats field {0!r}".format(k)
+            self.assertEqual(v, expected, msg)
+
     def test_sync(self):
         local_path = self.local_path
         params = self.params
-        params.update(CONFIG_TREE_SYNC)
+        params.update(self.CONFIG_TREE_SYNC)
         task = sync_trees.SyncTree(params)
-        task.run_sync()
+        stats = self.EXPECTED_TREE_STATS
+        self.check_sync_details(task.run_sync(), stats) # initial
+        self.check_tree_layout(local_path)
+        stats.update(self.EXPECTED_REPEAT_STATS)
+        self.check_sync_details(task.run_sync(), stats) # repeat
         self.check_tree_layout(local_path)
 
     def test_sync_versioned(self):
         local_path = self.local_path
         params = self.params
-        params.update(CONFIG_VERSIONED_SYNC)
+        params.update(self.CONFIG_VERSIONED_SYNC)
+        stats = self.EXPECTED_VERSIONED_STATS
         task = sync_trees.SyncVersionedTree(params)
-        task.run_sync()
+        self.check_sync_details(task.run_sync(), stats) # initial
+        self.check_versioned_layout(local_path)
+        stats.update(self.EXPECTED_REPEAT_STATS)
+        self.check_sync_details(task.run_sync(), stats) # repeat
         self.check_versioned_layout(local_path)
 
     def test_sync_snapshot(self):
         local_path = self.local_path
         params = self.params
-        params.update(CONFIG_SNAPSHOT_SYNC)
+        params.update(self.CONFIG_SNAPSHOT_SYNC)
         details = self.setup_snapshot_layout(local_path)
         task = sync_trees.SyncSnapshotTree(params)
-        task.run_sync()
+        stats = self.EXPECTED_SNAPSHOT_STATS
+        self.check_sync_details(task.run_sync(), stats) # initial
+        self.check_snapshot_layout(local_path, *details)
+        # For an up-to-date tree, we transfer *nothing*
+        for k in stats:
+            stats[k] = 0
+        self.check_sync_details(task.run_sync(), stats) # repeat
         self.check_snapshot_layout(local_path, *details)
 
     def test_sync_latest_link(self):
         local_path = self.local_path
         params = self.params
-        params.update(CONFIG_SNAPSHOT_SYNC)
+        params.update(self.CONFIG_SNAPSHOT_SYNC)
         link_name = u"latest-relevant"
         link_path = os.path.join(local_path, link_name)
         params["latest_link_name"] = link_name
@@ -67,7 +95,7 @@ class TestSyncTree(TreeTestCase):
         # of simple syncs
         local_path = self.local_path
         params = self.params
-        params.update(CONFIG_TREE_SYNC)
+        params.update(self.CONFIG_TREE_SYNC)
         task = sync_trees.SyncTree(params)
         protected_path = os.path.join(local_path, "safe")
         protected_fname = os.path.join(protected_path, "PROTECTED")
@@ -87,7 +115,7 @@ class TestSyncTree(TreeTestCase):
         # since the consolidation is handled by
         # the base class
         params = self.params
-        params.update(CONFIG_TREE_SYNC)
+        params.update(self.CONFIG_TREE_SYNC)
         task = sync_trees.SyncTree(params)
         rsyncd_path = self.rsyncd.tmp_dir + params["remote_path"]
         extra_path = os.path.join(rsyncd_path, "extra.txt")

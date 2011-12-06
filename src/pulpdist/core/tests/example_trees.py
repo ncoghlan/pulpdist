@@ -68,40 +68,6 @@ test_data_layout = [
             for subdir in source_layout
 ]
 
-_default_log = u"/dev/null"
-
-CONFIG_TREE_SYNC = dict(
-    tree_name = u"Simple Tree",
-    remote_server = u"localhost",
-    remote_path = u"/test_data/simple/",
-    excluded_files = u"*skip*".split(),
-    sync_filters = u"exclude_irrelevant/ exclude_dull/".split(),
-    log_path = _default_log
-)
-
-CONFIG_VERSIONED_SYNC = dict(
-    tree_name = u"Versioned Tree",
-    remote_server = u"localhost",
-    remote_path = u"/test_data/versioned/",
-    version_pattern = u"relevant*",
-    excluded_versions = u"relevant-but*".split(),
-    excluded_files = u"*skip*".split(),
-    sync_filters = u"exclude_irrelevant/ exclude_dull/".split(),
-    log_path = _default_log
-)
-
-CONFIG_SNAPSHOT_SYNC = dict(
-    tree_name = u"Snapshot Tree",
-    remote_server = u"localhost",
-    remote_path = u"/test_data/snapshot/",
-    version_pattern = u"relevant*",
-    excluded_versions = u"relevant-but*".split(),
-    excluded_files = u"*skip*".split(),
-    sync_filters = u"exclude_irrelevant/ exclude_dull/".split(),
-    log_path = _default_log
-)
-
-
 def mark_trees_finished(base_dir, trees):
     for tree in trees:
         status_path = os.path.join(base_dir, tree, u"STATUS")
@@ -130,13 +96,71 @@ def start_rsyncd():
     rsyncd.start()
     return rsyncd
 
+_default_log = u"/dev/null"
+
 class TreeTestCase(unittest.TestCase):
+
+    CONFIG_TREE_SYNC = dict(
+        tree_name = u"Simple Tree",
+        remote_server = u"localhost",
+        remote_path = u"/test_data/simple/",
+        excluded_files = u"*skip*".split(),
+        sync_filters = u"exclude_irrelevant/ exclude_dull/".split(),
+        log_path = _default_log
+    )
+
+    CONFIG_VERSIONED_SYNC = dict(
+        tree_name = u"Versioned Tree",
+        remote_server = u"localhost",
+        remote_path = u"/test_data/versioned/",
+        version_pattern = u"relevant*",
+        excluded_versions = u"relevant-but*".split(),
+        excluded_files = u"*skip*".split(),
+        sync_filters = u"exclude_irrelevant/ exclude_dull/".split(),
+        log_path = _default_log
+    )
+
+    CONFIG_SNAPSHOT_SYNC = dict(
+        tree_name = u"Snapshot Tree",
+        remote_server = u"localhost",
+        remote_path = u"/test_data/snapshot/",
+        version_pattern = u"relevant*",
+        excluded_versions = u"relevant-but*".split(),
+        excluded_files = u"*skip*".split(),
+        sync_filters = u"exclude_irrelevant/ exclude_dull/".split(),
+        log_path = _default_log
+    )
+
+    EXPECTED_TREE_STATS = dict(
+        total_file_count = 12,
+        total_bytes = 160,
+    )
+    EXPECTED_VERSIONED_STATS = dict(((k, v * 4) for k, v in EXPECTED_TREE_STATS.iteritems()))
+    EXPECTED_SNAPSHOT_STATS = dict(((k, v * 2) for k, v in EXPECTED_TREE_STATS.iteritems()))
+
+    _COMMON_STATS = dict(
+        transferred_file_count = 8,
+        transferred_bytes = 160,
+        literal_bytes = 160,
+        matched_bytes = 0,
+    )
+
+    EXPECTED_TREE_STATS.update(_COMMON_STATS)
+    EXPECTED_VERSIONED_STATS.update(_COMMON_STATS)
+    EXPECTED_SNAPSHOT_STATS.update(_COMMON_STATS)
+
+    EXPECTED_REPEAT_STATS = dict(
+        transferred_file_count = 0,
+        transferred_bytes = 0,
+        literal_bytes = 0,
+        matched_bytes = 0,
+    )
+
     def setUp(self):
         self.rsyncd = rsyncd = start_rsyncd()
         self.local_path = local_path = tempfile.mkdtemp().decode("utf-8")
         self.params = dict(rsync_port = rsyncd.port,
                            local_path = local_path+'/')
-
 
     def tearDown(self):
         self.rsyncd.close()
