@@ -39,9 +39,11 @@ IMPORTERS = [u"simple_tree", u"versioned_tree", u"snapshot_tree",
              u"delta_tree", u"snapshot_delta"]
 
 def _naive_utc(dt):
+    if dt.utcoffset() is None:
+        return dt # already naive
     return (dt - dt.utcoffset()).replace(tzinfo=None)
 
-def parse_date(raw):
+def parse_iso_datetime(raw):
     dt = parse_str("{:ti}", raw).fixed[0]
     return _naive_utc(dt)
 
@@ -222,26 +224,46 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         self.assertIsNone(imp[u"last_sync"])
         self.assertIsNone(imp[u"scratchpad"])
 
-    def check_postsync(self):
+    def check_iso_datetime(self, iso_str,
+                           reference_time=None,
+                           max_error_seconds=2):
+        self.assertIsNotNone(iso_str)
+        dt = parse_iso_datetime(iso_str)
+        self.assertIsInstance(dt, datetime)
+        if reference_time is not None:
+            max_delta = timedelta(seconds=max_error_seconds)
+            self.assertLessEqual(reference_time - dt, max_delta)
+
+    def check_postsync(self, expected_stats=None):
         imp = self._get_importer()
         self.assertFalse(imp[u"sync_in_progress"])
-        last_sync = imp[u"last_sync"]
-        self.assertIsNotNone(last_sync)
-        sync_time = parse_date(last_sync)
+        sync_time = imp[u"last_sync"]
         now = datetime.utcnow()
-        self.assertLess(now - sync_time, timedelta(seconds=2))
+        self.check_iso_datetime(sync_time, now)
         history = self._get_sync_history()
         self.assertGreaterEqual(len(history), 1)
         sync_meta = history[0]
-        self.assertIsNotNone(sync_meta)
-        self.assertEqual(sync_meta["result"], "success")
-        self.assertIsNotNone(sync_meta["started"])
-        self.assertIsNotNone(sync_meta["added_count"])
-        self.assertIsNotNone(sync_meta["removed_count"])
-        completed = sync_meta["completed"]
-        self.assertIsNotNone(completed)
-        completed_time = parse_date(completed)
-        self.assertEqual(sync_time, completed_time)
+        # from pprint import pprint
+        # pprint(sync_meta)
+        # Check top level sync history
+        self.assertEqual(sync_meta[u"result"], u"success")
+        self.assertIsNotNone(sync_meta[u"started"])
+        self.assertIsNotNone(sync_meta[u"added_count"])
+        self.assertIsNotNone(sync_meta[u"removed_count"])
+        self.check_iso_datetime(sync_meta[u"completed"], now)
+        # Check summary
+        summary = sync_meta[u"summary"]
+        self.check_iso_datetime(summary[u"start_time"], now, 60)
+        self.check_iso_datetime(summary[u"finish_time"], now)
+        stats = summary[u"stats"]
+        self.assertIsInstance(stats, dict)
+        if expected_stats is not None:
+            checked_fields = () # For now...
+            for field in checked_fields:
+                self.assertEqual(stats[field], expected_stats[field])
+        # Check details
+        details = sync_meta[u"details"]
+        self.assertIsInstance(details[u"sync_log"], unicode)
 
     def test_simple_tree_sync(self):
         importer_id = u"simple_tree"

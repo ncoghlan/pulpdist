@@ -181,7 +181,7 @@ class _IndirectResource(object):
         }
         # Lift fields out of the Pulp reply
         for field in cls.pulp_fields:
-            data[field] = raw.pop(field)
+            data[field] = raw.pop(field, None)
         detail_url = cls._get_detail_url(server_slug, pulp_id)
         if detail_url is not None:
             data["url"] = detail_url
@@ -284,7 +284,8 @@ class PulpRepoSyncHistory(_RepoSubResource):
     detail_urlname = "restapi_pulp_repo_sync_history"
     detail_suffix = "/sync_history/"
     pulp_fields = ("added_count removed_count started completed "
-                   "result error_message exception traceback".split())
+                   "result error_message exception traceback "
+                   "summary details".split())
 
     @classmethod
     def _make_metadata(cls, server_slug, raw):
