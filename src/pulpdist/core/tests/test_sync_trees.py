@@ -25,16 +25,18 @@ class TestSyncTree(TreeTestCase):
         max_delta = timedelta(seconds=max_error_seconds)
         self.assertLessEqual(reference - actual, max_delta)
 
+    def check_stats(self, actual, expected):
+        for field, expected_value in expected.iteritems():
+            actual_value = getattr(actual, field)
+            msg = "sync stats field {0!r}".format(field)
+            self.assertEqual(actual_value, expected_value, msg)
+
     def check_sync_details(self, details, expected_stats):
         start_time, finish_time, stats = details
         now = datetime.utcnow()
         self.check_datetime(start_time, now, 60)
         self.check_datetime(finish_time, now)
-        # print(stats)
-        for k, expected in expected_stats.iteritems():
-            v = getattr(stats, k)
-            msg = "sync stats field {0!r}".format(k)
-            self.assertEqual(v, expected, msg)
+        self.check_stats(stats, expected_stats)
 
     def test_sync(self):
         local_path = self.local_path
@@ -52,8 +54,8 @@ class TestSyncTree(TreeTestCase):
         local_path = self.local_path
         params = self.params
         params.update(self.CONFIG_VERSIONED_SYNC)
-        stats = self.EXPECTED_VERSIONED_STATS
         task = sync_trees.SyncVersionedTree(params)
+        stats = self.EXPECTED_VERSIONED_STATS
         self.check_sync_details(task.run_sync(), stats) # initial
         self.check_versioned_layout(local_path)
         stats.update(self.EXPECTED_REPEAT_STATS)

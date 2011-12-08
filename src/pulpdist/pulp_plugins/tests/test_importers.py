@@ -147,19 +147,19 @@ class TestConfiguration(PulpTestCase):
 
     def test_simple_tree(self):
         importer_id = u"simple_tree"
-        params = example_trees.CONFIG_TREE_SYNC.copy()
+        params = example_trees.TreeTestCase.CONFIG_TREE_SYNC.copy()
         imp = self._add_importer(importer_id, params)
         self.check_importer(imp, importer_id, params)
 
     def test_versioned_tree(self):
         importer_id = u"versioned_tree"
-        params = example_trees.CONFIG_VERSIONED_SYNC.copy()
+        params = example_trees.TreeTestCase.CONFIG_VERSIONED_SYNC.copy()
         imp = self._add_importer(importer_id, params)
         self.check_importer(imp, importer_id, params)
 
     def test_snapshot_tree(self):
         importer_id = u"snapshot_tree"
-        params = example_trees.CONFIG_SNAPSHOT_SYNC.copy()
+        params = example_trees.TreeTestCase.CONFIG_SNAPSHOT_SYNC.copy()
         imp = self._add_importer(importer_id, params)
         self.check_importer(imp, importer_id, params)
 
@@ -234,6 +234,12 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
             max_delta = timedelta(seconds=max_error_seconds)
             self.assertLessEqual(reference_time - dt, max_delta)
 
+    def check_stats(self, actual, expected):
+        for field, expected_value in expected.iteritems():
+            actual_value = actual[field]
+            msg = "sync stats field {0!r}".format(field)
+            self.assertEqual(actual_value, expected_value, msg)
+
     def check_postsync(self, expected_stats=None):
         imp = self._get_importer()
         self.assertFalse(imp[u"sync_in_progress"])
@@ -243,8 +249,9 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         history = self._get_sync_history()
         self.assertGreaterEqual(len(history), 1)
         sync_meta = history[0]
-        # from pprint import pprint
-        # pprint(sync_meta)
+        from pprint import pprint
+        pprint(sync_meta["summary"]["stats"])
+        print(sync_meta["details"]["sync_log"])
         # Check top level sync history
         self.assertEqual(sync_meta[u"result"], u"success")
         self.assertIsNotNone(sync_meta[u"started"])
@@ -258,42 +265,43 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         stats = summary[u"stats"]
         self.assertIsInstance(stats, dict)
         if expected_stats is not None:
-            checked_fields = () # For now...
-            for field in checked_fields:
-                self.assertEqual(stats[field], expected_stats[field])
+            self.check_stats(stats, expected_stats)
         # Check details
         details = sync_meta[u"details"]
         self.assertIsInstance(details[u"sync_log"], unicode)
 
     def test_simple_tree_sync(self):
         importer_id = u"simple_tree"
-        params = example_trees.CONFIG_TREE_SYNC.copy()
+        params = self.CONFIG_TREE_SYNC.copy()
         imp = self._add_importer(importer_id, params)
         self.check_presync(imp, importer_id, params)
         self.assertTrue(self._sync_repo())
         self._wait_for_sync()
-        self.check_postsync()
+        stats = self.EXPECTED_TREE_STATS
+        self.check_postsync(stats)
         self.check_tree_layout(self.local_path)
 
     def test_versioned_tree_sync(self):
         importer_id = u"versioned_tree"
-        params = example_trees.CONFIG_VERSIONED_SYNC.copy()
+        params = self.CONFIG_VERSIONED_SYNC.copy()
         imp = self._add_importer(importer_id, params)
         self.check_presync(imp, importer_id, params)
         self.assertTrue(self._sync_repo())
         self._wait_for_sync()
-        self.check_postsync()
+        stats = self.EXPECTED_VERSIONED_STATS
+        self.check_postsync(stats)
         self.check_versioned_layout(self.local_path)
 
     def test_snapshot_tree_sync(self):
         importer_id = u"snapshot_tree"
-        params = example_trees.CONFIG_SNAPSHOT_SYNC.copy()
+        params = self.CONFIG_SNAPSHOT_SYNC.copy()
         details = self.setup_snapshot_layout(self.local_path)
         imp = self._add_importer(importer_id, params)
         self.check_presync(imp, importer_id, params)
         self.assertTrue(self._sync_repo())
         self._wait_for_sync()
-        self.check_postsync()
+        stats = self.EXPECTED_SNAPSHOT_STATS
+        self.check_postsync(stats)
         self.check_snapshot_layout(self.local_path, *details)
 
 class TestBasicAuthLocalSync(BasicAuthMixin, TestLocalSync): pass

@@ -124,25 +124,32 @@ class BaseSyncCommand(object):
 
     def _update_run_log(self, fmt, *args):
         fmt = ("  " * self._run_log_indent_level) + fmt
-        self._run_log_file.write((fmt % args) + '\n')
+        if args:
+            msg = (fmt % args)
+        else:
+            msg = fmt
+        self._run_log_file.write(msg.rstrip() + '\n')
+        self._run_log_file.flush()
 
-    def _log_shell_output(self, cmd, output_path=None):
-        if output_path:
-            cmd += ' | tee "{0}"; exit ${{PIPESTATUS[0]}}'.format(output_path)
+    def _log_shell_output(self, cmd):
+        shell_output = []
         with self._indent_run_log(0):
             self._update_run_log("_"*75)
             self._update_run_log("Getting shell output for:\n\n  %s\n", cmd)
-            result = subprocess.call(cmd, shell=True,
-                                stdout=self._run_log_file,
-                                stderr=subprocess.STDOUT)
+            proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
+                                                     stderr=subprocess.STDOUT)
+            for line in proc.stdout:
+                shell_output.append(line)
+                self._update_run_log(line)
+            result = proc.wait()
             self._update_run_log("^"*75)
-        return result
+        return result, "".join(shell_output)
 
     def _consolidate_tree(self):
         local_path = self.local_path
         hardlink_cmd = "hardlink -v " + self.local_path
         try:
-            return_code = self._log_shell_output(hardlink_cmd)
+            return_code, __ = self._log_shell_output(hardlink_cmd)
         except:
             self._update_run_log(traceback.format_exc())
             result_msg = "Exception while hard linking duplicates in %r"
@@ -232,7 +239,7 @@ class BaseSyncCommand(object):
         scraped = _sync_stats_pattern.search(data)
         if scraped is None:
             self._update_run_log("No stats data found in rsync output")
-            return _null_sync_stats
+            raise RuntimeError("No stats data found in rsync output")
         data = scraped.groupdict()
         stats = {}
         for field in SyncStats._fields:
@@ -268,20 +275,17 @@ class BaseSyncCommand(object):
         if not self.is_test_run and not os.path.exists(local_dest_path):
             self._update_run_log("Creating destination directory %r", local_dest_path)
             os.makedirs(local_dest_path)
-        with shellutil.temp_dir() as capture_dir:
-          with self._indent_run_log():
-            capture_path = os.path.join(capture_dir, "rsync_fetch_dir.log")
+        with self._indent_run_log():
             try:
-                return_code = self._log_shell_output(rsync_fetch_command, capture_path)
+                return_code, captured = self._log_shell_output(rsync_fetch_command)
             except:
                 self._update_run_log(traceback.format_exc())
                 result_msg = "Exception while updating %r from %r"
             else:
                 if return_code == 0:
                     result_msg = "Successfully updated %r from %r"
-                    with open(capture_path) as rsync_log:
-                      with self._indent_run_log():
-                        rsync_stats = self._scrape_fetch_dir_rsync_stats(rsync_log.read())
+                    with self._indent_run_log():
+                        rsync_stats = self._scrape_fetch_dir_rsync_stats(captured)
                         self._update_run_log("Retrieved rsync stats:")
                         with self._indent_run_log():
                             for field, value in zip(rsync_stats._fields, rsync_stats):
@@ -336,20 +340,17 @@ class SyncVersionedTree(BaseSyncCommand):
         rsync_ls_command = "rsync " + " ".join(params)
         self._update_run_log("Getting remote listing for %r", remote_ls_path)
         dir_entries = link_entries = ()
-        with shellutil.temp_dir() as capture_dir:
-          with self._indent_run_log():
-            capture_path = os.path.join(capture_dir, "rsync_remote_ls.log")
+        with self._indent_run_log():
             try:
-                return_code = self._log_shell_output(rsync_ls_command, capture_path)
+                return_code, captured = self._log_shell_output(rsync_ls_command)
             except:
                 self._update_run_log(traceback.format_exc())
                 result_msg = "Exception while listing %r"
             else:
                 if return_code == 0:
                     result_msg = "Successfully listed %r"
-                    with open(capture_path) as rsync_log:
-                      with self._indent_run_log():
-                        dir_entries, link_entries = self._scrape_rsync_remote_ls(rsync_log.read())
+                    with self._indent_run_log():
+                        dir_entries, link_entries = self._scrape_rsync_remote_ls(captured)
                 else:
                     result_msg = "Non-zero return code ({0:d}) listing %r".format(return_code)
             self._update_run_log(result_msg, remote_ls_path)
@@ -436,7 +437,7 @@ class SyncSnapshotTree(SyncVersionedTree):
             with self._indent_run_log():
                 rsync_status_command = "rsync " + " ".join(params)
                 try:
-                    return_code = self._log_shell_output(rsync_status_command)
+                    return_code, __ = self._log_shell_output(rsync_status_command)
                 except:
                     self._update_run_log(traceback.format_exc())
                     result_msg = "Exception while attempting to check status of %r"
