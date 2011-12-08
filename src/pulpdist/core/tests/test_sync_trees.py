@@ -31,8 +31,9 @@ class TestSyncTree(TreeTestCase):
             msg = "sync stats field {0!r}".format(field)
             self.assertEqual(actual_value, expected_value, msg)
 
-    def check_sync_details(self, details, expected_stats):
-        start_time, finish_time, stats = details
+    def check_sync_details(self, details, expected_result, expected_stats):
+        result, start_time, finish_time, stats = details
+        self.assertEqual(result, expected_result)
         now = datetime.utcnow()
         self.check_datetime(start_time, now, 60)
         self.check_datetime(finish_time, now)
@@ -44,10 +45,10 @@ class TestSyncTree(TreeTestCase):
         params.update(self.CONFIG_TREE_SYNC)
         task = sync_trees.SyncTree(params)
         stats = self.EXPECTED_TREE_STATS
-        self.check_sync_details(task.run_sync(), stats) # initial
+        self.check_sync_details(task.run_sync(), "SYNC_COMPLETED", stats)
         self.check_tree_layout(local_path)
         stats.update(self.EXPECTED_REPEAT_STATS)
-        self.check_sync_details(task.run_sync(), stats) # repeat
+        self.check_sync_details(task.run_sync(), "SYNC_UP_TO_DATE", stats)
         self.check_tree_layout(local_path)
 
     def test_sync_versioned(self):
@@ -56,10 +57,10 @@ class TestSyncTree(TreeTestCase):
         params.update(self.CONFIG_VERSIONED_SYNC)
         task = sync_trees.SyncVersionedTree(params)
         stats = self.EXPECTED_VERSIONED_STATS
-        self.check_sync_details(task.run_sync(), stats) # initial
+        self.check_sync_details(task.run_sync(), "SYNC_COMPLETED", stats)
         self.check_versioned_layout(local_path)
         stats.update(self.EXPECTED_REPEAT_STATS)
-        self.check_sync_details(task.run_sync(), stats) # repeat
+        self.check_sync_details(task.run_sync(), "SYNC_UP_TO_DATE", stats)
         self.check_versioned_layout(local_path)
 
     def test_sync_snapshot(self):
@@ -69,12 +70,12 @@ class TestSyncTree(TreeTestCase):
         details = self.setup_snapshot_layout(local_path)
         task = sync_trees.SyncSnapshotTree(params)
         stats = self.EXPECTED_SNAPSHOT_STATS
-        self.check_sync_details(task.run_sync(), stats) # initial
+        self.check_sync_details(task.run_sync(), "SYNC_COMPLETED", stats)
         self.check_snapshot_layout(local_path, *details)
         # For an up-to-date tree, we transfer *nothing*
         for k in stats:
             stats[k] = 0
-        self.check_sync_details(task.run_sync(), stats) # repeat
+        self.check_sync_details(task.run_sync(), "SYNC_UP_TO_DATE", stats)
         self.check_snapshot_layout(local_path, *details)
 
     def test_sync_latest_link(self):

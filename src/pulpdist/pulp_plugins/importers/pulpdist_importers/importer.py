@@ -61,9 +61,10 @@ class _BaseImporter(Importer):
             sync_info = command.run_sync()
             sync_log_data = sync_log.read()
         summary = {
-            "start_time": sync_info[0].isoformat(),
-            "finish_time": sync_info[1].isoformat(),
-            "stats": sync_info[2]._asdict(),
+            "result": sync_info[0],
+            "start_time": sync_info[1].isoformat(),
+            "finish_time": sync_info[2].isoformat(),
+            "stats": sync_info[3]._asdict(),
         }
         details = {
             "sync_log": sync_log_data,

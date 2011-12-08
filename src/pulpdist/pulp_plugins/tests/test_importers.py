@@ -249,9 +249,8 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         history = self._get_sync_history()
         self.assertGreaterEqual(len(history), 1)
         sync_meta = history[0]
-        from pprint import pprint
-        pprint(sync_meta["summary"]["stats"])
-        print(sync_meta["details"]["sync_log"])
+        # TODO: Report and check sync status properly
+        # print(sync_meta["summary"]["result"])
         # Check top level sync history
         self.assertEqual(sync_meta[u"result"], u"success")
         self.assertIsNotNone(sync_meta[u"started"])

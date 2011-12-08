@@ -34,9 +34,6 @@ _BASE_FETCH_DIR_PARAMS = """
     --timeout=18000 --partial --delay-updates
 """.split()
 
-# Variants create incorrect matches due to rsync wildcard limitations
-VARIANTS = "Supplementary SAP V2VWIN HPN DSRV".split()
-
 # Rsync statistics collection
 _sync_stats_pattern = re.compile(r"""
 Number of files: (?P<total_file_count>\d+)
@@ -94,6 +91,11 @@ _remote_ls_entry_pattern = re.compile(
 
 class BaseSyncCommand(object):
 
+    SYNC_UP_TO_DATE = "SYNC_UP_TO_DATE"
+    SYNC_COMPLETED = "SYNC_COMPLETED"
+    SYNC_PARTIAL = "SYNC_PARTIAL"
+    SYNC_FAILED = "SYNC_FAILED"
+
     CONFIG_TYPE = None
 
     def __init__(self, config):
@@ -122,10 +124,10 @@ class BaseSyncCommand(object):
         finally:
             self._run_log_indent_level = old_level
 
-    def _update_run_log(self, fmt, *args):
-        fmt = ("  " * self._run_log_indent_level) + fmt
+    def _update_run_log(self, _fmt, *args, **kwds):
+        fmt = ("  " * self._run_log_indent_level) + _fmt
         if args:
-            msg = (fmt % args)
+            msg = fmt.format(*args, **kwds)
         else:
             msg = fmt
         self._run_log_file.write(msg.rstrip() + '\n')
@@ -135,7 +137,7 @@ class BaseSyncCommand(object):
         shell_output = []
         with self._indent_run_log(0):
             self._update_run_log("_"*75)
-            self._update_run_log("Getting shell output for:\n\n  %s\n", cmd)
+            self._update_run_log("Getting shell output for:\n\n  {0}\n", cmd)
             proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
                                                      stderr=subprocess.STDOUT)
             for line in proc.stdout:
@@ -152,37 +154,37 @@ class BaseSyncCommand(object):
             return_code, __ = self._log_shell_output(hardlink_cmd)
         except:
             self._update_run_log(traceback.format_exc())
-            result_msg = "Exception while hard linking duplicates in %r"
+            result_msg = "Exception while hard linking duplicates in {0!r}"
         else:
             if return_code == 0:
-                result_msg = "Successfully hard linked duplicates in %r"
+                result_msg = "Successfully hard linked duplicates in {0!r}"
             else:
-                result_msg = "Failed to hard link duplicates in %r"
+                result_msg = "Failed to hard link duplicates in {0!r}"
         self._update_run_log(result_msg, local_path)
 
 
-    def _send_amqp_message(self, sync_stats):
-        details = "%r transfer %r -> %r: %s" % (
-            self.tree_name, self.remote_path, self.local_path, sync_stats)
+    def _send_amqp_message(self, result, sync_stats):
+        details = "{0!r} transfer {1!r} -> {2!r}: {3}, {4}".format(
+            self.tree_name, self.remote_path, self.local_path, result, sync_stats)
         if self.is_test_run:
-            msg = "Not sending AMQP message for test run (%s)"
-        msg = "AMQP support not yet implemented (%s)"
+            msg = "Not sending AMQP message for test run ({0})"
+        msg = "AMQP support not yet implemented ({0})"
         self._update_run_log(msg, details)
 
     def run_sync(self):
         """Execute the full synchronisation task"""
         self._init_run_log()
         start_time = datetime.utcnow()
-        self._update_run_log("Syncing tree %r at %s", self.tree_name, start_time)
+        self._update_run_log("Syncing tree {0!r} at {1}", self.tree_name, start_time)
 
         with self._indent_run_log():
             if self.is_test_run:
                 self._update_run_log("Performing test run (no file transfer)")
             elif not path.exists(self.local_path):
-                self._update_run_log("Local path %r does not exist, creating it", self.local_path)
+                self._update_run_log("Local path {0!r} does not exist, creating it", self.local_path)
                 os.makedirs(self.local_path, 0755)
 
-            sync_stats = self._do_transfer()
+            result, sync_stats = self._do_transfer()
 
             if sync_stats.transferred_file_count > 0:
                 self._update_run_log("Consolidating downloaded data with hard links")
@@ -190,13 +192,13 @@ class BaseSyncCommand(object):
                     self._consolidate_tree()
                 self._update_run_log("Sending AMQP message")
                 with self._indent_run_log():
-                    self._send_amqp_message(sync_stats)
+                    self._send_amqp_message(result, sync_stats)
 
         finish_time = datetime.utcnow()
-        msg = "Completed sync of %r at %s (Duration: %s)"
+        msg = "Completed sync of {0!r} at {1} (Result: {2}, Duration: {3})"
         self._update_run_log(msg, self.tree_name,
-                             finish_time, finish_time - start_time)
-        return start_time, finish_time, sync_stats
+                             finish_time, result, finish_time - start_time)
+        return result, start_time, finish_time, sync_stats
 
     def _build_common_rsync_params(self):
         """Construct rsync parameters common to all operations"""
@@ -259,9 +261,9 @@ class BaseSyncCommand(object):
                 stats[field] = _bytes_from_size_and_kind(size, kind)
         return SyncStats(**stats)
 
-    def _fetch_dir_complete(self, remote_source_path, local_dest_path):
-        pass
-        
+    def _fetch_dir_complete(self, result, remote_source_path, local_dest_path):
+        return result
+
     def fetch_dir(self, remote_source_path, local_dest_path, local_seed_paths=()):
         """Fetch a single directory from the remote server"""
         params = self._build_fetch_dir_rsync_params(remote_source_path,
@@ -269,32 +271,43 @@ class BaseSyncCommand(object):
                                                     local_seed_paths)
         rsync_fetch_command = "rsync " + " ".join(params)
         rsync_stats = _null_sync_stats
-        self._update_run_log("Downloading %r -> %r", remote_source_path, local_dest_path)
+        self._update_run_log("Downloading {0!r} -> {1!r}", remote_source_path, local_dest_path)
         for seed_path in local_seed_paths:
-            self._update_run_log("Using %r as local seed data", seed_path)
+            self._update_run_log("Using {0!r} as local seed data", seed_path)
         if not self.is_test_run and not os.path.exists(local_dest_path):
-            self._update_run_log("Creating destination directory %r", local_dest_path)
+            self._update_run_log("Creating destination directory {0!r}", local_dest_path)
             os.makedirs(local_dest_path)
         with self._indent_run_log():
             try:
                 return_code, captured = self._log_shell_output(rsync_fetch_command)
             except:
                 self._update_run_log(traceback.format_exc())
-                result_msg = "Exception while updating %r from %r"
+                result_msg = "Exception while updating {0!r} from {1!r}"
             else:
-                if return_code == 0:
-                    result_msg = "Successfully updated %r from %r"
+                if return_code in (0, 23):
                     with self._indent_run_log():
                         rsync_stats = self._scrape_fetch_dir_rsync_stats(captured)
                         self._update_run_log("Retrieved rsync stats:")
                         with self._indent_run_log():
                             for field, value in zip(rsync_stats._fields, rsync_stats):
-                                self._update_run_log("%s=%s", field, value)
-                    self._fetch_dir_complete(remote_source_path, local_dest_path)
+                                self._update_run_log("{0}={1}", field, value)
+                    if return_code == 23:
+                        result_msg = "Partially updated {0!r} from {1!r}"
+                        result = self.SYNC_PARTIAL
+                    elif rsync_stats.transferred_file_count == 0:
+                        result_msg = "{1!r} already up to date relative to {0!r}"
+                        result = self.SYNC_UP_TO_DATE
+                    else:
+                        result_msg = "Successfully updated {0!r} from {1!r}"
+                        result = self.SYNC_COMPLETED
+                    # We give subclasses a chance to second guess the nominal result
+                    # as well as taking other actions
+                    result = self._fetch_dir_complete(result, remote_source_path, local_dest_path)
                 else:
-                    result_msg = "Non-zero return code ({0:d}) updating %r from %r".format(return_code)
+                    result_msg = "Non-zero return code (%d) updating {0!r} from {1!r}" % return_code
+                    result = self.SYNC_FAILED
             self._update_run_log(result_msg, local_dest_path, remote_source_path)
-        return rsync_stats
+        return result, rsync_stats
 
 
 class SyncTree(BaseSyncCommand):
@@ -338,21 +351,21 @@ class SyncVersionedTree(BaseSyncCommand):
     def remote_ls(self, remote_ls_path):
         params = self._build_remote_ls_rsync_params(remote_ls_path)
         rsync_ls_command = "rsync " + " ".join(params)
-        self._update_run_log("Getting remote listing for %r", remote_ls_path)
+        self._update_run_log("Getting remote listing for {0!r}", remote_ls_path)
         dir_entries = link_entries = ()
         with self._indent_run_log():
             try:
                 return_code, captured = self._log_shell_output(rsync_ls_command)
             except:
                 self._update_run_log(traceback.format_exc())
-                result_msg = "Exception while listing %r"
+                result_msg = "Exception while listing {0!r}"
             else:
                 if return_code == 0:
-                    result_msg = "Successfully listed %r"
+                    result_msg = "Successfully listed {0!r}"
                     with self._indent_run_log():
                         dir_entries, link_entries = self._scrape_rsync_remote_ls(captured)
                 else:
-                    result_msg = "Non-zero return code ({0:d}) listing %r".format(return_code)
+                    result_msg = "Non-zero return code ({0:d}) listing {{0!r}}".format(return_code)
             self._update_run_log(result_msg, remote_ls_path)
         return dir_entries, link_entries
 
@@ -394,18 +407,40 @@ class SyncVersionedTree(BaseSyncCommand):
         remote_pattern = os.path.join(self.remote_path, self.version_pattern)
         remote_ls_path = "rsync://{0}{1}".format(self.remote_server, remote_pattern)
         dir_entries, link_entries = self.remote_ls(remote_ls_path)
+        if not dir_entries:
+            self._update_run_log("No relevant directories found at {0!r}", remote_ls_path)
+            return self.SYNC_FAILED, sync_stats
+        tallies = collections.defaultdict(int)
         for remote_source_path, local_dest_path, local_seed_paths in self._iter_remote_versions(dir_entries):
-            self._update_run_log("Preparing to download %r -> %r", remote_source_path, local_dest_path)
+            self._update_run_log("Preparing to download {0!r} -> {1!r}", remote_source_path, local_dest_path)
             if self._already_retrieved(local_dest_path):
-                self._update_run_log("Skipping download for %r -> %r (already completed)", remote_source_path, local_dest_path)
+                self._update_run_log("Skipping download for {0!r} -> {1!r} (already completed)", remote_source_path, local_dest_path)
                 continue
             if not self._should_retrieve(remote_source_path):
-                self._update_run_log("Skipping download for %r -> %r (source not ready)", remote_source_path, local_dest_path)
+                self._update_run_log("Skipping download for {0!r} -> {1!r} (source not ready)", remote_source_path, local_dest_path)
                 continue
-            sync_stats += self.fetch_dir(remote_source_path, local_dest_path, local_seed_paths)
+            dir_result, dir_stats = self.fetch_dir(remote_source_path, local_dest_path, local_seed_paths)
+            tallies[dir_result] += 1
+            sync_stats += dir_stats
         self._fix_link_entries(link_entries)
         self._delete_old_dirs(dir_entries)
-        return sync_stats
+        up_to_date = tallies[self.SYNC_UP_TO_DATE]
+        completed = tallies[self.SYNC_COMPLETED]
+        partial = tallies[self.SYNC_PARTIAL]
+        failed = tallies[self.SYNC_FAILED]
+        if failed and not (partial or completed or up_to_date):
+            # Absolutely nothing worked
+            result = self.SYNC_FAILED
+        elif failed or partial:
+            # Got at least some failures
+            result = self.SYNC_PARTIAL
+        elif completed:
+            # Had to actually do something
+            result = self.SYNC_COMPLETED
+        else:
+            # Everything was already up to date
+            result = self.SYNC_UP_TO_DATE
+        return result, sync_stats
 
 class SyncSnapshotTree(SyncVersionedTree):
     """Sync the contents of a directory containing multiple snapshots of a tree"""
@@ -414,15 +449,15 @@ class SyncSnapshotTree(SyncVersionedTree):
     def _already_retrieved(self, local_dest_path):
         local_status_path = os.path.join(local_dest_path, "STATUS")
         with self._indent_run_log():
-            self._update_run_log("Checking for STATUS file in %r", local_dest_path)
+            self._update_run_log("Checking for STATUS file in {0!r}", local_dest_path)
             with self._indent_run_log():
                 if os.path.exists(local_status_path):
                     with open(local_status_path) as f:
                         status = f.read().strip()
-                        self._update_run_log("Current status of %r is %r", local_dest_path, status)
+                        self._update_run_log("Current status of {0!r} is {1!r}", local_dest_path, status)
                         return status == "FINISHED"
                 else:
-                    self._update_run_log("No STATUS file found in %r", local_dest_path)
+                    self._update_run_log("No STATUS file found in {0!r}", local_dest_path)
         return False
 
     def _should_retrieve(self, remote_source_path):
@@ -433,29 +468,37 @@ class SyncSnapshotTree(SyncVersionedTree):
             params = self._build_common_rsync_params()
             params.append(remote_status_path)
             params.append(tmp_local_status)
-            self._update_run_log("Checking for STATUS file in %r", remote_source_path)
+            self._update_run_log("Checking for STATUS file in {0!r}", remote_source_path)
             with self._indent_run_log():
                 rsync_status_command = "rsync " + " ".join(params)
                 try:
                     return_code, __ = self._log_shell_output(rsync_status_command)
                 except:
                     self._update_run_log(traceback.format_exc())
-                    result_msg = "Exception while attempting to check status of %r"
+                    result_msg = "Exception while attempting to check status of {0!r}"
                 else:
                     if os.path.exists(tmp_local_status):
                         with open(tmp_local_status) as f:
                             status = f.read().strip()
-                            self._update_run_log("Current status of %r is %r", remote_source_path, status)
+                            self._update_run_log("Current status of {0!r} is {1!r}", remote_source_path, status)
                             return status == "FINISHED"
                     else:
-                        result_msg = "No STATUS file found in %r"
+                        result_msg = "No STATUS file found in {0!r}"
                 self._update_run_log(result_msg, remote_source_path)
         return False
 
-    def _fetch_dir_complete(self, remote_source_path, local_dest_path):
+    def _fetch_dir_complete(self, result, remote_source_path, local_dest_path):
+        if result == self.SYNC_PARTIAL:
+            return result
         status_path = os.path.join(local_dest_path, "STATUS")
+        if result == self.SYNC_UP_TO_DATE and os.path.exists(status_path):
+            # Tree actually *was* up to date, we didn't just get lucky
+            # and manage to hard link everything
+            return result
+        result = self.SYNC_COMPLETED
         with open(status_path, 'w') as f:
             f.write("FINISHED\n")
+        return result
 
     def _link_to_latest(self):
         link_name = self.latest_link_name
@@ -463,27 +506,27 @@ class SyncSnapshotTree(SyncVersionedTree):
             return
         local_path = self.local_path
         link_path = os.path.join(local_path, link_name)
-        self._update_run_log("Updating %r symlink to refer to latest version", link_path)
+        self._update_run_log("Updating {0!r} symlink to refer to latest version", link_path)
         with self._indent_run_log():
             if self.is_test_run:
-                self._update_run_log("Skipping creation of %r for test run", link_path)
+                self._update_run_log("Skipping creation of {0!r} for test run", link_path)
                 return
             try:
                 target_path = max(self._iter_local_versions(), key=os.path.getmtime)
             except ValueError:
-                self._update_run_log("No valid target versions in %r, skipping", local_path)
+                self._update_run_log("No valid target versions in {0!r}, skipping", local_path)
                 return
             if os.path.isdir(link_path) and not os.path.islink(link_path):
-                self._update_run_log("Existing latest directory, %s, is not a symbolic link, deleting it", link_path)
+                self._update_run_log("Existing latest directory, {0}, is not a symbolic link, deleting it", link_path)
                 shutil.rmtree(link_path)
             relative_target = os.path.relpath(target_path, os.path.dirname(link_path))
             os.symlink(relative_target, link_path)
-            self._update_run_log("Linked %r -> %r", link_path, relative_target)
+            self._update_run_log("Linked {0!r} -> {1!r}", link_path, relative_target)
 
     def _do_transfer(self):
-        sync_stats = super(SyncSnapshotTree, self)._do_transfer()
+        result, sync_stats = super(SyncSnapshotTree, self)._do_transfer()
         self._link_to_latest()
-        return sync_stats
+        return result, sync_stats
 
 
 
