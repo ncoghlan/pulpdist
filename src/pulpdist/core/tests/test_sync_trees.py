@@ -145,22 +145,20 @@ class TestSyncTree(TreeTestCase):
         self.check_sync_details(task.run_sync(), "SYNC_COMPLETED", stats)
         self.check_tree_layout(local_path)
 
-    def check_log_output(self, log_data):
-        self.assertIn("SYNC_COMPLETED", log_data)
-        expected_stats = self.EXPECTED_TREE_STATS
-        actual_stats = sync_trees.SyncStats.from_rsync_output(log_data)
-        self.check_stats(actual_stats, expected_stats)
-
     def test_path_logging(self):
         with NamedTemporaryFile() as sync_log:
             self.log_simple_sync(sync_log.name)
             log_data = sync_log.read()
-        self.check_log_output(log_data)
+        self.check_log_output(log_data,
+                              "SYNC_COMPLETED",
+                              self.EXPECTED_TREE_STATS)
 
     def test_stream_logging(self):
         stream = StringIO()
         self.log_simple_sync(stream)
-        self.check_log_output(stream.getvalue())
+        self.check_log_output(stream.getvalue(),
+                              "SYNC_COMPLETED",
+                              self.EXPECTED_TREE_STATS)
 
     # TODO: Verify copying of other symlinks
     # TODO: Delete old versioned directories

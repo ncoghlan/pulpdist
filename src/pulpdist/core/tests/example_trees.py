@@ -20,6 +20,7 @@ import os.path
 from .compat import unittest
 
 from . import rsync_daemon
+from .. import sync_trees
 
 expected_files = [
     u"data.txt",
@@ -233,3 +234,8 @@ class TreeTestCase(unittest.TestCase):
                 fpaths = [os.path.join(dpath, fname) for dpath in dpaths]
                 msg = "{0} are different files".format(fpaths)
                 self.assertTrue(os.path.samefile(*fpaths))
+
+    def check_log_output(self, log_data, expected_result, expected_stats):
+        self.assertIn(expected_result, log_data)
+        actual_stats = sync_trees.SyncStats.from_rsync_output(log_data)
+        self.check_stats(actual_stats, expected_stats)
