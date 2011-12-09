@@ -15,6 +15,8 @@
 
 import shutil
 import os.path
+from tempfile import NamedTemporaryFile
+from cStringIO import StringIO
 from datetime import datetime, timedelta
 
 from .. import sync_trees
@@ -133,6 +135,32 @@ class TestSyncTree(TreeTestCase):
         copied_path = os.path.join(local_path, "copied.txt")
         self.assertTrue(os.path.samefile(extra_path, copied_path))
 
+
+    def log_simple_sync(self, log_dest):
+        local_path = self.local_path
+        params = self.params
+        params.update(self.CONFIG_TREE_SYNC)
+        task = sync_trees.SyncTree(params, log_dest)
+        stats = self.EXPECTED_TREE_STATS
+        self.check_sync_details(task.run_sync(), "SYNC_COMPLETED", stats)
+        self.check_tree_layout(local_path)
+
+    def check_log_output(self, log_data):
+        self.assertIn("SYNC_COMPLETED", log_data)
+        expected_stats = self.EXPECTED_TREE_STATS
+        actual_stats = sync_trees.SyncStats.from_rsync_output(log_data)
+        self.check_stats(actual_stats, expected_stats)
+
+    def test_path_logging(self):
+        with NamedTemporaryFile() as sync_log:
+            self.log_simple_sync(sync_log.name)
+            log_data = sync_log.read()
+        self.check_log_output(log_data)
+
+    def test_stream_logging(self):
+        stream = StringIO()
+        self.log_simple_sync(stream)
+        self.check_log_output(stream.getvalue())
 
     # TODO: Verify copying of other symlinks
     # TODO: Delete old versioned directories

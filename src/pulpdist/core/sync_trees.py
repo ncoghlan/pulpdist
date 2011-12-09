@@ -79,6 +79,30 @@ class SyncStats(collections.namedtuple("SyncStats", _sync_stats_fields)):
             return NotImplemented
         return SyncStats(*(a + b for a, b in zip(self, other)))
 
+    @classmethod
+    def from_rsync_output(cls, raw_data):
+        scraped = _sync_stats_pattern.search(raw_data)
+        if scraped is None:
+            raise ValueError("No rsync stats found in output")
+        data = scraped.groupdict()
+        stats = {}
+        for field in SyncStats._fields:
+            if field.endswith("_count"):
+                stats[field] = int(data[field])
+            elif field.endswith("_seconds"):
+                stats[field] = float(data[field])
+            elif field.endswith("_bps"):
+                field_prefix = field.rpartition('_')[0]
+                rate = data[field_prefix + "_rate"]
+                kind = data[field_prefix + "_rate_kind"]
+                stats[field] = _bytes_from_size_and_kind(rate, kind)
+            else:
+                field_prefix = field.rpartition('_')[0]
+                size = data[field_prefix + "_size"]
+                kind = data[field_prefix + "_size_kind"]
+                stats[field] = _bytes_from_size_and_kind(size, kind)
+        return cls(**stats)
+
 _null_sync_stats = SyncStats(*([0]*len(SyncStats._fields)))
 
 # rsync remote ls scraping
@@ -98,20 +122,23 @@ class BaseSyncCommand(object):
 
     CONFIG_TYPE = None
 
-    def __init__(self, config):
+    def __init__(self, config, log_dest=None):
         config_type = self.CONFIG_TYPE
         if config_type is None:
             raise NotImplementedError("CONFIG_TYPE not set by subclass")
         config_data = config_type(config)
         config_data.validate()
         self.__dict__.update(config_data.config)
+        self._init_run_log(log_dest)
 
-    def _init_run_log(self):
+    def _init_run_log(self, log_dest):
         self._run_log_indent_level = 0
-        if self.log_path is None:
-            self._run_log_file = sys.stdout
+        if log_dest is None:
+            self._run_log_file = None
+        elif isinstance(log_dest, basestring):
+            self._run_log_file = open(log_dest, 'w')
         else:
-            self._run_log_file = open(self.log_path, 'w')
+            self._run_log_file = log_dest
 
     @contextlib.contextmanager
     def _indent_run_log(self, level=None):
@@ -125,19 +152,20 @@ class BaseSyncCommand(object):
             self._run_log_indent_level = old_level
 
     def _update_run_log(self, _fmt, *args, **kwds):
+        if self._run_log_file is None:
+            return
         fmt = ("  " * self._run_log_indent_level) + _fmt
         if args:
             msg = fmt.format(*args, **kwds)
         else:
             msg = fmt
         self._run_log_file.write(msg.rstrip() + '\n')
-        self._run_log_file.flush()
 
-    def _log_shell_output(self, cmd):
+    def _run_shell_command(self, cmd):
         shell_output = []
         with self._indent_run_log(0):
             self._update_run_log("_"*75)
-            self._update_run_log("Getting shell output for:\n\n  {0}\n", cmd)
+            self._update_run_log("Getting shell output for:\n\n  {0}\n\n", cmd)
             proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
                                                      stderr=subprocess.STDOUT)
             for line in proc.stdout:
@@ -151,7 +179,7 @@ class BaseSyncCommand(object):
         local_path = self.local_path
         hardlink_cmd = "hardlink -v " + self.local_path
         try:
-            return_code, __ = self._log_shell_output(hardlink_cmd)
+            return_code, __ = self._run_shell_command(hardlink_cmd)
         except:
             self._update_run_log(traceback.format_exc())
             result_msg = "Exception while hard linking duplicates in {0!r}"
@@ -173,7 +201,6 @@ class BaseSyncCommand(object):
 
     def run_sync(self):
         """Execute the full synchronisation task"""
-        self._init_run_log()
         start_time = datetime.utcnow()
         self._update_run_log("Syncing tree {0!r} at {1}", self.tree_name, start_time)
 
@@ -238,28 +265,11 @@ class BaseSyncCommand(object):
         return params
 
     def _scrape_fetch_dir_rsync_stats(self, data):
-        scraped = _sync_stats_pattern.search(data)
-        if scraped is None:
+        try:
+            return SyncStats.from_rsync_output(data)
+        except ValueError:
             self._update_run_log("No stats data found in rsync output")
             raise RuntimeError("No stats data found in rsync output")
-        data = scraped.groupdict()
-        stats = {}
-        for field in SyncStats._fields:
-            if field.endswith("_count"):
-                stats[field] = int(data[field])
-            elif field.endswith("_seconds"):
-                stats[field] = float(data[field])
-            elif field.endswith("_bps"):
-                field_prefix = field.rpartition('_')[0]
-                rate = data[field_prefix + "_rate"]
-                kind = data[field_prefix + "_rate_kind"]
-                stats[field] = _bytes_from_size_and_kind(rate, kind)
-            else:
-                field_prefix = field.rpartition('_')[0]
-                size = data[field_prefix + "_size"]
-                kind = data[field_prefix + "_size_kind"]
-                stats[field] = _bytes_from_size_and_kind(size, kind)
-        return SyncStats(**stats)
 
     def _fetch_dir_complete(self, result, remote_source_path, local_dest_path):
         return result
@@ -279,7 +289,7 @@ class BaseSyncCommand(object):
             os.makedirs(local_dest_path)
         with self._indent_run_log():
             try:
-                return_code, captured = self._log_shell_output(rsync_fetch_command)
+                return_code, captured = self._run_shell_command(rsync_fetch_command)
             except:
                 self._update_run_log(traceback.format_exc())
                 result_msg = "Exception while updating {0!r} from {1!r}"
@@ -355,7 +365,7 @@ class SyncVersionedTree(BaseSyncCommand):
         dir_entries = link_entries = ()
         with self._indent_run_log():
             try:
-                return_code, captured = self._log_shell_output(rsync_ls_command)
+                return_code, captured = self._run_shell_command(rsync_ls_command)
             except:
                 self._update_run_log(traceback.format_exc())
                 result_msg = "Exception while listing {0!r}"
@@ -472,7 +482,7 @@ class SyncSnapshotTree(SyncVersionedTree):
             with self._indent_run_log():
                 rsync_status_command = "rsync " + " ".join(params)
                 try:
-                    return_code, __ = self._log_shell_output(rsync_status_command)
+                    return_code, __ = self._run_shell_command(rsync_status_command)
                 except:
                     self._update_run_log(traceback.format_exc())
                     result_msg = "Exception while attempting to check status of {0!r}"

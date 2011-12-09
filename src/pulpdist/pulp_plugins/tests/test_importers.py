@@ -48,6 +48,8 @@ def parse_iso_datetime(raw):
     return _naive_utc(dt)
 
 class PulpTestCase(unittest.TestCase):
+    REPO_ID = u"test_repo"
+
     def setUp(self):
         self.server = self._local_test_server()
 
@@ -56,6 +58,15 @@ class PulpTestCase(unittest.TestCase):
         oauth_key = "example-oauth-key"
         oauth_secret = "example-oauth-secret"
         return pulpapi.PulpServer(localhost, oauth_key, oauth_secret)
+
+    def _local_test_repo(self):
+        try:
+            self.server.delete_repo(self.REPO_ID)
+        except pulpapi.ServerRequestError:
+            pass
+        else:
+            raise RuntimeError("Previous test run didn't destroy test repo!")
+        return self.server.create_repo(self.REPO_ID)
 
 class BasicAuthMixin(object):
     def _local_test_server(self):
@@ -75,7 +86,6 @@ class TestServerAccess(PulpTestCase):
     # Test basic access to the local Pulp server
     # including whether or not the pulpdist plugins
     # are installed correctly
-    REPO_ID = u"test_repo"
 
     def test_importers_loaded(self):
        importers = self.server.get_generic_importers()
@@ -112,11 +122,10 @@ class TestLocalCertServerAccess(LocalCertMixin, TestServerAccess): pass
 class TestConfiguration(PulpTestCase):
     # Test configuration of importers without
     # actually trying to sync anything
-    REPO_ID = u"test_repo"
 
     def setUp(self):
         super(TestConfiguration, self).setUp()
-        self.repo = self.server.create_repo(self.REPO_ID)
+        self.repo = self._local_test_repo()
 
     def tearDown(self):
         self.server.delete_repo(self.repo[u"id"])
@@ -168,16 +177,13 @@ class TestLocalCertConfiguration(LocalCertMixin, TestConfiguration): pass
 
 class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
     # Actually test synchronisation
-    REPO_ID = u"test_repo"
 
     def setUp(self):
         super(TestLocalSync, self).setUp()
         self.server = self._local_test_server()
-        self.repo = self.server.create_repo(self.REPO_ID)
+        self.repo = self._local_test_repo()
         # Ensure Pulp server can write to our data dir
         os.chmod(self.local_path, 0o777)
-        # Use the server's default logging option
-        self.params["log_path"] = None
 
     def tearDown(self):
         self.server.delete_repo(self.repo[u"id"])
@@ -240,7 +246,7 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
             msg = "sync stats field {0!r}".format(field)
             self.assertEqual(actual_value, expected_value, msg)
 
-    def check_postsync(self, expected_stats=None):
+    def check_postsync(self, expected_result, expected_stats):
         imp = self._get_importer()
         self.assertFalse(imp[u"sync_in_progress"])
         sync_time = imp[u"last_sync"]
@@ -277,7 +283,7 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         self.assertTrue(self._sync_repo())
         self._wait_for_sync()
         stats = self.EXPECTED_TREE_STATS
-        self.check_postsync(stats)
+        self.check_postsync("SYNC_COMPLETED", stats)
         self.check_tree_layout(self.local_path)
 
     def test_versioned_tree_sync(self):
@@ -288,7 +294,7 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         self.assertTrue(self._sync_repo())
         self._wait_for_sync()
         stats = self.EXPECTED_VERSIONED_STATS
-        self.check_postsync(stats)
+        self.check_postsync("SYNC_COMPLETED", stats)
         self.check_versioned_layout(self.local_path)
 
     def test_snapshot_tree_sync(self):
@@ -300,7 +306,7 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         self.assertTrue(self._sync_repo())
         self._wait_for_sync()
         stats = self.EXPECTED_SNAPSHOT_STATS
-        self.check_postsync(stats)
+        self.check_postsync("SYNC_COMPLETED", stats)
         self.check_snapshot_layout(self.local_path, *details)
 
 class TestBasicAuthLocalSync(BasicAuthMixin, TestLocalSync): pass

@@ -96,8 +96,6 @@ def start_rsyncd():
     rsyncd.start()
     return rsyncd
 
-_default_log = u"/dev/null"
-
 class TreeTestCase(unittest.TestCase):
 
     CONFIG_TREE_SYNC = dict(
@@ -105,8 +103,7 @@ class TreeTestCase(unittest.TestCase):
         remote_server = u"localhost",
         remote_path = u"/test_data/simple/",
         excluded_files = u"*skip*".split(),
-        sync_filters = u"exclude_irrelevant/ exclude_dull/".split(),
-        log_path = _default_log
+        sync_filters = u"exclude_irrelevant/ exclude_dull/".split()
     )
 
     CONFIG_VERSIONED_SYNC = dict(
@@ -116,8 +113,7 @@ class TreeTestCase(unittest.TestCase):
         version_pattern = u"relevant*",
         excluded_versions = u"relevant-but*".split(),
         excluded_files = u"*skip*".split(),
-        sync_filters = u"exclude_irrelevant/ exclude_dull/".split(),
-        log_path = _default_log
+        sync_filters = u"exclude_irrelevant/ exclude_dull/".split()
     )
 
     CONFIG_SNAPSHOT_SYNC = dict(
@@ -127,8 +123,7 @@ class TreeTestCase(unittest.TestCase):
         version_pattern = u"relevant*",
         excluded_versions = u"relevant-but*".split(),
         excluded_files = u"*skip*".split(),
-        sync_filters = u"exclude_irrelevant/ exclude_dull/".split(),
-        log_path = _default_log
+        sync_filters = u"exclude_irrelevant/ exclude_dull/".split()
     )
 
     EXPECTED_TREE_STATS = dict(

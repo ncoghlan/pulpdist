@@ -11,7 +11,9 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 """PulpDist importer plugins"""
-import tempfile
+import sys
+import traceback
+from cStringIO import StringIO
 
 try:
     from pulpdist.core import sync_trees, validation
@@ -53,23 +55,33 @@ class _BaseImporter(Importer):
 
     def sync_repo(self, repo, sync_conduit, config):
         sync_config = self._build_sync_config(config)
-        with tempfile.NamedTemporaryFile() as sync_log:
-            sync_config.config["log_path"] = sync_log.name
-            command = self.SYNC_COMMAND(sync_config.config)
+        sync_log = StringIO()
+        command = self.SYNC_COMMAND(sync_config.config, sync_log)
+        try:
             # TODO: Refactor to support progress reporting
             # TODO: Refactor to populate content unit metadata
             sync_info = command.run_sync()
-            sync_log_data = sync_log.read()
+        except:
+            et, ev, tb = sys.exc_info()
+            msg_format = (
+                "exception: {0}\n"
+                "error_message: {1}\n"
+                "traceback:\n{2}\n"
+                "log_details:\n{3}\n"
+            )
+            raise RuntimeError(msg.format(et, ev,
+                               traceback.format_tb(tb),
+                               sync_log.getvalue()))
+        result = sync_info[0]
         summary = {
-            "result": sync_info[0],
+            "result": result,
             "start_time": sync_info[1].isoformat(),
             "finish_time": sync_info[2].isoformat(),
             "stats": sync_info[3]._asdict(),
         }
-        details = {
-            "sync_log": sync_log_data,
-        }
-        return sync_conduit.build_report(summary, details)
+        details = {"sync_log": sync_log.getvalue()}
+        report = sync_conduit.build_report(summary, details)
+        return report
 
 class SimpleTreeImporter(_BaseImporter):
     PULP_ID = "simple_tree"
