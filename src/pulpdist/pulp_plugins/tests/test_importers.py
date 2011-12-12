@@ -272,9 +272,29 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         self.assertIsInstance(sync_log, unicode)
         self.check_log_output(sync_log, expected_result, expected_stats)
 
+    def test_simple_tree_sync_partial(self):
+        importer_id = u"simple_tree"
+        params = self.CONFIG_TREE_SYNC.copy()
+        imp = self._add_importer(importer_id, params)
+        self.check_presync(imp, importer_id, params)
+        self.assertTrue(self._sync_repo())
+        self._wait_for_sync()
+        stats = self.EXPECTED_TREE_STATS
+        # With the default settings, the rsync download in the
+        # plugin encounters a non-fatal error that prompts it to
+        # report that some files couldn't be downloaded. It's
+        # wrong about that, but we can use it to check the
+        # partial sync reporting.
+        self.check_postsync("SYNC_PARTIAL", stats)
+        self.check_tree_layout(self.local_path)
+
     def test_simple_tree_sync(self):
         importer_id = u"simple_tree"
         params = self.CONFIG_TREE_SYNC.copy()
+        # Work around for the odd behaviour described under
+        # test_simple_tree_sync_partial
+        local_path = os.path.join(self.params["local_path"], "simple_tree/")
+        self.local_path = self.params["local_path"] = local_path
         imp = self._add_importer(importer_id, params)
         self.check_presync(imp, importer_id, params)
         self.assertTrue(self._sync_repo())
