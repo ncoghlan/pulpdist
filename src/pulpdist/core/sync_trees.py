@@ -47,7 +47,8 @@ File list generation time: (?P<listing_creation_seconds>[.\d]+) seconds
 File list transfer time: (?P<listing_transfer_seconds>[.\d]+) seconds
 Total bytes sent: (?P<sent_size>[.\d]+)(?P<sent_size_kind>[BKMG]?)
 Total bytes received: (?P<received_size>[.\d]+)(?P<received_size_kind>[BKMG]?)
-.+sent.+bytes\s+(?P<transfer_rate>[\d.]+)(?P<transfer_rate_kind>[BKMG]?)\s+bytes/sec
+
+sent \d+ bytes\s+received \d+ bytes\s+(?P<transfer_rate>[\d.]+)(?P<transfer_rate_kind>[BKMG]?)\s+bytes/sec
 """, re.DOTALL)
 
 _kind_scale = {
@@ -81,26 +82,27 @@ class SyncStats(collections.namedtuple("SyncStats", _sync_stats_fields)):
 
     @classmethod
     def from_rsync_output(cls, raw_data):
-        scraped = _sync_stats_pattern.search(raw_data)
+        stats = collections.defaultdict(int)
+        scraped = None
+        for scraped in _sync_stats_pattern.finditer(raw_data):
+            data = scraped.groupdict()
+            for field in SyncStats._fields:
+                if field.endswith("_count"):
+                    stats[field] += int(data[field])
+                elif field.endswith("_seconds"):
+                    stats[field] += float(data[field])
+                elif field.endswith("_bps"):
+                    field_prefix = field.rpartition('_')[0]
+                    rate = data[field_prefix + "_rate"]
+                    kind = data[field_prefix + "_rate_kind"]
+                    stats[field] += _bytes_from_size_and_kind(rate, kind)
+                else:
+                    field_prefix = field.rpartition('_')[0]
+                    size = data[field_prefix + "_size"]
+                    kind = data[field_prefix + "_size_kind"]
+                    stats[field] += _bytes_from_size_and_kind(size, kind)
         if scraped is None:
             raise ValueError("No rsync stats found in output")
-        data = scraped.groupdict()
-        stats = {}
-        for field in SyncStats._fields:
-            if field.endswith("_count"):
-                stats[field] = int(data[field])
-            elif field.endswith("_seconds"):
-                stats[field] = float(data[field])
-            elif field.endswith("_bps"):
-                field_prefix = field.rpartition('_')[0]
-                rate = data[field_prefix + "_rate"]
-                kind = data[field_prefix + "_rate_kind"]
-                stats[field] = _bytes_from_size_and_kind(rate, kind)
-            else:
-                field_prefix = field.rpartition('_')[0]
-                size = data[field_prefix + "_size"]
-                kind = data[field_prefix + "_size_kind"]
-                stats[field] = _bytes_from_size_and_kind(size, kind)
         return cls(**stats)
 
 _null_sync_stats = SyncStats(*([0]*len(SyncStats._fields)))

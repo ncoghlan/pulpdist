@@ -240,12 +240,6 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
             max_delta = timedelta(seconds=max_error_seconds)
             self.assertLessEqual(reference_time - dt, max_delta)
 
-    def check_stats(self, actual, expected):
-        for field, expected_value in expected.iteritems():
-            actual_value = actual[field]
-            msg = "sync stats field {0!r}".format(field)
-            self.assertEqual(actual_value, expected_value, msg)
-
     def check_postsync(self, expected_result, expected_stats):
         imp = self._get_importer()
         self.assertFalse(imp[u"sync_in_progress"])
@@ -265,6 +259,7 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         self.check_iso_datetime(sync_meta[u"completed"], now)
         # Check summary
         summary = sync_meta[u"summary"]
+        self.assertEqual(summary[u"result"], expected_result)
         self.check_iso_datetime(summary[u"start_time"], now, 60)
         self.check_iso_datetime(summary[u"finish_time"], now)
         stats = summary[u"stats"]
@@ -273,7 +268,9 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
             self.check_stats(stats, expected_stats)
         # Check details
         details = sync_meta[u"details"]
-        self.assertIsInstance(details[u"sync_log"], unicode)
+        sync_log = details[u"sync_log"]
+        self.assertIsInstance(sync_log, unicode)
+        self.check_log_output(sync_log, expected_result, expected_stats)
 
     def test_simple_tree_sync(self):
         importer_id = u"simple_tree"

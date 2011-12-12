@@ -27,12 +27,6 @@ class TestSyncTree(TreeTestCase):
         max_delta = timedelta(seconds=max_error_seconds)
         self.assertLessEqual(reference - actual, max_delta)
 
-    def check_stats(self, actual, expected):
-        for field, expected_value in expected.iteritems():
-            actual_value = getattr(actual, field)
-            msg = "sync stats field {0!r}".format(field)
-            self.assertEqual(actual_value, expected_value, msg)
-
     def check_sync_details(self, details, expected_result, expected_stats):
         result, start_time, finish_time, stats = details
         self.assertEqual(result, expected_result)

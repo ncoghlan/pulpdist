@@ -235,6 +235,14 @@ class TreeTestCase(unittest.TestCase):
                 msg = "{0} are different files".format(fpaths)
                 self.assertTrue(os.path.samefile(*fpaths))
 
+    def check_stats(self, actual, expected):
+        if isinstance(actual, dict):
+            actual = sync_trees.SyncStats(**actual)
+        for field, expected_value in expected.iteritems():
+            actual_value = getattr(actual, field)
+            msg = "sync stats field {0!r}".format(field)
+            self.assertEqual(actual_value, expected_value, msg)
+
     def check_log_output(self, log_data, expected_result, expected_stats):
         self.assertIn(expected_result, log_data)
         actual_stats = sync_trees.SyncStats.from_rsync_output(log_data)
