@@ -15,6 +15,9 @@ from django.conf.urls.defaults import url
 from django.core.urlresolvers import reverse
 from django.template.defaultfilters import slugify
 from django.http import Http404
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+
 
 from djangorestframework.views import View, ListOrCreateModelView, InstanceModelView
 from djangorestframework.resources import Resource, ModelResource
@@ -55,6 +58,10 @@ class BaseView(View):
             regex_parts.append(part)
         regex_parts.append('$')
         return  '^' + '/'.join(regex_parts)
+
+    @method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super(BaseView, self).dispatch(*args, **kwargs)
 
     @classmethod
     def make_url(cls, url_parts):

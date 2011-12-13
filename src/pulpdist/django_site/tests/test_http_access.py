@@ -10,13 +10,42 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 """HTTP Access Tests for Pulp Web UI"""
+from contextlib import contextmanager
+
 from djangosanetesting.cases import HttpTestCase
 
-# Needs a live server to back the web API
+from .. import settings
+
+# Note: needs a live Pulp server to back the web API
+
+@contextmanager
+def site_login(client, username):
+    login_status = client.login(username=username)
+    try:
+        yield login_status
+    finally:
+        client.logout()
+
+def user_login(client):
+    return site_login(client, settings.DUMMY_AUTH_USER)
+
+def staff_login(client):
+    return site_login(client, settings.DUMMY_AUTH_STAFF)
+
+def su_login(client):
+    return site_login(client, settings.DUMMY_AUTH_SUPER)
+
 
 class Index_TestCase(HttpTestCase):
-    fixtures = ['pulpdist/fixtures/pulpdist_server_details.json']
-    
+    fixtures = ["pulpdist/fixtures/pulpdist_server_details.json"]
+
     def test_index_loads(self):
-        resp = self.client.get('/pulpdist/')
-        self.assertEqual(resp.status_code, 200)
+        with user_login(self.client) as logged_in:
+            self.assertTrue(logged_in)
+            resp = self.client.get("/pulpdist/")
+            self.assertEqual(resp.status_code, 200)
+
+    def test_root_redirect(self):
+        resp = self.client.get("")
+        self.assertEqual(resp.status_code, 301)
+        self.assertTrue(resp["Location"].endswith("/pulpdist/"))

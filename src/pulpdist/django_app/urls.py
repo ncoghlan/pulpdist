@@ -12,6 +12,7 @@
 """URL definitions for Pulp UI"""
 
 from django.conf.urls.defaults import url, patterns
+from django.contrib.auth.decorators import login_required
 
 from .views import MainIndex, ServerView, RepoListView, RepoView
 
@@ -20,13 +21,13 @@ import restapi as api
 # Main site
 urlpatterns = patterns('',
     url(r'^$',
-        MainIndex.as_view(), name=MainIndex.urlname),
+        login_required(MainIndex.as_view()), name=MainIndex.urlname),
     url(r'^server/(?P<server_slug>[-\w]+)/$',
-        ServerView.as_view(), name=ServerView.urlname),
+        login_required(ServerView.as_view()), name=ServerView.urlname),
     url(r'^server/(?P<server_slug>[-\w]+)/repos/$',
-        RepoListView.as_view(), name=RepoListView.urlname),
+        login_required(RepoListView.as_view()), name=RepoListView.urlname),
     url(r'^server/(?P<server_slug>[-\w]+)/repos/(?P<repo_id>\w+)/$',
-        RepoView.as_view(), name=RepoView.urlname),
+        login_required(RepoView.as_view()), name=RepoView.urlname),
 )
 
 # REST API

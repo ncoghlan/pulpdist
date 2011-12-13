@@ -10,15 +10,14 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 from django.conf.urls.defaults import patterns, include, url
+from django.views.generic.simple import redirect_to
 
-# Uncomment the next two lines to enable the admin:
 from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('',
+    (r'^$', redirect_to, {'url': '/pulpdist/'}),
     url(r'^pulpdist/', include('pulpdist.django_app.urls')),
-
-    url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
-
-    url(r'^admin/', include(admin.site.urls)),
+    url(r'^pulpdist/admin/doc/', include('django.contrib.admindocs.urls')),
+    url(r'^pulpdist/admin/', include(admin.site.urls)),
 )

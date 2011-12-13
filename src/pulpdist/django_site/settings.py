@@ -12,7 +12,7 @@
 # Django settings for pulpweb project.
 import os
 import tempfile
-from ConfigParser import RawConfigParser
+from ConfigParser import RawConfigParser, NoOptionError
 
 # The RPM spec file sets this variable when needed so
 # Django management commands like 'collectstatic'
@@ -27,16 +27,29 @@ SITE_CONFIG = RawConfigParser()
 
 VAR_RELPATH = 'var/lib/pulpdist/'
 
+_sentinel = object()
+def _read_option(meth, section, option, default=_sentinel):
+    try:
+        return meth(section, option)
+    except NoOptionError:
+        if default is not _sentinel:
+            return default
+        raise
+
 if SITE_CONFIG.read(SITE_CONFIG_FILE):
     # Use deployed settings
-    DEBUG = SITE_CONFIG.has_section('debug')
-    PULPAPI_OAUTH_KEY_STORE_PASSPHRASE = SITE_CONFIG.get('db_config', 'passphrase')
+    DEBUG = _read_option(SITE_CONFIG.getboolean, 'devel', 'debug_pages', False)
+    ENABLE_DUMMY_AUTH = _read_option(SITE_CONFIG.get, 'devel', 'allow_test_users', False)
+    PULPAPI_OAUTH_KEY_STORE_PASSPHRASE = SITE_CONFIG.get('database', 'passphrase')
+    SECRET_KEY = SITE_CONFIG.get('django', 'secret_key')
     ADMINS = tuple(SITE_CONFIG.items('admins'))
     VAR_ROOT = os.path.join(_RPM_ROOT, VAR_RELPATH)
 else:
     # Use development settings
     DEBUG = True
+    ENABLE_DUMMY_AUTH = True
     PULPAPI_OAUTH_KEY_STORE_PASSPHRASE = "better than plaintext oauth key storage!"
+    SECRET_KEY = '9@m7g_zn=+gx&g1-a&eyuhs6j+om_&m)uj(n8p4(zj=eu61*eo'
     ADMINS = (
         ('Nick Coghlan', 'ncoghlan@redhat.com'),
     )
@@ -46,6 +59,11 @@ else:
     VAR_ROOT = os.path.abspath(
                   os.path.normpath(
                      os.path.join(_this_dir, '../../..', VAR_RELPATH)))
+
+if ENABLE_DUMMY_AUTH:
+    DUMMY_AUTH_USER = 'pulpdist-test'
+    DUMMY_AUTH_STAFF = 'pulpdist-test-admin'
+    DUMMY_AUTH_SUPER = 'pulpdist-test-su'
 
 TEMPLATE_DEBUG = DEBUG
 MANAGERS = ADMINS
@@ -116,6 +134,9 @@ STATIC_URL = '/static/'
 # Examples: "http://foo.com/static/admin/", "/static/admin/".
 ADMIN_MEDIA_PREFIX = '/static/admin/'
 
+# Account login page when user details are not provided
+LOGIN_URL = '/pulpdist/login'
+
 # Additional locations of static files
 STATICFILES_DIRS = (
     # Put strings here, like "/home/html/static" or "C:/www/django/static".
@@ -131,9 +152,6 @@ STATICFILES_FINDERS = (
 #    'django.contrib.staticfiles.finders.DefaultStorageFinder',
 )
 
-# Make this unique, and don't share it with anybody.
-SECRET_KEY = '9@m7g_zn=+gx&g1-a&eyuhs6j+om_&m)uj(n8p4(zj=eu61*eo'
-
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',
@@ -147,7 +165,17 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'django.contrib.auth.middleware.RemoteUserMiddleware',
 )
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.RemoteUserBackend',
+)
+
+if ENABLE_DUMMY_AUTH:
+    AUTHENTICATION_BACKENDS += (
+        'pulpdist.django_site.dummy_auth.DummyAuthBackend',
+    )
 
 ROOT_URLCONF = 'pulpdist.django_site.urls'
 
