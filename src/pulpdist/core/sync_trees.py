@@ -22,7 +22,6 @@ import subprocess
 import traceback
 import collections
 import re
-import tempfile
 import contextlib
 
 from . import sync_config
