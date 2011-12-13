@@ -14,8 +14,8 @@ class Migration(SchemaMigration):
             ('pulp_site', self.gf('django.db.models.fields.CharField')(unique=True, max_length=200)),
             ('server_slug', self.gf('django.db.models.fields.SlugField')(unique=True, max_length=200, db_index=True)),
             ('hostname', self.gf('django.db.models.fields.CharField')(max_length=200)),
-            ('oauth_key', self.gf('pulpdist.django_app.fields.EncryptedCharField')('PULPUI_OAUTH_KEY_STORE_PASSPHRASE', 200, null=False, blank=False)),
-            ('oauth_secret', self.gf('pulpdist.django_app.fields.EncryptedCharField')('PULPUI_OAUTH_KEY_STORE_PASSPHRASE', 200, null=False, blank=False)),
+            ('oauth_key', self.gf('pulpdist.django_app.fields.EncryptedCharField')('PULPAPI_OAUTH_KEY_STORE_PASSPHRASE', 200, null=False, blank=False)),
+            ('oauth_secret', self.gf('pulpdist.django_app.fields.EncryptedCharField')('PULPAPI_OAUTH_KEY_STORE_PASSPHRASE', 200, null=False, blank=False)),
         ))
         db.send_create_signal('django_app', ['PulpServer'])
 
@@ -31,8 +31,8 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'PulpServer'},
             'hostname': ('django.db.models.fields.CharField', [], {'max_length': '200'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'oauth_key': ('pulpdist.django_app.fields.EncryptedCharField', ["'PULPUI_OAUTH_KEY_STORE_PASSPHRASE'", '200'], {'null': 'False', 'blank': 'False'}),
-            'oauth_secret': ('pulpdist.django_app.fields.EncryptedCharField', ["'PULPUI_OAUTH_KEY_STORE_PASSPHRASE'", '200'], {'null': 'False', 'blank': 'False'}),
+            'oauth_key': ('pulpdist.django_app.fields.EncryptedCharField', ["'PULPAPI_OAUTH_KEY_STORE_PASSPHRASE'", '200'], {'null': 'False', 'blank': 'False'}),
+            'oauth_secret': ('pulpdist.django_app.fields.EncryptedCharField', ["'PULPAPI_OAUTH_KEY_STORE_PASSPHRASE'", '200'], {'null': 'False', 'blank': 'False'}),
             'pulp_site': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '200'}),
             'server_slug': ('django.db.models.fields.SlugField', [], {'unique': 'True', 'max_length': '200', 'db_index': 'True'})
         }

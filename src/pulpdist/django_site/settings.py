@@ -30,13 +30,13 @@ VAR_RELPATH = 'var/lib/pulpdist/'
 if SITE_CONFIG.read(SITE_CONFIG_FILE):
     # Use deployed settings
     DEBUG = SITE_CONFIG.has_section('debug')
-    PULPUI_OAUTH_KEY_STORE_PASSPHRASE = SITE_CONFIG.get('db_config', 'passphrase')
+    PULPAPI_OAUTH_KEY_STORE_PASSPHRASE = SITE_CONFIG.get('db_config', 'passphrase')
     ADMINS = tuple(SITE_CONFIG.items('admins'))
     VAR_ROOT = os.path.join(_RPM_ROOT, VAR_RELPATH)
 else:
     # Use development settings
     DEBUG = True
-    PULPUI_OAUTH_KEY_STORE_PASSPHRASE = "better than plaintext oauth key storage!"
+    PULPAPI_OAUTH_KEY_STORE_PASSPHRASE = "better than plaintext oauth key storage!"
     ADMINS = (
         ('Nick Coghlan', 'ncoghlan@redhat.com'),
     )

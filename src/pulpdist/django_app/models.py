@@ -40,7 +40,7 @@ class PulpServer(models.Model):
     # Storage is split so two secrets are needed to retrieve the OAuth keys
     #  - the storage database itself (with the keys in encrypted form)
     #  - the project settings file (with the passphrase for the keys)
-    _passphrase_setting = 'PULPUI_OAUTH_KEY_STORE_PASSPHRASE'
+    _passphrase_setting = 'PULPAPI_OAUTH_KEY_STORE_PASSPHRASE'
     oauth_key = EncryptedCharField(max_length=200,
                                    passphrase_setting=_passphrase_setting,
                                    null=False, blank=False)
