@@ -2,9 +2,10 @@ PulpDist Development
 ====================
 
 PulpDist is written primarily in Python and developed in git on
-`Fedora Hosted`_.
+`Fedora Hosted`_. Issue tracking is handled in Bugzilla_.
 
 _`Fedora Hosted`: http://fedorahosted.org/pulpdist
+_`Bugzilla`: https://bugzilla.redhat.com/buglist.cgi?product=PulpDist&bug_status=__open__
 
 Target Platforms
 ----------------
