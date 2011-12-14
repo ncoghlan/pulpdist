@@ -22,6 +22,37 @@ from django_tables2 import Table, Column
 from .util import ServerMixin, RepoMixin, _TableView, Breadcrumb
 from .models import PulpServer
 
+# Repo sync history details
+class SyncHistoryTable(Table):
+    started = Column()
+    completed = Column()
+
+class SyncHistoryView(RepoMixin, _TableView):
+    view_title='Repository Sync History'
+    urlname = 'pulp_repo_sync_history'
+    table_type = SyncHistoryTable
+    empty_text = "There are no sync history entries for this repository."
+
+    @property
+    def queryset(self):
+        server = self.get_pulp_server()
+        print "Retrieving sync history data from Pulp server"
+        return server.get_sync_history(self.repo_id)
+
+    def get_breadcrumbs(self):
+        server = self.get_pulp_server()
+        name = self.get_pulp_repo()['display_name']
+        crumbs = [ServerView.breadcrumb(server.pulp_site, server.server_slug),
+                  RepoListView.breadcrumb(server.server_slug),
+                  RepoView.breadcrumb(name, server.server_slug, self.repo_id),
+                  self.breadcrumb(server.server_slug, self.repo_id),]
+        return crumbs
+
+    @classmethod
+    def breadcrumb(cls, server_slug, repo_id):
+        return super(SyncHistoryView, cls).breadcrumb('Sync History', server_slug, repo_id)
+
+
 # Repo details
 class RepoView(RepoMixin, DetailView):
     context_object_name = 'pulp_repo'
@@ -29,13 +60,18 @@ class RepoView(RepoMixin, DetailView):
     template_name='pulpdist/repo.tmpl'
 
     def get_object(self, queryset=None):
-        return self.get_pulp_repo()
+        server = self.get_pulp_server()
+        details = self.get_pulp_repo()
+        importer_info = server.get_importer(self.repo_id)
+        details["importer_info"] = importer_info
+        return details
 
     def get_breadcrumbs(self):
         server = self.get_pulp_server()
+        name = self.get_pulp_repo()['display_name']
         crumbs = [ServerView.breadcrumb(server.pulp_site, server.server_slug),
                   RepoListView.breadcrumb(server.server_slug),
-                  self.breadcrumb(server.server_slug, self.repo_id),]
+                  self.breadcrumb(name, server.server_slug, self.repo_id),]
         return crumbs
 
 
@@ -76,8 +112,7 @@ class RepoListView(ServerMixin, _TableView):
 
     @classmethod
     def breadcrumb(cls, server_slug):
-        url = mark_safe(cls.get_url(server_slug))
-        return Breadcrumb('Repositories', url)
+        return super(RepoListView, cls).breadcrumb('Repositories', server_slug)
 
 
 # Server details

@@ -16,7 +16,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from django.contrib.auth import logout
 
-from .views import MainIndex, ServerView, RepoListView, RepoView
+from .views import MainIndex, ServerView, RepoListView, RepoView, SyncHistoryView
 
 import restapi as api
 
@@ -30,6 +30,8 @@ urlpatterns = patterns('',
         login_required(RepoListView.as_view()), name=RepoListView.urlname),
     url(r'^server/(?P<server_slug>[-\w]+)/repos/(?P<repo_id>\w+)/$',
         login_required(RepoView.as_view()), name=RepoView.urlname),
+    url(r'^server/(?P<server_slug>[-\w]+)/repos/(?P<repo_id>\w+)/sync_history$',
+        login_required(SyncHistoryView.as_view()), name=SyncHistoryView.urlname),
 )
 
 # Authentication handling

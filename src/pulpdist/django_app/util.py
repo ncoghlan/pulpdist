@@ -77,14 +77,20 @@ class RepoMixin(ServerMixin):
             server = self.get_pulp_server()
         return server.get_repo(self.repo_id)
 
+    def get_context_data(self, **kwds):
+        context = super(RepoMixin, self).get_context_data(**kwds)
+        if 'repo_id' not in context:
+            context['repo_id'] = self.repo_id
+        return context
+
     @classmethod
     def get_url(cls, server_slug, repo_id):
         return get_repo_url(cls.urlname, server_slug, repo_id)
 
     @classmethod
-    def breadcrumb(cls, server_slug, repo_id):
+    def breadcrumb(cls, display_name, server_slug, repo_id):
         url = mark_safe(cls.get_url(server_slug, repo_id))
-        return Breadcrumb(repo_id, url)
+        return Breadcrumb(display_name, url)
 
 
 # Helper for data table views

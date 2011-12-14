@@ -6,6 +6,6 @@
 {% block content %}
   {% trans 'Pulp Repository Details' %}
   <ul>
-    <li><a href="{% url pulp_repo_index pulp_server.server_slug %}">{% trans "Packages (but not yet!)" %}</a></li>
+    <li><a href="{% url pulp_repo_sync_history pulp_server.server_slug repo_id %}">{% trans "Repo Sync History" %}</a></li>
   </ul>
 {% endblock %}
