@@ -90,7 +90,7 @@ class PulpServer(models.Model):
         return self.add_slug(self.server.get_repo(repo_id))
 
     def get_importer(self, repo_id):
-        return self.server.get_repo(repo_id)
+        return self.server.get_importer(repo_id)
 
     def get_sync_history(self, repo_id):
         return self.server.get_sync_history(repo_id)

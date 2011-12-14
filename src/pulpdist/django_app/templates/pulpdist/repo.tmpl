@@ -4,8 +4,38 @@
 {% load pulpdist_tags %}
 
 {% block content %}
-  {% trans 'Pulp Repository Details' %}
-  <ul>
-    <li><a href="{% url pulp_repo_sync_history pulp_server.server_slug repo_id %}">{% trans "Repo Sync History" %}</a></li>
-  </ul>
+    <h2>{% trans 'Pulp Repository Details for' %} {{ object.display_name }}</h2>
+    {{ object.description }}
+
+    <h3><p>{% trans 'Annotations' %}</p></h3>
+    <ul>
+        {% if object.notes %}
+            {% for k, v in object.notes.iteritems %}
+                <li><b>{{ k }}:</b> {{ v }}</br></li>
+            {% endfor %}
+        {% else %}
+            <li>{% trans 'No repository annotations' %}</li>
+        {% endif %}
+    </ul>
+
+    <h3><p>{% trans 'Automatic Update Configuration' %}</p></h3>
+    <ul>
+        {% if object.importer_info %}
+        <li><b>{% trans 'Update type' %}:</b> {{ object.importer_info.importer_type_id }}</br></li>
+        <li><b>{% trans 'Last updated' %}:</b> {{ object.importer_info.last_sync }}</br></li>
+        <li><b>{% trans 'Update in progress?' %}:</b> {{ object.importer_info.sync_in_progress }}</br></li>
+        <li><b>{% trans 'Configuration details' %}:</b><ul>
+            {% for k, v in object.importer_info.config.iteritems %}
+            <li>{{ k }} = {{ v }}</br></li>
+            {% endfor %}
+            </ul></li>
+        {% else %}
+            <li>{% trans 'Automatic updates not configured' %}</li>
+        {% endif %}
+    </ul>
+
+    <h3><p>{% trans 'Other repository information' %}</p></h3>
+    <ul>
+        <li><a href="{% url pulp_repo_sync_history pulp_server.server_slug repo_id %}">{% trans "Repo Sync History" %}</a></li>
+    </ul>
 {% endblock %}
