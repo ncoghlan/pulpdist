@@ -42,8 +42,7 @@ class RepoView(RepoMixin, DetailView):
 # Repos on a server
 class RepoTable(Table):
     id = Column(verbose_name='Repo Name')
-    distribution = Column()
-    uri_ref = Column(verbose_name='Repo URL')
+    description = Column(verbose_name='Description')
     empty_text = "There are no repositories defined in the Pulp server."
 
     def render_id(self, record):
@@ -52,7 +51,7 @@ class RepoTable(Table):
             'repo_id' : repo_id,
             'server_slug' : record['server_slug'],
         }
-        repo_name = escape(repo_id)
+        repo_name = record['display_name']
         url = reverse(RepoView.urlname, kwargs=kwargs)
         link = '<a href="{0}">{1}</a>'.format(url, repo_name)
         return mark_safe(link)
