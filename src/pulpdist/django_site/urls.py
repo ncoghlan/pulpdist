@@ -16,8 +16,11 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('',
+    # Redirect site root to the PulpDist app
     (r'^$', redirect_to, {'url': '/pulpdist/'}),
+    # Install the main app
     url(r'^pulpdist/', include('pulpdist.django_app.urls')),
+    # Hook up the admin pages
     url(r'^pulpdist/admin/doc/', include('django.contrib.admindocs.urls')),
     url(r'^pulpdist/admin/', include(admin.site.urls)),
 )

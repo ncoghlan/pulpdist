@@ -13,6 +13,8 @@
 
 from django.conf.urls.defaults import url, patterns
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect
+from django.contrib.auth import logout
 
 from .views import MainIndex, ServerView, RepoListView, RepoView
 
@@ -28,6 +30,16 @@ urlpatterns = patterns('',
         login_required(RepoListView.as_view()), name=RepoListView.urlname),
     url(r'^server/(?P<server_slug>[-\w]+)/repos/(?P<repo_id>\w+)/$',
         login_required(RepoView.as_view()), name=RepoView.urlname),
+)
+
+# Authentication handling
+def logout_view(request):
+    logout(request)
+    return redirect(MainIndex.urlname)
+
+urlpatterns += patterns('',
+    url(r'^login/$', 'django.contrib.auth.views.login', {'template_name': 'pulpdist/login.tmpl'}, name="pulpdist_login"),
+    url(r'^logout/$', logout_view, name="pulpdist_logout"),
 )
 
 # REST API

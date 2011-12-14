@@ -31,14 +31,14 @@ class DummyAuthBackend(object):
     def authenticate(self, username=None, password=None):
         if username not in DUMMY_USERS:
             return None
-        # raise Exception("Checking DUMMY AUTH for {0}".format(username))
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
             # Create the dummy user. We leave the password
             # unusable so that the dummy users can't be
             # used with the normal auth mechanisms
-            # raise Exception("DUMMY AUTH attempting to create {0}".format(username))
+            # (if DummyAuth *is* enabled, you can just enter
+            # any old password and it will accept it)
             email = username + "@example.com.invalid"
             user = User.objects.create_user(username, email)
             user.is_staff = (user == DUMMY_STAFF)
