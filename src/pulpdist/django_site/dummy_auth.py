@@ -11,14 +11,18 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 """DummyAuth backend to provide a default 'admin' user in dev environments"""
 
+import logging
+
 from django.conf import settings
 from django.contrib.auth.models import User
 
 DUMMY_USER = settings.DUMMY_AUTH_USER
-DUMMY_STAFF = settings.DUMMY_AUTH_STAFF
-DUMMY_SUPER = settings.DUMMY_AUTH_SUPER
+DUMMY_STAFF = DUMMY_USER + "-admin"
+DUMMY_SUPER = DUMMY_USER + "-su"
 
 DUMMY_USERS = [DUMMY_USER, DUMMY_STAFF, DUMMY_SUPER]
+
+_log = logging.getLogger("pulpdist.dummy_auth")
 
 class DummyAuthBackend(object):
     """
@@ -29,7 +33,9 @@ class DummyAuthBackend(object):
     supports_object_permissions = False
 
     def authenticate(self, username=None, password=None):
+        _log.debug("Authenticating %s against %s", username, DUMMY_USERS)
         if username not in DUMMY_USERS:
+            _log.debug("%s is not a valid dummy user", username)
             return None
         try:
             user = User.objects.get(username=username)
@@ -41,8 +47,12 @@ class DummyAuthBackend(object):
             # any old password and it will accept it)
             email = username + "@example.com.invalid"
             user = User.objects.create_user(username, email)
-            user.is_staff = (user == DUMMY_STAFF)
-            user.is_super = (user == DUMMY_SUPER)
+            user.is_active = True
+            user.is_staff = username in (DUMMY_STAFF, DUMMY_SUPER)
+            user.is_superuser = username == DUMMY_SUPER
+            user.save()
+            _log.debug("Created %s dummy user", username)
+        _log.debug("Returning %s (Staff=%s, Super=%s)", username, user.is_staff, user.is_superuser)
         return user
 
     def get_user(self, user_id):

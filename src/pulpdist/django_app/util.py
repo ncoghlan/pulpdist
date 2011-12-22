@@ -15,6 +15,8 @@ from django.shortcuts import get_object_or_404
 from django.views.generic import ListView
 from django.utils.safestring import mark_safe
 from django.core.urlresolvers import reverse
+from django.conf import settings
+
 from .models import PulpServer
 
 # Easy access to common version definition
@@ -39,7 +41,14 @@ def get_repo_url(urlname, server_slug, repo_id, **kwds):
     kwds['repo_id'] = repo_id
     return reverse(urlname, kwargs=kwds)
 
-class ServerMixin(object):
+class ViewMixin(object):
+    def get_context_data(self, **kwds):
+        context = super(ViewMixin, self).get_context_data(**kwds)
+        if settings.ENABLE_DUMMY_AUTH:
+            context['dummy_user'] = settings.DUMMY_AUTH_USER
+        return context
+
+class ServerMixin(ViewMixin):
     @property
     def server_slug(self):
         return self.kwargs['server_slug']

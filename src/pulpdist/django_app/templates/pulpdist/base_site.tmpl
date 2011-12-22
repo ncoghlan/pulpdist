@@ -4,10 +4,28 @@
 
 {% block title %}{{ title }} | {% trans 'Pulp Server Status' %}{% endblock %}
 
-{% block branding %}
+{% block site-header-left %}
   <a href="https://fedorahosted.org/pulpdist/"><img src="{% pulpdist_image_dir %}pulpdist-logo.png"
      alt="logo" />
   </a>
+{% endblock %}
+
+{% block site-header-right %}
+  {% if user.is_active %}
+  <div id="user-tools">
+    {% trans 'Welcome,' %}
+    <strong>{% filter force_escape %}{% firstof user.first_name user.username %}{% endfilter %}</strong>.
+    {% block userlinks %}
+        {% url pulpdist_logout as logout_url %}
+        {% if logout_url %}
+            <a href="{{ logout_url }}">
+        {% else %}
+            <a href="{{ root_path }}logout/">
+        {% endif %}
+        {% trans 'Log out' %}</a>
+    {% endblock %}
+  </div>
+{% endif %}
 {% endblock %}
 
 {% block sitestyle %}
@@ -19,6 +37,14 @@
 {% for crumb in breadcrumbs %}
   &rsaquo; <a href="{{crumb.link}}">{% trans crumb.label %}</a>
 {% endfor %}
+{% endblock %}
+
+{% block contentprefix%}
+  {% if dummy_user %}
+    <i><b>
+    {% blocktrans %}This is a demonstration PulpDist instance. User "{{ dummy_user }}" is enabled (any password accepted){% endblocktrans %}
+    </b></i><br/><br/>
+  {% endif %}
 {% endblock %}
 
 {% block header %}

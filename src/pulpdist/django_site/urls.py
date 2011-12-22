@@ -14,6 +14,7 @@ from django.views.generic.simple import redirect_to
 
 from django.contrib import admin
 admin.autodiscover()
+admin.site.login_template = 'pulpdist/login.tmpl'
 
 urlpatterns = patterns('',
     # Redirect site root to the PulpDist app

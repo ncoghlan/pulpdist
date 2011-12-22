@@ -62,11 +62,11 @@ else:
 
 if ENABLE_DUMMY_AUTH:
     DUMMY_AUTH_USER = 'pulpdist-test'
-    DUMMY_AUTH_STAFF = 'pulpdist-test-admin'
-    DUMMY_AUTH_SUPER = 'pulpdist-test-su'
 
 TEMPLATE_DEBUG = DEBUG
 MANAGERS = ADMINS
+
+THEME_DIR = VAR_ROOT + 'templates'
 
 DB_NAME = VAR_ROOT + 'djangoORM.db'
 TEST_DB_NAME = os.path.join(tempfile.gettempdir(), VAR_RELPATH)
@@ -183,7 +183,7 @@ TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-    VAR_ROOT + "templates",
+    THEME_DIR,
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (

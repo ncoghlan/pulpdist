@@ -19,7 +19,7 @@ from django.utils.html import escape
 
 from django_tables2 import Table, Column
 
-from .util import ServerMixin, RepoMixin, _TableView, Breadcrumb
+from .util import ViewMixin, ServerMixin, RepoMixin, _TableView, Breadcrumb
 from .models import PulpServer
 
 # Repo sync history details
@@ -145,7 +145,7 @@ class ServerTable(Table):
     def render_pulp_site(self, record):
         return ServerView.make_link(record.pulp_site, record.server_slug)
 
-class ServerListView(_TableView):
+class ServerListView(ViewMixin, _TableView):
     table_type = ServerTable
     view_title = 'Pulp Servers'
     urlname = 'pulp_server_index'
