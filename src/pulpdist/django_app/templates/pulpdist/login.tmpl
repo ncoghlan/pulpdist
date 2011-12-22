@@ -11,6 +11,16 @@
 
 {% block breadcrumbs %}{% endblock %}
 
+{% block contentprefix%}
+  {% if dummy_user %}
+    <div id="dummy-auth-notification">
+      <i><b>
+      {% blocktrans %}This is a demonstration PulpDist instance. User "{{ dummy_user }}" is enabled (any password accepted){% endblocktrans %}
+      </b></i><br/><br/>
+    </div>
+  {% endif %}
+{% endblock %}
+
 {% block content %}
 {% if form.errors and not form.non_field_errors and not form.this_is_the_login_form.errors %}
 <p class="errornote">

@@ -39,14 +39,6 @@
 {% endfor %}
 {% endblock %}
 
-{% block contentprefix%}
-  {% if dummy_user %}
-    <i><b>
-    {% blocktrans %}This is a demonstration PulpDist instance. User "{{ dummy_user }}" is enabled (any password accepted){% endblocktrans %}
-    </b></i><br/><br/>
-  {% endif %}
-{% endblock %}
-
 {% block header %}
   <span class="main-content-header-text">
   {% if pulp_server %}

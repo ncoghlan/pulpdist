@@ -15,6 +15,7 @@ from django.conf.urls.defaults import url, patterns
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from django.contrib.auth import logout
+from django.conf import settings
 
 from .views import MainIndex, ServerView, RepoListView, RepoView, SyncHistoryView
 
@@ -39,8 +40,14 @@ def logout_view(request):
     logout(request)
     return redirect(MainIndex.urlname)
 
+login_config = {
+    'template_name': 'pulpdist/login.tmpl',
+}
+if settings.ENABLE_DUMMY_AUTH:
+    login_config['extra_context'] = {'dummy_user' : settings.DUMMY_AUTH_USER}
+
 urlpatterns += patterns('',
-    url(r'^login/$', 'django.contrib.auth.views.login', {'template_name': 'pulpdist/login.tmpl'}, name="pulpdist_login"),
+    url(r'^login/$', 'django.contrib.auth.views.login', login_config, name="pulpdist_login"),
     url(r'^logout/$', logout_view, name="pulpdist_logout"),
 )
 

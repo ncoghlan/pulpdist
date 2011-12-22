@@ -42,11 +42,9 @@ def get_repo_url(urlname, server_slug, repo_id, **kwds):
     return reverse(urlname, kwargs=kwds)
 
 class ViewMixin(object):
-    def get_context_data(self, **kwds):
-        context = super(ViewMixin, self).get_context_data(**kwds)
-        if settings.ENABLE_DUMMY_AUTH:
-            context['dummy_user'] = settings.DUMMY_AUTH_USER
-        return context
+    # Hook to allow behaviour of all PulpDist custom views
+    # to be adjusted globally
+    pass
 
 class ServerMixin(ViewMixin):
     @property
