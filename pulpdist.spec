@@ -145,7 +145,7 @@ mkdir -p %{buildroot}%{plugin_dest}/types
 cp %{plugin_src}/%{plugin_type_spec} %{buildroot}%{plugin_dest}/%{plugin_type_spec}
 mkdir -p %{buildroot}%{plugin_dest}/%{plugin_importer}
 cp -R %{plugin_src}/%{plugin_importer}/* %{buildroot}%{plugin_dest}/%{plugin_importer}
-mkdir -p %{buildroot}%{plugin_dest}/%{plugin_importer}
+mkdir -p %{buildroot}%{plugin_dest}/%{plugin_distributor}
 cp -R %{plugin_src}/%{plugin_distributor}/* %{buildroot}%{plugin_dest}/%{plugin_distributor}
 
 %clean
