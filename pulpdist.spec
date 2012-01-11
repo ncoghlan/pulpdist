@@ -190,6 +190,7 @@ chown -R apache:apache %{buildroot}%{httpd_static_media}/*
 %doc
 # For noarch packages: sitelib
 %{python_sitelib}/%{name}/*/
+%{python_sitelib}/%{name}/*.py[co]
 %{python_sitelib}/%{name}/__init__.py
 %attr(755,root,root) %{python_sitelib}/%{name}/manage_site.py
 
