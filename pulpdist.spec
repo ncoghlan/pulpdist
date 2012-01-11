@@ -161,6 +161,7 @@ if [ "$1" = "1" ]; then
 fi
 %{run_manage_site} migrate
 popd
+chmod -R 644 %{database_file}
 chown apache:apache %{database_file}
 
 %postun
@@ -198,9 +199,8 @@ chown -R apache:apache %{buildroot}%{httpd_static_media}/*
 %config(noreplace) /etc/httpd/conf.d/%{name}.conf
 %defattr(644,apache,apache,755)
 %attr(750, apache, apache) /srv/%{name}/django.wsgi
-/var/lib/%{name}/
-%attr(644,apache,apache) %ghost %{database_file}
-%{httpd_static_media}/
+%ghost %{database_file}
+%{httpd_static_media}
 /var/log/%{name}/
 %config(noreplace) /etc/%{name}/site.conf
 
