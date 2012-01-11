@@ -100,6 +100,8 @@ pushd src
 %{__python} setup.py build
 popd
 
+%define database_file /var/lib/%{name}/djangoORM.db
+
 %define httpd_static_media /var/www/pub/%{name}
 
 %define plugin_src src/%{name}/pulp_plugins
@@ -116,6 +118,8 @@ pushd src
 popd
 # Remove egg info
 rm -rf %{buildroot}/%{python_sitelib}/%{name}*.egg-info
+
+touch %{buildroot}%{database_file}
 
 # Apache deployment configuration files and directories
 mkdir -p %{buildroot}/etc/%{name}
@@ -146,7 +150,6 @@ rm -rf %{buildroot}
 # -- post-install - Main Python package -----------------------------------------------------
 
 %define run_manage_site %{__python} -m %{name}.manage_site
-%define database_file /var/lib/%{name}/djangoORM.db
 
 %post
 # Django ORM
