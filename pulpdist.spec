@@ -100,7 +100,8 @@ pushd src
 %{__python} setup.py build
 popd
 
-%define database_file /var/lib/%{name}/djangoORM.db
+%define data_dir /var/lib/%{name}
+%define database_file %{data_dir}/djangoORM.db
 
 %define httpd_static_media /var/www/pub/%{name}
 
@@ -119,6 +120,8 @@ popd
 # Remove egg info
 rm -rf %{buildroot}/%{python_sitelib}/%{name}*.egg-info
 
+# 'Database' file for buildroot (real one is created in post-install)
+mkdir -p %{data_dir}
 touch %{buildroot}%{database_file}
 
 # Apache deployment configuration files and directories
