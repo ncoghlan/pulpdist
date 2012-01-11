@@ -143,8 +143,10 @@ cp srv/%{name}/django.wsgi %{buildroot}/srv/%{name}/django.wsgi
 # Pulp plugins
 mkdir -p %{buildroot}%{plugin_dest}/types
 cp %{plugin_src}/%{plugin_type_spec} %{buildroot}%{plugin_dest}/%{plugin_type_spec}
-cp -R %{plugin_src}/%{plugin_importer} %{buildroot}%{plugin_dest}/%{plugin_importer}
-cp -R %{plugin_src}/%{plugin_distributor} %{buildroot}%{plugin_dest}/%{plugin_distributor}
+mkdir -p %{buildroot}%{plugin_dest}/%{plugin_importer}
+cp -R %{plugin_src}/%{plugin_importer}/* %{buildroot}%{plugin_dest}/%{plugin_importer}
+mkdir -p %{buildroot}%{plugin_dest}/%{plugin_importer}
+cp -R %{plugin_src}/%{plugin_distributor}/* %{buildroot}%{plugin_dest}/%{plugin_distributor}
 
 %clean
 rm -rf %{buildroot}
