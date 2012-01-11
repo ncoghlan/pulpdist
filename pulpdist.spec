@@ -89,9 +89,8 @@ Requires: rsync
 %description -n %{plugin_package}
 The Pulp plugins to be installed on each Pulp server in a PulpDist mirroring network
 
-# -- build -------------------------------------------------------------------
 
-%define run_manage_site %{__python} -m %{name}.manage_site
+# -- build -------------------------------------------------------------------
 
 %prep
 %setup -q
@@ -101,19 +100,51 @@ pushd src
 %{__python} setup.py build
 popd
 
+%define httpd_static_media /var/www/pub/%{name}
+
+%define plugin_src src/%{name}/pulp_plugins
+%define plugin_dest /var/lib/pulp/plugins
+%define plugin_type_spec types/%{name}.json
+%define plugin_importer importers/%{name}_importers
+%define plugin_distributor distributors/%{name}_distributors
+
 %install
 rm -rf %{buildroot}
+# Main Python package
 pushd src
 %{__python} setup.py install -O1 --skip-build --root %{buildroot}
 popd
 # Remove egg info
 rm -rf %{buildroot}/%{python_sitelib}/%{name}*.egg-info
 
+# Apache deployment configuration files and directories
+mkdir -p %{buildroot}/etc/%{name}
+cp -R etc/%{name}/* %{buildroot}/etc/%{name}
+# Logging
+mkdir -p %{buildroot}/var/log/%{name}
+# Storage for misc files (e.g. Django sqlite3 ORM)
+mkdir -p %{buildroot}/var/lib/%{name}
+# Storage for static media files (e.g. CSS, JS, images)
+mkdir -p %{buildroot}%{httpd_static_media}
+# Apache Configuration
+mkdir -p %{buildroot}/etc/httpd/conf.d/
+cp etc/httpd/conf.d/%{name}.conf %{buildroot}/etc/httpd/conf.d/
+# WSGI Service Hook
+mkdir -p %{buildroot}/srv/%{name}
+cp srv/%{name}/django.wsgi %{buildroot}/srv/%{name}/django.wsgi
+
+# Pulp plugins
+cp %plugin_src/%{plugin_type_spec} %{buildroot}%{plugin_dest}/%{plugin_type_spec}
+cp %plugin_src/%{plugin_importer} %{buildroot}%{plugin_dest}/%{plugin_importer}
+cp %plugin_src/%{plugin_distributor} %{buildroot}%{plugin_dest}/%{plugin_distributor}
+
 %clean
 rm -rf %{buildroot}
 
-# -- files - Main Python package -----------------------------------------------------
 
+# -- post-install - Main Python package -----------------------------------------------------
+
+%define run_manage_site %{__python} -m %{name}.manage_site
 %define database_file /var/lib/%{name}/djangoORM.db
 
 %post
@@ -122,41 +153,25 @@ if [ "$1" = "1" ]; then
   %{run_manage_site} syncdb --noinput
 fi
 %{run_manage_site} migrate
-chown apache:apache %{database_file}
 popd
+chown apache:apache %{database_file}
 
 %postun
 # TODO
 
-# -- files - Apache deployment -----------------------------------------------------
+# -- post-install - Apache deployment -----------------------------------------------------
 
 %post -n %{deploy_package}
-# Configuration
-mkdir -p %{buildroot}/etc/%{name}
-cp -R etc/%{name}/* %{buildroot}/etc/%{name}
-
-# Logging
-mkdir -p %{buildroot}/var/log/%{name}
-
-# Storage for misc files (e.g. Django sqlite3 ORM)
-mkdir -p %{buildroot}/var/lib/%{name}
-
 # Static files (CSS, JS, images)
 # We use an environment variable to tweak the Django settings
 # for the static media files and other components put in
 # place as part of the build process
-mkdir -p %{buildroot}/var/www/pub/%{name}
 pushd src
 export DJANGO_RPM_ROOT=%{buildroot}; %{run_manage_site} collectstatic --noinput
 popd
+chmod -R 644 %{buildroot}%{httpd_static_media}/*
+chown -R apache:apache %{buildroot}%{httpd_static_media}/*
 
-# Apache Configuration
-mkdir -p %{buildroot}/etc/httpd/conf.d/
-cp etc/httpd/conf.d/%{name}.conf %{buildroot}/etc/httpd/conf.d/
-
-# WSGI Service Hook
-mkdir -p %{buildroot}/srv/%{name}
-cp srv/%{name}/django.wsgi %{buildroot}/srv/%{name}/django.wsgi
 
 # -- files - Main Python package -----------------------------------------------------
 
@@ -179,10 +194,18 @@ cp srv/%{name}/django.wsgi %{buildroot}/srv/%{name}/django.wsgi
 %attr(750, apache, apache) /srv/%{name}/django.wsgi
 /var/lib/%{name}/
 %attr(644,apache,apache) %ghost %{database_file}
-/var/www/pub/%{name}/
+%{httpd_static_media}/
 /var/log/%{name}/
 /etc/%{name}/
 %config(noreplace) /etc/%{name}/*.conf
+
+# -- files - Pulp plugins ----------------------------------------------------------
+%files -n %{plugin_package}
+%defattr(644,apache,apache,755)
+%{plugin_dest}/%{plugin_type_spec}
+%{plugin_dest}/%{plugin_importer}
+%{plugin_dest}/%{plugin_distributor}
+
 
 # -- changelog ---------------------------------------------------------------
 
