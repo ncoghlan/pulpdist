@@ -165,7 +165,7 @@ cp srv/%{name}/django.wsgi %{buildroot}/srv/%{name}/django.wsgi
 %doc
 # For noarch packages: sitelib
 %{python_sitelib}/%{name}/*/
-%{python_sitelib}/__init__.py
+%{python_sitelib}/%{name}/__init__.py
 %attr(755,root,root) %{python_sitelib}/%{name}/manage_site.py
 
 # -- files - Apache deployment ----------------------------------------------------------
