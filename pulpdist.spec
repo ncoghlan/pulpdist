@@ -121,7 +121,7 @@ popd
 rm -rf %{buildroot}/%{python_sitelib}/%{name}*.egg-info
 
 # 'Database' file for buildroot (real one is created in post-install)
-mkdir -p %{data_dir}
+mkdir -p %{buildroot}%{data_dir}
 touch %{buildroot}%{database_file}
 
 # Apache deployment configuration files and directories
