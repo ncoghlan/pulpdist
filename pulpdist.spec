@@ -191,14 +191,14 @@ chown -R apache:apache %{buildroot}%{httpd_static_media}/*
 %doc
 %config(noreplace) /etc/httpd/conf.d/%{name}.conf
 %defattr(644,apache,apache,755)
-/srv/%{name}/
+/srv/%{name}
 %attr(750, apache, apache) /srv/%{name}/django.wsgi
 /var/lib/%{name}/
 %attr(644,apache,apache) %ghost %{database_file}
 %{httpd_static_media}/
 /var/log/%{name}/
-/etc/%{name}/
-%config(noreplace) /etc/%{name}/*.conf
+/etc/%{name}
+%config(noreplace) /etc/%{name}/site.conf
 
 # -- files - Pulp plugins ----------------------------------------------------------
 %files -n %{plugin_package}
