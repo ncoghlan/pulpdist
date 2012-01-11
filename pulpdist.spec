@@ -186,6 +186,6 @@ cp srv/%{name}/django.wsgi %{buildroot}/srv/%{name}/django.wsgi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
-* Fri Nov 4 2011 Nick Coghlan <ncoghlan@redhat.com> 0.0.1-1
-- initial repackaging for publication as pulpdist
+* Wed Jan 11 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.1-1
+- initial packaging as pulpdist
 
