@@ -9,6 +9,7 @@
 
 # -- headers - pulpdist Python package  -------------------------------------------------
 Name:           pulpdist
+Summary:        Python library for PulpDist web application and associated Pulp plugins
 Version:        0.0.1
 Release:        1%{?dist}
 Group:          Development/Tools
@@ -185,6 +186,6 @@ cp srv/%{name}/django.wsgi %{buildroot}/srv/%{name}/django.wsgi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
-* Fri 4 Nov 2011 Nick Coghlan <ncoghlan@redhat.com> 0.0.1-1
+* Fri Nov 4 2011 Nick Coghlan <ncoghlan@redhat.com> 0.0.1-1
 - initial repackaging for publication as pulpdist
 
