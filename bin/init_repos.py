@@ -26,7 +26,9 @@ if __name__ == "__main__":
         repo_id = repo_details["repo_id"]
         server.create_repo(repo_id,
                            repo_details["display_name"],
-                           repo_details["description"])
+                           repo_details.get("description", None),
+                           repo_details.get("notes", None))
         server.add_importer(repo_id,
                             repo_details["importer_type_id"],
                             repo_details["importer_config"])
+        print (server.get_repo(repo_id))

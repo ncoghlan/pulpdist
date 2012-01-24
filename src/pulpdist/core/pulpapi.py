@@ -58,9 +58,18 @@ class _PulpCollection(object):
         settings["id"] = entry_id
         return _response_data(self.server.POST(path, settings))
 
+    def create_or_save_entry(self, entry_id, settings):
+        try:
+            return self.create_entry(entry_id, dict(settings))
+        except ServerRequestError, ex:
+            if ex.args[0] not in (500, 409): # entry already exists
+                raise
+        return self.save_entry(entry_id, settings)
+
     def save_entry(self, entry_id, settings):
         path = "%s%s/" % (self.collection_path, entry_id)
-        return _response_data(self.server.PUT(path, settings))
+        delta = {u"delta": settings}
+        return _response_data(self.server.PUT(path, delta))
 
     def delete_entry(self, entry_id):
         path = "%s%s/" % (self.collection_path, entry_id)
@@ -129,20 +138,26 @@ class PulpServerClient(pulp.client.api.server.PulpServer):
     def get_repo(self, repo_id):
         return PulpRepositories(self).get_entry(repo_id)
 
-    def _repo_settings(self, display_name, description):
+    def _repo_settings(self, display_name, description, notes):
         result = {}
         if display_name is not None:
             result[u'display_name'] = display_name
         if description is not None:
             result[u'description'] = description
+        if notes is not None:
+            result[u'notes'] = notes
         return result
 
-    def create_repo(self, repo_id, display_name=None, description=None):
-        settings = self._repo_settings(display_name, description)
+    def create_repo(self, repo_id, display_name=None, description=None, notes=None):
+        settings = self._repo_settings(display_name, description, notes)
         return PulpRepositories(self).create_entry(repo_id, settings)
 
-    def save_repo(self, repo_id, display_name=None, description=None):
-        settings = self._repo_settings(display_name, description)
+    def create_or_save_repo(self, repo_id, display_name=None, description=None, notes=None):
+        settings = self._repo_settings(display_name, description, notes)
+        return PulpRepositories(self).create_or_save_entry(repo_id, settings)
+
+    def save_repo(self, repo_id, display_name=None, description=None, notes=None):
+        settings = self._repo_settings(display_name, description, notes)
         return PulpRepositories(self).save_entry(repo_id, settings)
 
     def delete_repo(self, repo_id):

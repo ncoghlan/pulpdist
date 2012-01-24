@@ -3,6 +3,12 @@
     "repo_id": "simple_sync",
     "display_name": "Simple Sync Demo",
     "description": "Demonstration of the simple tree sync plugin",
+    "notes": {
+        "basic": "note",
+        "pulpdist": {
+            "origin": "PulpDist example repository"
+        }
+    },
     "importer_type_id": "simple_tree",
     "importer_config": {
       "tree_name": "Simple Tree",
@@ -17,6 +23,12 @@
     "repo_id": "versioned_sync",
     "display_name": "Versioned Sync Demo",
     "description": "Demonstration of the versioned tree sync plugin",
+    "notes": {
+        "basic": "note",
+        "pulpdist": {
+            "origin": "PulpDist example repository"
+        }
+    },
     "importer_type_id": "versioned_tree",
     "importer_config": {
       "tree_name": "Versioned Tree",
@@ -33,6 +45,12 @@
     "repo_id": "snapshot_sync",
     "display_name": "Snapshot Sync Demo",
     "description": "Demonstration of the snapshot tree sync plugin",
+    "notes": {
+        "basic": "note",
+        "pulpdist": {
+            "origin": "PulpDist example repository"
+        }
+    },
     "importer_type_id": "snapshot_tree",
     "importer_config": {
       "tree_name": "Snapshot Tree",
