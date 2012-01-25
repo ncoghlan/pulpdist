@@ -16,10 +16,23 @@ import argparse
 import json
 import sys
 import pprint
+import contextlib
 
-def _display_error(msg):
-    sys.stderr.write(msg+'\n')
+def _format_data(data, prefix=2, indent=1):
+    details = pprint.pformat(data, indent=indent)
+    return "\n".join(prefix * " " + line for line in details.splitlines())
+
+def _print_server_error(msg, ex):
+    details = "{0} ({1})\n".format(msg, ex)
+    sys.stderr.write(details)
     sys.stderr.flush()
+
+@contextlib.contextmanager
+def _catch_server_error(msg):
+    try:
+        yield
+    except ServerRequestError, ex:
+        _print_server_error(msg, ex)
 
 try:
     import pulpdist
@@ -33,18 +46,52 @@ except ImportError:
 from pulpdist.core.pulpapi import PulpServerClient, ServerRequestError
 
 def _init_repos(args):
-    raise NotImplemented # TODO: Bring over from init_repos.py
+    verbose = args.verbose
+    server = args.server
+    with open(args.repo_fname) as repo_file:
+        repo_configs = json.load(repo_file)
+    for repo_config in repo_configs:
+        repo_id = repo_config["repo_id"]
+        if verbose:
+            print("Creating {0}".format(repo_id))
+        if verbose > 1:
+            print("Configuration:")
+            print(_format_data(repo_config))
+        try:
+            server.create_repo(repo_id,
+                               repo_config.get("display_name", None),
+                               repo_config.get("description", None),
+                               repo_config.get("notes", None))
+        except ServerRequestError, ex:
+            msg = "Failed to create {0}".format(repo_id)
+            _print_server_error(msg, ex)
+            continue
+        if verbose:
+            print("Created {0}".format(repo_id))
+        importer_id = repo_config.get("importer_type_id", None)
+        if importer_id is not None:
+            if verbose:
+                print("Adding {0} importer to {1}".format(importer_id, repo_id))
+            err_msg = "Failed to add {0} importer to {1}"
+            with _catch_server_error(err_msg.format(importer_id, repo_id)):
+                server.add_importer(repo_id,
+                                    importer_id,
+                                    repo_config.get("importer_config", None))
+            if verbose:
+                print("Added {0} importer to {1}".format(importer_id, repo_id))
+        if verbose > 1:
+            print("Checking repository details for {0}".format(repo_id))
+            with _catch_server_error("Failed to retrieve {0}".format(repo_id)):
+                data = server.get_repo(repo_id)
+                print(_format_data(data))
 
 def _list_repos(args):
     server = args.server
     for repo_id in args.repo_list:
-        print("Repository details for: {0}".format(repo_id))
-        try:
+        print("Repository details for {0}".format(repo_id))
+        with _catch_server_error("Failed to retrieve {0}".format(repo_id)):
             data = server.get_repo(repo_id)
-        except ServerRequestError, ex:
-            _display_error("Failed to sync {0} ({1})", repo_id, ex)
-        else:
-            pprint.pprint(data)
+            print(_format_data(data))
 
 def _sync_repos(args):
     verbose = args.verbose
@@ -52,10 +99,8 @@ def _sync_repos(args):
     for repo_id in args.repo_list:
         if verbose:
             print("Syncing {0}".format(repo_id))
-        try:
+        with _catch_server_error("Failed to sync {0}".format(repo_id)):
             server.sync_repo(repo_id)
-        except ServerRequestError, ex:
-            _display_error("Failed to sync {0} ({1})", repo_id, ex)
 
 def _delete_repos(args):
     verbose = args.verbose
@@ -66,10 +111,8 @@ def _delete_repos(args):
         if delete:
             if verbose:
                 print("Deleting {0}".format(repo_id))
-            try:
-                server.delete_repo(repo_id)
-            except ServerRequestError, ex:
-                _display_error("Failed to delete {0} ({1})", repo_id, ex)
+            with _catch_server_error("Failed to delete {0}".format(repo_id)):
+                    server.delete_repo(repo_id)
         elif verbose:
             print("Not deleting {0}".format(repo_id))
 
@@ -113,14 +156,14 @@ def _parse_args(argv):
     if repo_fname:
         with open(repo_fname) as repo_file:
             if args.verbose:
-                print("Reading repository list from {0!r}".format(repo_fname))
+                print("Reading repository list from {0}".format(repo_fname))
             args.repo_list = [repo["repo_id"] for repo in json.load(repo_file)]
     elif args.fetch_repo_list:
         if args.verbose:
-            print("Retrieving repository list from {0!r}".format(pulp_host))
+            print("Retrieving repository list from {0}".format(pulp_host))
         args.repo_list = [repo["id"] for repo in server.get_repos()]
     else:
-        parser.error("{0!r} command requires an explicit repo list".format(args.command))
+        parser.error("{0} command requires an explicit repo list".format(args.command))
     return args
 
 def _main(argv):
