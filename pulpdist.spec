@@ -11,7 +11,7 @@
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
 Version:        0.0.1
-Release:        2%{?dist}
+Release:        3%{?dist}
 Group:          Development/Tools
 License:        GPLv2
 Source0:        %{name}-%{version}.tar.gz
@@ -218,6 +218,10 @@ chown -R apache:apache %{buildroot}%{httpd_static_media}/*
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* Fri Jan 27 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.1-3
+- Don't require things that aren't actually needed (ncoghlan@redhat.com)
+- Start repo management script (ncoghlan@redhat.com)
+
 * Wed Jan 11 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.1-2
 - initial packaging as pulpdist
 
