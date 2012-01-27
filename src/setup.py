@@ -52,16 +52,12 @@ project_requires = [
     # Functional
     'pulp',
     'django-tables2',
-    'django-uni-form',
     'djangorestframework',
     # Installation
     'south',
     # Test
     'django-sane-testing',
     'mock'
-]
-project_setup_requires = [
-    'setuptools-git',
 ]
 
 setup(
@@ -76,7 +72,6 @@ setup(
     license          = project_license,
     classifiers      = project_classifiers,
     install_requires = project_requires,
-    setup_requires   = project_setup_requires,
     packages         = project_packages,
     # Data file declarations in MANIFEST.in
     include_package_data = True,
