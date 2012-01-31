@@ -10,8 +10,8 @@
 # -- headers - pulpdist Python package  --------------------------------------
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
-Version:        0.0.2
-Release:        2%{?dist}
+Version:        0.0.3
+Release:        1%{?dist}
 Group:          Development/Tools
 License:        GPLv2
 Source0:        %{name}-%{version}.tar.gz
@@ -70,6 +70,7 @@ Summary:        Basic Django site definition to serve %{name} on Apache
 
 Requires: %{name} = %{version}
 Requires: %{django_meta} = %{version}
+Requires: policycoreutils-python
 Requires: httpd
 Requires: mod_ssl
 Requires: mod_wsgi
@@ -126,6 +127,10 @@ pushd src
 %{__python} setup.py build
 popd
 
+%define config_dir /etc/%{name}
+%define log_dir /var/log/%{name}
+%define service_dir /srv/%{name}
+
 %define data_dir /var/lib/%{name}
 %define database_file %{data_dir}/djangoORM.db
 
@@ -151,20 +156,18 @@ mkdir -p %{buildroot}%{data_dir}
 touch %{buildroot}%{database_file}
 
 # Apache deployment configuration files and directories
-mkdir -p %{buildroot}/etc/%{name}
-cp -R etc/%{name}/* %{buildroot}/etc/%{name}
+mkdir -p %{buildroot}%{config_dir}
+cp -R etc/%{name}/* %{buildroot}%{config_dir}
 # Logging
-mkdir -p %{buildroot}/var/log/%{name}
-# Storage for misc files (e.g. Django sqlite3 ORM)
-mkdir -p %{buildroot}/var/lib/%{name}
+mkdir -p %{buildroot}%{log_dir}
 # Storage for static media files (e.g. CSS, JS, images)
 mkdir -p %{buildroot}%{httpd_static_media}
 # Apache Configuration
 mkdir -p %{buildroot}/etc/httpd/conf.d/
 cp etc/httpd/conf.d/%{name}.conf %{buildroot}/etc/httpd/conf.d/
 # WSGI Service Hook
-mkdir -p %{buildroot}/srv/%{name}
-cp srv/%{name}/django.wsgi %{buildroot}/srv/%{name}/django.wsgi
+mkdir -p %{buildroot}%{service_dir}
+cp srv/%{name}/django.wsgi %{buildroot}%{service_dir}/django.wsgi
 
 # Pulp plugins
 mkdir -p %{buildroot}%{plugin_dest}/types
@@ -207,6 +210,29 @@ popd
 chmod -R u=rwX,g=rX,o=rX %{httpd_static_media}
 chown -R apache:apache %{httpd_static_media}
 
+# SELinux contexts for Apache runtime access
+if selinuxenabled ; then
+# Read-only httpd access
+    semanage fcontext -a -t httpd_sys_content_t "%{config_dir}(/.*)?"
+    restorecon -R %{config_dir}
+    semanage fcontext -a -t httpd_sys_content_t "%{service_dir}(/.*)?"
+    restorecon -R %{service_dir}
+
+# Read-write httpd access
+    semanage fcontext -a -t httpd_sys_rw_content_t "%{log_dir}(/.*)?"
+    restorecon -R %{log_dir}
+    semanage fcontext -a -t httpd_sys_rw_content_t "%{data_dir}(/.*)?"
+    restorecon -R %{data_dir}
+fi
+
+%postun -n %{deploy_package}
+if selinuxenabled ; then
+    semanage fcontext -d "%{config_dir}(/.*)?"
+    semanage fcontext -d "%{service_dir}(/.*)?"
+    semanage fcontext -d "%{log_dir}(/.*)?"
+    semanage fcontext -d "%{data_dir}(/.*)?"
+fi
+
 # -- files - Main Python package -----------------------------------------------------
 
 %files
@@ -246,6 +272,9 @@ chown -R apache:apache %{httpd_static_media}
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* Tue Jan 31 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.3-1
+- Support deployment under SELinux in pulpdist-httpd
+
 * Tue Jan 31 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.2-2
 - All post-install operations moved to pulpdist-httpd
 - Post install operations actually work as intended
