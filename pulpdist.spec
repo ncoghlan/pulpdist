@@ -238,6 +238,10 @@ chown -R apache:apache %{httpd_static_media}
 %{plugin_dest}/%{plugin_importer}/
 %{plugin_dest}/%{plugin_distributor}/
 
+# -- files - meta-packages ----------------------------------------------------------
+%files -n %{django_meta}
+%files -n %{devel_meta}
+
 
 # -- changelog ---------------------------------------------------------------
 
