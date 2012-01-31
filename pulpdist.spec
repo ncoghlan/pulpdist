@@ -11,7 +11,7 @@
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
 Version:        0.0.2
-Release:        1%{?dist}
+Release:        2%{?dist}
 Group:          Development/Tools
 License:        GPLv2
 Source0:        %{name}-%{version}.tar.gz
@@ -246,7 +246,7 @@ chown -R apache:apache %{httpd_static_media}
 # -- changelog ---------------------------------------------------------------
 
 %changelog
-* Tue Jan 27 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.2
+* Tue Jan 31 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.2
 - All post-install operations moved to pulpdist-httpd
 - Post install operations actually work as intended
 - DJANGO_RPM_ROOT envvar is no more
