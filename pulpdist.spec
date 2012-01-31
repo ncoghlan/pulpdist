@@ -246,7 +246,7 @@ chown -R apache:apache %{httpd_static_media}
 # -- changelog ---------------------------------------------------------------
 
 %changelog
-* Tue Jan 31 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.2
+* Tue Jan 31 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.2-2
 - All post-install operations moved to pulpdist-httpd
 - Post install operations actually work as intended
 - DJANGO_RPM_ROOT envvar is no more
