@@ -23,10 +23,6 @@ pushtag:
 rpm:
 	tito build --rpm $(TITO_ARGS)
 
-publish: rpmclean rpm
-	pulp-admin --host $(PULP_HOST) content upload --repoid=gsv3 --dir=$(TITO_DIR) --nosig
-	pulp-admin --host $(PULP_HOST) content upload --repoid=gsv3 --dir=$(TITO_DIR)/noarch --nosig
-
 pulp-auth:
 	pulp-admin --host $(PULP_HOST) auth login --username=$(PULP_USER) --password=$(PULP_PASS)
 

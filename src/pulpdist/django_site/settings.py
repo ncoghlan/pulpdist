@@ -14,13 +14,8 @@ import os
 import tempfile
 from ConfigParser import RawConfigParser, NoOptionError
 
-# The RPM spec file sets this variable when needed so
-# Django management commands like 'collectstatic'
-# will respect the build root when creating the RPM
-_RPM_ROOT = os.environ.get('DJANGO_RPM_ROOT', '/')
-
 # Site specific settings (other than those stored in the database)
-CONFIG_ROOT = _RPM_ROOT + '/etc/pulpdist/'
+CONFIG_ROOT = '/etc/pulpdist/'
 
 SITE_CONFIG_FILE = CONFIG_ROOT + 'site.conf'
 SITE_CONFIG = RawConfigParser()
@@ -43,7 +38,7 @@ if SITE_CONFIG.read(SITE_CONFIG_FILE):
     PULPAPI_OAUTH_KEY_STORE_PASSPHRASE = SITE_CONFIG.get('database', 'passphrase')
     SECRET_KEY = SITE_CONFIG.get('django', 'secret_key')
     ADMINS = tuple(SITE_CONFIG.items('admins'))
-    VAR_ROOT = os.path.join(_RPM_ROOT, VAR_RELPATH)
+    VAR_ROOT = '/' + VAR_RELPATH
 else:
     # Use development settings
     DEBUG = True
@@ -123,7 +118,7 @@ MEDIA_URL = '/media/'
 # Don't put anything in this directory yourself; store your static files
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.
 # Example: "/home/media/media.lawrence.com/static/"
-STATIC_ROOT = _RPM_ROOT + '/var/www/pub/pulpdist'
+STATIC_ROOT = '/var/www/pub/pulpdist'
 
 # URL prefix for static files.
 # Example: "http://media.lawrence.com/static/"

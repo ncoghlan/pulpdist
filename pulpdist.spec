@@ -7,61 +7,69 @@
 # leading 'python-' until they have been packaged
 # properly for Fedora/EPEL/etc
 
-# -- headers - pulpdist Python package  -------------------------------------------------
+# -- headers - pulpdist Python package  --------------------------------------
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
-Version:        0.0.1
-Release:        3%{?dist}
+Version:        0.0.2
+Release:        1%{?dist}
 Group:          Development/Tools
 License:        GPLv2
 Source0:        %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-BuildArch:      noarch
-BuildRequires:  rpm-python
-BuildRequires:  python2-devel
-BuildRequires:  python-setuptools
-# BuildRequires:  python-setuptools-git (PyPI)
-BuildRequires: Django-south
+BuildArch:     noarch
 
-# Testing dependencies
-BuildRequires:  python-nose
-# BuildRequires:  python-mock (PyPI)
-# BuildRequires:  python-djangosanetesting (PyPI)
+BuildRequires: rpm-python
+BuildRequires: python2-devel
+BuildRequires: python-setuptools
 
 Requires: pulp-admin
 Requires: python >= 2.6
-Requires: Django >= 1.3
 Requires: python-oauth2
 Requires: python-httplib2
 Requires: python-dateutil
 Requires: m2crypto
 Requires: openssl
 Requires: python-ldap
-# Requires: python-django-tables2 (PyPI)
-# Requires:  python-djangorestframework (PyPI)
+
+# Note: pulpdist.django_app/site require additional dependencies to execute
+#       Refer to the pulpdist-django meta package dependencies listed below.
 
 # Installation dependencies
 Requires: python-setuptools
-Requires: Django-south
 
 %define deploy_package %{name}-httpd
 %define plugin_package %{name}-plugins
+%define django_meta %{name}-django
+%define devel_meta %{name}-devel
 
 %description
 The PulpDist Python package includes all of the Python components needed by
 %{deploy_package} and %{plugin_package}.
 
-# -- headers - PulpDist Django App ---------------------------------------
+
+# -- headers - Django app dependencies metapackage -----------------------
+
+%package -n %{django_meta}
+Summary:        Additional dependencies for the PulpDist Django app component
+
+Requires: Django >= 1.3
+Requires: Django-south
+# Requires: python-django-tables2 (PyPI)
+# Requires:  python-djangorestframework (PyPI)
+
+%description -n %{django_meta}
+Additional dependencies needed to actually use the Django app component
+provided in the %{name} Python module.
+
+
+# -- headers - PulpDist Django App on Apache --------------------------------
 
 %package -n %{deploy_package}
 Summary:        Basic Django site definition to serve %{name} on Apache
-BuildRequires:  rpm-python
-BuildRequires:  python2-devel
-BuildRequires:  python-setuptools
-# BuildRequires:  python-setuptools-git (PyPI)
 
 Requires: %{name} = %{version}
+Requires: %{django_meta} = %{version}
 Requires: httpd
 Requires: mod_ssl
 Requires: mod_wsgi
@@ -72,15 +80,11 @@ A web frontend for managing and monitoring a network of Pulp servers used
 as a private mirroring network. Deploys and serves %{name} as a standalone
 Django site on Apache. 
 
+
 # -- headers - PulpDist plugins for Pulp  -------------------------------------------------
 
 %package -n %{plugin_package}
 Summary:        Pulp plugins to support PulpDist mirroring network
-
-BuildRequires:  rpm-python
-BuildRequires:  python2-devel
-BuildRequires:  python-setuptools
-# BuildRequires:  python-setuptools-git (PyPI)
 
 Requires: %{name} = %{version}
 Requires: pulp
@@ -88,6 +92,28 @@ Requires: rsync
 
 %description -n %{plugin_package}
 The Pulp plugins to be installed on each Pulp server in a PulpDist mirroring network
+
+
+# -- headers - Development dependencies metapackage -----------------------
+
+%package -n %{devel_meta}
+Summary:        Additional dependencies for PulpDist development
+
+Requires: %{django_meta} = %{version}
+
+# RPM creation
+Requires: tito
+# Requires:  python-setuptools-git (PyPI)
+
+# Testing dependencies
+Requires:  python-nose
+# Requires:  python-mock (PyPI)
+# Requires:  python-djangosanetesting (PyPI)
+
+
+%description -n %{devel_meta}
+Meta-package defining additional dependencies for PulpDist testing and
+RPM creation
 
 
 # -- build -------------------------------------------------------------------
@@ -157,31 +183,29 @@ rm -rf %{buildroot}
 %define run_manage_site %{__python} -m %{name}.manage_site
 
 %post
+# Nothing to do
+
+%postun
+# Nothing to do?
+
+# -- post-install - Apache deployment -----------------------------------------------------
+
+%post -n %{deploy_package}
 # Django ORM
 if [ "$1" = "1" ]; then
   %{run_manage_site} syncdb --noinput
 fi
 %{run_manage_site} migrate
 popd
-chmod -R 644 %{database_file}
-chown apache:apache %{database_file}
+chmod -R u=rwX,g=rX,o=rX %{data_dir}
+chown -R apache:apache %{data_dir}
 
-%postun
-# TODO
-
-# -- post-install - Apache deployment -----------------------------------------------------
-
-%post -n %{deploy_package}
 # Static files (CSS, JS, images)
-# We use an environment variable to tweak the Django settings
-# for the static media files and other components put in
-# place as part of the build process
 pushd src
-export DJANGO_RPM_ROOT=%{buildroot}; %{run_manage_site} collectstatic --noinput
+%{run_manage_site} collectstatic --noinput
 popd
-chmod -R 644 %{buildroot}%{httpd_static_media}/*
-chown -R apache:apache %{buildroot}%{httpd_static_media}/*
-
+chmod -R u=rwX,g=rX,o=rX %{httpd_static_media}
+chown -R apache:apache %{httpd_static_media}
 
 # -- files - Main Python package -----------------------------------------------------
 
@@ -218,6 +242,13 @@ chown -R apache:apache %{buildroot}%{httpd_static_media}/*
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* Tue Jan 27 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.2
+- All post-install operations moved to pulpdist-httpd
+- Post install operations actually work as intended
+- DJANGO_RPM_ROOT envvar is no more
+- Django dependencies moved to separate meta-package
+- Development dependencies moved to separate meta-package
+
 * Fri Jan 27 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.1-3
 - Don't require things that aren't actually needed (ncoghlan@redhat.com)
 - Start repo management script (ncoghlan@redhat.com)
