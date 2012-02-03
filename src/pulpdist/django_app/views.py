@@ -36,7 +36,6 @@ class SyncHistoryView(RepoMixin, _TableView):
     @property
     def queryset(self):
         server = self.get_pulp_server()
-        print "Retrieving sync history data from Pulp server"
         return server.get_sync_history(self.repo_id)
 
     def get_breadcrumbs(self):

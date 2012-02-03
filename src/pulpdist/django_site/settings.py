@@ -12,6 +12,7 @@
 # Django settings for pulpweb project.
 import os
 import tempfile
+import logging
 from ConfigParser import RawConfigParser, NoOptionError, NoSectionError
 
 # Site specific settings (other than those stored in the database)
@@ -21,6 +22,7 @@ SITE_CONFIG_FILE = CONFIG_ROOT + 'site.conf'
 SITE_CONFIG = RawConfigParser()
 
 VAR_RELPATH = 'var/lib/pulpdist/'
+LOG_RELPATH = 'var/log/pulpdist/'
 
 _sentinel = object()
 def _read_option(meth, section, option, default=_sentinel):
@@ -39,6 +41,7 @@ if SITE_CONFIG.read(SITE_CONFIG_FILE):
     SECRET_KEY = SITE_CONFIG.get('django', 'secret_key')
     ADMINS = tuple(SITE_CONFIG.items('admins'))
     VAR_ROOT = '/' + VAR_RELPATH
+    LOG_ROOT = '/' + LOG_RELPATH
 else:
     # Use development settings
     DEBUG = True
@@ -51,9 +54,11 @@ else:
     # This file is src/pulpdist/django_site/settings.py in Git, set VAR_ROOT accordingly
     import os.path
     _this_dir = os.path.dirname(__file__)
-    VAR_ROOT = os.path.abspath(
-                  os.path.normpath(
-                     os.path.join(_this_dir, '../../..', VAR_RELPATH)))
+    _checkout_root = os.path.abspath(
+                         os.path.normpath(
+                             os.path.join(_this_dir, '../../..')))
+    VAR_ROOT = os.path.join(_checkout_root, VAR_RELPATH)
+    LOG_ROOT = os.path.join(_checkout_root, LOG_RELPATH)
 
 if ENABLE_DUMMY_AUTH:
     DUMMY_AUTH_USER = 'pulpdist-test'
@@ -206,14 +211,42 @@ INSTALLED_APPS = (
     'pulpdist.django_app',
 )
 
-# A sample logging configuration. The only tangible logging
-# performed by this configuration is to send an email to
-# the site admins on every HTTP 500 error.
-# See http://docs.djangoproject.com/en/dev/topics/logging for
-# more details on how to customize your logging configuration.
+# Logging config:
+#   - attempts to email site admins for 500 errors
+#   - INFO+ django messages to LOG_DIR/django.log
+#   - all pulp messages to LOG_DIR/pulp.log
+#   - all pulpdist app messages to LOG_DIR/pulpdist.log
+#   - DEBUG+ (if DEBUG set) or INFO+ (otherwise) to console
+
+LOG_PATH_DJANGO = os.path.join(LOG_ROOT, "django.log")
+LOG_PATH_PULP = os.path.join(LOG_ROOT, "pulp.log")
+LOG_PATH_PULPDIST = os.path.join(LOG_ROOT, "pulpdist.log")
+LOG_PATH_DEBUG = os.path.join(LOG_ROOT, "debug.log")
+LOG_PATH_ERROR = os.path.join(LOG_ROOT, "error.log")
+
+def _debug_logger(path):
+    return {
+        'level':  'DEBUG',
+        'class':  'logging.handlers.RotatingFileHandler',
+        'filename': path,
+        'maxBytes' : 1024*1024,
+        'backupCount' : 5,
+        'formatter': 'simple'
+    }
+
+def _error_logger(path):
+    config = _debug_logger(path)
+    config['level'] = 'ERROR'
+    return config
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'simple': {
+            'format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        },
+    },
     'handlers': {
         'mail_admins': {
             'level': 'ERROR',
@@ -224,6 +257,11 @@ LOGGING = {
             'class':  'logging.StreamHandler',
             'stream': 'ext://sys.stdout',
         },
+        'django_log': _debug_logger(LOG_PATH_DJANGO),
+        'pulp_log': _debug_logger(LOG_PATH_PULP),
+        'pulpdist_log': _debug_logger(LOG_PATH_PULPDIST),
+        'debug_log': _debug_logger(LOG_PATH_DEBUG),
+        'error_log': _error_logger(LOG_PATH_ERROR),
     },
     'loggers': {
         'django.request': {
@@ -231,13 +269,23 @@ LOGGING = {
             'level': 'ERROR',
             'propagate': True,
         },
+        'django': {
+            'handlers': ['django_log'],
+            'level': 'INFO',
+            'propagate': True,
+        },
         'pulp': {
-            'handlers': ['console'],
+            'handlers': ['pulp_log', 'console'],
             'level': 'DEBUG',
             'propagate': True,
         },
         'pulpdist': {
-            'handlers': ['console'],
+            'handlers': ['pulpdist_log', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'root': {
+            'handlers': ['debug_log', 'error_log'],
             'level': 'DEBUG',
             'propagate': True,
         },

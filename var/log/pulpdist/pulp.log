@@ -1,0 +1,16 @@
+2012-02-03 17:35:26,852 - pulp - DEBUG - signing 'GET' request to u'https://ncoghlan-laptop.bne.redhat.com/pulp/api/v2/repositories/'
+2012-02-03 17:35:26,877 - pulp - DEBUG - sending GET request to /pulp/api/v2/repositories/
+2012-02-03 17:35:26,905 - pulp - DEBUG - signing 'GET' request to u'https://ncoghlan-laptop.bne.redhat.com/pulp/api/v2/repositories/'
+2012-02-03 17:35:26,927 - pulp - DEBUG - sending GET request to /pulp/api/v2/repositories/
+2012-02-03 17:35:27,972 - pulp - DEBUG - signing 'GET' request to u'https://ncoghlan-laptop.bne.redhat.com/pulp/api/v2/repositories/snapshot_sync/'
+2012-02-03 17:35:27,987 - pulp - DEBUG - sending GET request to /pulp/api/v2/repositories/snapshot_sync/
+2012-02-03 17:35:28,023 - pulp - DEBUG - signing 'GET' request to u'https://ncoghlan-laptop.bne.redhat.com/pulp/api/v2/repositories/snapshot_sync/importers/'
+2012-02-03 17:35:28,041 - pulp - DEBUG - sending GET request to /pulp/api/v2/repositories/snapshot_sync/importers/
+2012-02-03 17:35:28,068 - pulp - DEBUG - signing 'GET' request to u'https://ncoghlan-laptop.bne.redhat.com/pulp/api/v2/repositories/snapshot_sync/'
+2012-02-03 17:35:28,083 - pulp - DEBUG - sending GET request to /pulp/api/v2/repositories/snapshot_sync/
+2012-02-03 17:35:29,808 - pulp - DEBUG - signing 'GET' request to u'https://ncoghlan-laptop.bne.redhat.com/pulp/api/v2/repositories/snapshot_sync/sync_history/'
+2012-02-03 17:35:29,820 - pulp - DEBUG - sending GET request to /pulp/api/v2/repositories/snapshot_sync/sync_history/
+2012-02-03 17:35:29,872 - pulp - DEBUG - signing 'GET' request to u'https://ncoghlan-laptop.bne.redhat.com/pulp/api/v2/repositories/snapshot_sync/sync_history/'
+2012-02-03 17:35:29,892 - pulp - DEBUG - sending GET request to /pulp/api/v2/repositories/snapshot_sync/sync_history/
+2012-02-03 17:35:29,942 - pulp - DEBUG - signing 'GET' request to u'https://ncoghlan-laptop.bne.redhat.com/pulp/api/v2/repositories/snapshot_sync/'
+2012-02-03 17:35:29,963 - pulp - DEBUG - sending GET request to /pulp/api/v2/repositories/snapshot_sync/
