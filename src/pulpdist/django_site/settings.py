@@ -12,7 +12,7 @@
 # Django settings for pulpweb project.
 import os
 import tempfile
-from ConfigParser import RawConfigParser, NoOptionError
+from ConfigParser import RawConfigParser, NoOptionError, NoSectionError
 
 # Site specific settings (other than those stored in the database)
 CONFIG_ROOT = '/etc/pulpdist/'
@@ -26,7 +26,7 @@ _sentinel = object()
 def _read_option(meth, section, option, default=_sentinel):
     try:
         return meth(section, option)
-    except NoOptionError:
+    except (NoSectionError, NoOptionError):
         if default is not _sentinel:
             return default
         raise
