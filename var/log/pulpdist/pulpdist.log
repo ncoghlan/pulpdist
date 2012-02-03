@@ -1,2 +1,0 @@
-2012-02-03 17:35:24,092 - pulpdist.dummy_auth - DEBUG - Authenticating pulpdist-test-su against ['pulpdist-test', 'pulpdist-test-admin', 'pulpdist-test-su']
-2012-02-03 17:35:24,094 - pulpdist.dummy_auth - DEBUG - Returning pulpdist-test-su (Staff=True, Super=True)
