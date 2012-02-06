@@ -27,7 +27,8 @@ def app_context(request):
     app_details = {
         "APP_NAME": "PulpDist Web UI",
         "APP_VERSION": version(),
-        'APP_TRACKER_URL': "https://bugzilla.redhat.com/enter_bug.cgi?product=PulpDist",
+        "APP_TRACKER_URL": "https://bugzilla.redhat.com/enter_bug.cgi?product=PulpDist",
+        "APP_ALLOWS_LOCAL_LOGIN": settings.ENABLE_DUMMY_AUTH
     }
     return app_details
 

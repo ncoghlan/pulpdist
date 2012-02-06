@@ -14,12 +14,10 @@
 from django.conf.urls.defaults import patterns, include, url
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth.views import login
-from django.contrib.auth import logout
 from django.contrib import admin
 from django.shortcuts import redirect
 
+from .auth import login_view, logout_view, LOGIN_TEMPLATE, LOGOUT_TEMPLATE, PulpDistAuthForm
 from .views import MainIndex, ServerView, RepoListView, RepoView, SyncHistoryView
 
 import restapi as api
@@ -39,20 +37,6 @@ urlpatterns = patterns('',
 )
 
 # Authentication handling
-def logout_view(request):
-    logout(request)
-    return redirect(MainIndex.urlname)
-
-class PulpDistAuthenticationForm(AuthenticationForm):
-    allow_local_auth = settings.ENABLE_DUMMY_AUTH
-    if allow_local_auth:
-        dummy_user = settings.DUMMY_AUTH_USER
-
-def login_view(request):
-    return login(request,
-                 template_name='pulpdist/login.tmpl',
-                 authentication_form=PulpDistAuthenticationForm)
-
 urlpatterns += patterns('',
     url(r'^login/$', login_view, name="pulpdist_login"),
     url(r'^logout/$', logout_view, name="pulpdist_logout"),
@@ -61,8 +45,9 @@ urlpatterns += patterns('',
 # Admin site
 
 admin.autodiscover()
-admin.site.login_template = 'pulpdist/login.tmpl'
-admin.site.login_form = PulpDistAuthenticationForm
+admin.site.login_template = LOGIN_TEMPLATE
+admin.site.login_form = PulpDistAuthForm
+admin.site.logout_template = LOGOUT_TEMPLATE
 
 urlpatterns += patterns('',
     # Hook up the admin pages

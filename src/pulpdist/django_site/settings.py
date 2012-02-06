@@ -136,6 +136,7 @@ ADMIN_MEDIA_PREFIX = '/static/admin/'
 
 # Account login page when user details are not provided
 LOGIN_URL = '/pulpdist/login'
+LOGIN_REDIRECT_URL = '/pulpdist'
 
 # Additional locations of static files
 STATICFILES_DIRS = (

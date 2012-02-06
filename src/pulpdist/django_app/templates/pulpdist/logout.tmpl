@@ -1,0 +1,27 @@
+{% extends "pulpdist/base_site.tmpl" %}
+{% load i18n %}
+
+{% block extrastyle %}{% load adminmedia %}{{ block.super }}<link rel="stylesheet" type="text/css" href="{% admin_media_prefix %}css/login.css" />{% endblock %}
+
+{% block bodyclass %}logout{% endblock %}
+
+{% block nav-global %}{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block contentprefix%}{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  {% if APP_ALLOWS_LOCAL_LOGIN %}
+    {% trans 'Successfully logged out.' %}
+    <a href="{% url pulpdist_login %}">Log back in</a></span>
+  {% else %}
+    {% trans 'Web server is handling authentication.' %}<br/>
+    {% trans 'User authentication may remain active.' %}<br/>
+    <a href="{% url pulpdist_root_index %}">Return to {{APP_NAME}} home</a></span>
+  {% endif %}
+</div>
+{% endblock %}
