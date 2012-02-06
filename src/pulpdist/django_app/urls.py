@@ -40,14 +40,21 @@ def logout_view(request):
     logout(request)
     return redirect(MainIndex.urlname)
 
-login_config = {
-    'template_name': 'pulpdist/login.tmpl',
-}
-if settings.ENABLE_DUMMY_AUTH:
-    login_config['extra_context'] = {'dummy_user' : settings.DUMMY_AUTH_USER}
+def _login_config():
+    config = {
+        'template_name': 'pulpdist/login.tmpl',
+    }
+    extra_context = dict(allow_local_auth=False)
+    if settings.ENABLE_DUMMY_AUTH:
+        extra_context['allow_local_auth'] = True
+        extra_context['dummy_user'] = settings.DUMMY_AUTH_USER
+    config['extra_context'] = extra_context
+    return config
+
 
 urlpatterns += patterns('',
-    url(r'^login/$', 'django.contrib.auth.views.login', login_config, name="pulpdist_login"),
+    url(r'^login/$', 'django.contrib.auth.views.login',
+                     _login_config(), name="pulpdist_login"),
     url(r'^logout/$', logout_view, name="pulpdist_logout"),
 )
 

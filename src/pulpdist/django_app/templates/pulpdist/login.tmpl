@@ -1,4 +1,5 @@
 {% extends "pulpdist/base_site.tmpl" %}
+{% load pulpdist_tags %}
 {% load i18n %}
 
 {% block extrastyle %}{% load adminmedia %}{{ block.super }}<link rel="stylesheet" type="text/css" href="{% admin_media_prefix %}css/login.css" />{% endblock %}
@@ -13,48 +14,55 @@
 
 {% block contentprefix%}
   {% if dummy_user %}
-    <div id="dummy-auth-notification">
-      <i><b>
+    <p class="notification">
       {% blocktrans %}This is a demonstration PulpDist instance. User "{{ dummy_user }}" is enabled (any password accepted){% endblocktrans %}
-      </b></i><br/><br/>
-    </div>
+    </p>
   {% endif %}
 {% endblock %}
 
 {% block content %}
 {% if form.errors and not form.non_field_errors and not form.this_is_the_login_form.errors %}
-<p class="errornote">
-{% blocktrans count form.errors.items|length as counter %}Please correct the error below.{% plural %}Please correct the errors below.{% endblocktrans %}
-</p>
+  <p class="errornote">
+  {% blocktrans count form.errors.items|length as counter %}Please correct the error below.{% plural %}Please correct the errors below.{% endblocktrans %}
+  </p>
 {% endif %}
 
 {% if form.non_field_errors or form.this_is_the_login_form.errors %}
-{% for error in form.non_field_errors|add:form.this_is_the_login_form.errors %}
-<p class="errornote">
-    {{ error }}
-</p>
+  {% for error in form.non_field_errors|add:form.this_is_the_login_form.errors %}
+  <p class="errornote">
+      {{ error }}
+  </p>
 {% endfor %}
 {% endif %}
 
 <div id="content-main">
-<form action="{{ app_path }}" method="post" id="login-form">{% csrf_token %}
-  <div class="form-row">
-    {% if not form.this_is_the_login_form.errors %}{{ form.username.errors }}{% endif %}
-    <label for="id_username" class="required">{% trans 'Username:' %}</label> {{ form.username }}
-  </div>
-  <div class="form-row">
-    {% if not form.this_is_the_login_form.errors %}{{ form.password.errors }}{% endif %}
-    <label for="id_password" class="required">{% trans 'Password:' %}</label> {{ form.password }}
-    <input type="hidden" name="this_is_the_login_form" value="1" />
-    <input type="hidden" name="next" value="{{ next }}" />
-  </div>
-  <div class="submit-row">
-    <label>&nbsp;</label><input type="submit" value="{% trans 'Log in' %}" />
-  </div>
-</form>
-
-<script type="text/javascript">
-document.getElementById('id_username').focus()
-</script>
+{% if allow_local_auth%}
+  <form action="{{ app_path }}" method="post" id="login-form">{% csrf_token %}
+    <div class="form-row">
+      {% if not form.this_is_the_login_form.errors %}{{ form.username.errors }}{% endif %}
+      <label for="id_username" class="required">{% trans 'Username:' %}</label> {{ form.username }}
+    </div>
+    <div class="form-row">
+      {% if not form.this_is_the_login_form.errors %}{{ form.password.errors }}{% endif %}
+      <label for="id_password" class="required">{% trans 'Password:' %}</label> {{ form.password }}
+      <input type="hidden" name="this_is_the_login_form" value="1" />
+      <input type="hidden" name="next" value="{{ next }}" />
+    </div>
+    <div class="submit-row">
+      <label>&nbsp;</label><input type="submit" value="{% trans 'Log in' %}" />
+    </div>
+  </form>
+  <script type="text/javascript">
+    document.getElementById('id_username').focus()
+  </script>
+{% else %}
+    <p class="notification">
+      {% blocktrans %}
+        Local user authentication is not enabled.<br/><br/>
+        In this configuration, user authentication should be handled by the web server.<br/>
+        If you are seeing this page, please contact the system administrator.
+      {% endblocktrans %}
+    </p>
+{% endif %}
 </div>
 {% endblock %}

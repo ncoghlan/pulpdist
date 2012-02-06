@@ -75,3 +75,9 @@ color:#FFF;
 margin-top:-8px;
 text-decoration:none;
 }
+
+.notification {
+font-weight: bold;
+font-style: italic;
+padding:1.5em 1em;
+}
