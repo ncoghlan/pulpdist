@@ -10,7 +10,7 @@
 # -- headers - pulpdist Python package  --------------------------------------
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
-Version:        0.0.3
+Version:        0.0.4
 Release:        1%{?dist}
 Group:          Development/Tools
 License:        GPLv2
@@ -272,6 +272,10 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* Mon Feb 06 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.4-1
+- Default to Kerberos authentication in pulpdist-httpd
+- Better handling of web server based authentication
+
 * Tue Jan 31 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.3-1
 - Support deployment under SELinux in pulpdist-httpd
 
