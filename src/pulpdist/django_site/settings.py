@@ -272,22 +272,17 @@ LOGGING = {
             'propagate': True,
         },
         'django': {
-            'handlers': ['django_log'],
+            'handlers': ['debug_log', 'error_log', 'django_log'],
             'level': 'DEBUG',
             'propagate': True,
         },
         'pulp': {
-            'handlers': ['pulp_log', 'console'],
+            'handlers': ['debug_log', 'error_log', 'pulp_log'],
             'level': 'DEBUG',
             'propagate': True,
         },
         'pulpdist': {
-            'handlers': ['pulpdist_log', 'console'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-        'root': {
-            'handlers': ['debug_log', 'error_log'],
+            'handlers': ['debug_log', 'error_log', 'pulpdist_log'],
             'level': 'DEBUG',
             'propagate': True,
         },
