@@ -23,6 +23,14 @@ from .models import PulpServer
 def version():
     return "0.1a0"
 
+def app_context(request):
+    app_details = {
+        "APP_NAME": "PulpDist Web UI",
+        "APP_VERSION": version(),
+        'APP_TRACKER_URL': "https://bugzilla.redhat.com/enter_bug.cgi?product=PulpDist",
+    }
+    return app_details
+
 # Helpers for class-based views
 Breadcrumb = namedtuple("Breadcrumb", "label link")
 

@@ -50,7 +50,7 @@
 {% endblock %}
 
 {% block footer %}
-  <span class="name">{% trans 'PulpDist Web UI' %} {% pulpdist_version %}</span>
-  <span class="reportbug"><a href="https://bugzilla.redhat.com/enter_bug.cgi?product=PulpDist">Report a bug</a></span>
+  <span class="name">{{APP_NAME}} {{APP_VERSION}}</span>
+  <span class="reportbug"><a href="{{APP_TRACKER_URL}}">Report a bug</a></span>
 {% endblock %}
 
