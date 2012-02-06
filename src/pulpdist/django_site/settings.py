@@ -273,7 +273,7 @@ LOGGING = {
         },
         'django': {
             'handlers': ['django_log'],
-            'level': 'INFO',
+            'level': 'DEBUG',
             'propagate': True,
         },
         'pulp': {
