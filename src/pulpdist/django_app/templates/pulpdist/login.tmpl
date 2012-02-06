@@ -13,9 +13,12 @@
 {% block breadcrumbs %}{% endblock %}
 
 {% block contentprefix%}
-  {% if dummy_user %}
+  {% if form.dummy_user %}
     <p class="notification">
-      {% blocktrans %}This is a demonstration PulpDist instance. User "{{ dummy_user }}" is enabled (any password accepted){% endblocktrans %}
+      {% blocktrans with dummy_user=form.dummy_user %}
+         This is a demonstration PulpDist instance.<br/>
+         User "{{ dummy_user }}" is enabled (any password accepted)
+      {% endblocktrans %}
     </p>
   {% endif %}
 {% endblock %}
@@ -36,7 +39,7 @@
 {% endif %}
 
 <div id="content-main">
-{% if allow_local_auth%}
+{% if form.allow_local_auth %}
   <form action="{{ app_path }}" method="post" id="login-form">{% csrf_token %}
     <div class="form-row">
       {% if not form.this_is_the_login_form.errors %}{{ form.username.errors }}{% endif %}

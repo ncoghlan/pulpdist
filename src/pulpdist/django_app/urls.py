@@ -11,11 +11,14 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 """URL definitions for Pulp UI"""
 
-from django.conf.urls.defaults import url, patterns
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect
-from django.contrib.auth import logout
+from django.conf.urls.defaults import patterns, include, url
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.views import login
+from django.contrib.auth import logout
+from django.contrib import admin
+from django.shortcuts import redirect
 
 from .views import MainIndex, ServerView, RepoListView, RepoView, SyncHistoryView
 
@@ -40,23 +43,33 @@ def logout_view(request):
     logout(request)
     return redirect(MainIndex.urlname)
 
-def _login_config():
-    config = {
-        'template_name': 'pulpdist/login.tmpl',
-    }
-    extra_context = dict(allow_local_auth=False)
-    if settings.ENABLE_DUMMY_AUTH:
-        extra_context['allow_local_auth'] = True
-        extra_context['dummy_user'] = settings.DUMMY_AUTH_USER
-    config['extra_context'] = extra_context
-    return config
+class PulpDistAuthenticationForm(AuthenticationForm):
+    allow_local_auth = settings.ENABLE_DUMMY_AUTH
+    if allow_local_auth:
+        dummy_user = settings.DUMMY_AUTH_USER
 
+def login_view(request):
+    return login(request,
+                 template_name='pulpdist/login.tmpl',
+                 authentication_form=PulpDistAuthenticationForm)
 
 urlpatterns += patterns('',
-    url(r'^login/$', 'django.contrib.auth.views.login',
-                     _login_config(), name="pulpdist_login"),
+    url(r'^login/$', login_view, name="pulpdist_login"),
     url(r'^logout/$', logout_view, name="pulpdist_logout"),
 )
+
+# Admin site
+
+admin.autodiscover()
+admin.site.login_template = 'pulpdist/login.tmpl'
+admin.site.login_form = PulpDistAuthenticationForm
+
+urlpatterns += patterns('',
+    # Hook up the admin pages
+    url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
+    url(r'^admin/', include(admin.site.urls)),
+)
+
 
 # REST API
 

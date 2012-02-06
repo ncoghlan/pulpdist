@@ -12,16 +12,9 @@
 from django.conf.urls.defaults import patterns, include, url
 from django.views.generic.simple import redirect_to
 
-from django.contrib import admin
-admin.autodiscover()
-admin.site.login_template = 'pulpdist/login.tmpl'
-
 urlpatterns = patterns('',
     # Redirect site root to the PulpDist app
     (r'^$', redirect_to, {'url': '/pulpdist/'}),
     # Install the main app
     url(r'^pulpdist/', include('pulpdist.django_app.urls')),
-    # Hook up the admin pages
-    url(r'^pulpdist/admin/doc/', include('django.contrib.admindocs.urls')),
-    url(r'^pulpdist/admin/', include(admin.site.urls)),
 )
