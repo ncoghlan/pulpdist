@@ -16,6 +16,7 @@
     {% trans 'Welcome,' %}
     <strong>{% filter force_escape %}{% firstof user.first_name user.username %}{% endfilter %}</strong>.
     {% block userlinks %}
+      {% if APP_ALLOWS_LOCAL_LOGIN %}
         {% url pulpdist_logout as logout_url %}
         {% if logout_url %}
             <a href="{{ logout_url }}">
@@ -23,6 +24,7 @@
             <a href="{{ root_path }}logout/">
         {% endif %}
         {% trans 'Log out' %}</a>
+      {% endif %}
     {% endblock %}
   </div>
 {% endif %}

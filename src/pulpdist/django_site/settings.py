@@ -36,10 +36,11 @@ def _read_option(meth, section, option, default=_sentinel):
 if SITE_CONFIG.read(SITE_CONFIG_FILE):
     # Use deployed settings
     DEBUG = _read_option(SITE_CONFIG.getboolean, 'devel', 'debug_pages', False)
-    ENABLE_DUMMY_AUTH = _read_option(SITE_CONFIG.get, 'devel', 'allow_test_users', False)
+    ENABLE_DUMMY_AUTH = _read_option(SITE_CONFIG.getboolean, 'devel', 'allow_test_users', False)
     PULPAPI_OAUTH_KEY_STORE_PASSPHRASE = SITE_CONFIG.get('database', 'passphrase')
     SECRET_KEY = SITE_CONFIG.get('django', 'secret_key')
-    ADMINS = tuple(SITE_CONFIG.items('admins'))
+    PULPDIST_ADMINS = dict(SITE_CONFIG.items('admins'))
+    ADMINS = tuple((email, name) for (name, email) in PULPDIST_ADMINS.iteritems())
     VAR_ROOT = '/' + VAR_RELPATH
     LOG_ROOT = '/' + LOG_RELPATH
 else:
@@ -51,6 +52,7 @@ else:
     ADMINS = (
         ('Nick Coghlan', 'ncoghlan@redhat.com'),
     )
+    PULPDIST_ADMINS = dict((email, name) for (name, email) in ADMINS)
     # This file is src/pulpdist/django_site/settings.py in Git, set VAR_ROOT accordingly
     import os.path
     _this_dir = os.path.dirname(__file__)
@@ -170,7 +172,7 @@ MIDDLEWARE_CLASSES = (
 )
 
 AUTHENTICATION_BACKENDS = (
-    'django.contrib.auth.backends.RemoteUserBackend',
+    'pulpdist.django_app.auth.LDAPAuthBackend',
 )
 
 if ENABLE_DUMMY_AUTH:

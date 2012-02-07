@@ -272,7 +272,8 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
-* Mon Feb 06 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.4-1
+* Tue Feb 07 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.4-1
+- Correctly configure permissions for site administrators
 - Default to Kerberos authentication in pulpdist-httpd
 - Better handling of web server based authentication
 
