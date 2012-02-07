@@ -2,11 +2,6 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
-# For commented out dependencies marked as (PyPI)
-# do a manual 'pip install name' without the
-# leading 'python-' until they have been packaged
-# properly for Fedora/EPEL/etc
-
 # -- headers - pulpdist Python package  --------------------------------------
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
@@ -55,8 +50,8 @@ Summary:        Additional dependencies for the PulpDist Django app component
 
 Requires: Django >= 1.3
 Requires: Django-south
-# Requires: python-django-tables2 (PyPI)
-# Requires:  python-djangorestframework (PyPI)
+Requires: python-django-tables2
+Requires:  python-djangorestframework
 
 %description -n %{django_meta}
 Additional dependencies needed to actually use the Django app component
@@ -104,12 +99,12 @@ Requires: %{django_meta} = %{version}
 
 # RPM creation
 Requires: tito
-# Requires:  python-setuptools-git (PyPI)
+Requires:  python-setuptools-git
 
 # Testing dependencies
 Requires:  python-nose
-# Requires:  python-mock (PyPI)
-# Requires:  python-djangosanetesting (PyPI)
+Requires:  python-mock
+Requires:  python-djangosanetesting
 
 
 %description -n %{devel_meta}
@@ -269,6 +264,10 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* Tue Feb 07 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.4-2
+- Convert PyPI dependencies to real dependencies (these will be published
+  soon in a pulpdist repo at repos.fedorapeople.org)
+
 * Tue Feb 07 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.4-1
 - "pulpdist.manage_repos" CLI added to the core RPM
 - Correctly configure permissions for site administrators
