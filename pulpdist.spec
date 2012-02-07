@@ -239,10 +239,7 @@ fi
 %defattr(644,root,root,755)
 %doc
 # For noarch packages: sitelib
-%{python_sitelib}/%{name}/*/
-%{python_sitelib}/%{name}/*.py[co]
-%{python_sitelib}/%{name}/__init__.py
-%attr(755,root,root) %{python_sitelib}/%{name}/manage_site.py
+%{python_sitelib}/%{name}
 
 # -- files - Apache deployment ----------------------------------------------------------
 
@@ -273,6 +270,7 @@ fi
 
 %changelog
 * Tue Feb 07 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.4-1
+- "pulpdist.manage_repos" CLI added to the core RPM
 - Correctly configure permissions for site administrators
 - Default to Kerberos authentication in pulpdist-httpd
 - Better handling of web server based authentication
