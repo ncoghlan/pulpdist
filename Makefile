@@ -1,12 +1,14 @@
 TITO_DIR ?= /tmp/tito
 PULP_HOST ?= localhost
 PULP_USER ?= admin
+TITO_TAG_ARGS ?= --keep-version --no-auto-changelog
 
 settings:
 	@echo "PULP_HOST = $(PULP_HOST)"
 	@echo "TEST_ARGS = $(TEST_ARGS)"
 	@echo "TITO_ARGS = $(TITO_ARGS)"
 	@echo "TITO_DIR = $(TITO_DIR)"
+	@echo "TITO_TAG_ARGS = $(TITO_TAG_ARGS)"
 
 rpmclean:
 	rm -rf $(TITO_DIR)
@@ -15,7 +17,7 @@ rpmcheck:
 	tito build --rpm --test $(TITO_ARGS)
 
 rpmtag:
-	tito tag $(TITO_ARGS)
+	tito tag $(TITO_ARGS) $(TITO_TAG_ARGS)
 
 pushtag:
 	git push && git push --tags
