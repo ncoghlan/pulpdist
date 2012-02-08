@@ -7,11 +7,14 @@ PulpDist is written primarily in Python and developed in git on
 _`Fedora Hosted`: http://fedorahosted.org/pulpdist
 _`Bugzilla`: https://bugzilla.redhat.com/buglist.cgi?product=PulpDist&bug_status=__open__
 
+
 Target Platforms
 ----------------
 
-The code is currently known to work only under Python 2.7 on Fedora. It
-should eventually also run under 2.6+ on RHEL and on other \*nix systems.
+The code is currently tested known to work under Python 2.7 on Fedora and under
+Python 2.6 on RHEL6. It should also run under either version of Python on
+other \*nix systems (so long as the relevant dependencies are available).
+
 
 Build/Test Dependencies
 -----------------------
@@ -44,32 +47,33 @@ Web Application Dependencies
   * Django-south (database migrations)
   * python-m2crypto (OAuth support, including protected config storage)
   * python-oauth2 (OAuth based access to Pulp)
-  * django-tables2 (simply HTML display of tabular data)
+  * django-tables2 (simple HTML display of tabular data)
   * djangorestframework (simple development of rich REST APIs)
   * pulp-admin (used to simplify access to server REST API)
 
-Standard deployment configuration assumes Apache + mod_wsgi deployment,
-but alternatives are likely possible.
+Standard deployment configuration assumes Apache + mod_wsgi + mod_auth_kerb
+deployment, but alternatives are likely possible.
 
 
 Setting up a basic devel environment
 ------------------------------------
 
-First, install the pulp-admin client as described in the `Pulp User Guide`_.
+First, install the pulp-admin client as described in the
+`Pulp Installation Guide`_.
 
 The following set of instructions should then provide a working development
-instance of the ``pulpdist`` web application on a Fedora system::
+instance of the ``pulpdist`` web application on a Fedora 16 system::
 
-    sudo yum install Django
-    sudo yum install python-pip
-    sudo yum install Django-south
-    sudo yum install python-nose
-    sudo yum install python-m2crypto
-    sudo yum install python-oauth2
-    sudo pip-python install django-tables2
-    sudo pip-python install djangorestframework
-    sudo pip-python install mock
-    sudo pip-python install djangosanetesting
+    $ sudo yum install Django
+    $ sudo yum install Django-south
+    $ sudo yum install python-nose
+    $ sudo yum install python-m2crypto
+    $ sudo yum install python-oauth2
+    $ sudo wget -O /etc/yum.repos.d/fedora-pulpdist.repo http://repos.fedorapeople.org/repos/pulpdist/pulpdist/fedora-pulpdist.repo
+    $ sudo yum install python-django-tables2
+    $ sudo yum install python-djangorestframework
+    $ sudo yum install python-mock
+    $ sudo yum install python-djangosanetesting
 
     git clone git://fedorahosted.org/pulpdist.git pulpdist
     cd pulpdist/src/pulpdist
@@ -82,14 +86,22 @@ should then display the web UI. Pulp server definitions can be
 entered either through the REST API or else via the Django admin
 interface.
 
-_`Pulp User Guide`: http://pulpproject.org/ug/UGInstallation.html
+(Once an initial public RPM release is available in the Fedora People repo then
+the above will be simplified to just installing and removing the ``pulpdist``
+RPM in order to download all the relevant dependencies)
+
+_`Pulp Installation Guide`: http://pulpproject.org/ug/UGInstallation.html
 
 
-Setting up a devel environment
-------------------------------
+Running the unit tests
+----------------------
 
 Running the test suite (from the base directory)::
 
     make test
 
+Some of these test may require a Pulp server running on the local machine with
+OAuth enabled. Refer to the `Pulp Installation Guide`_ and
+`OAuth authentication`_ for details.
 
+.. _OAuth authentication: https://fedorahosted.org/pulp/wiki/AuthenticationOAuth#HowTo
