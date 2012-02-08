@@ -12,15 +12,30 @@ directly, but may eventually move to a more programmatic API based on
 Simple Tree Sync
 ----------------
 
-A simple tree sync is essentially just a scheduled rsync task. Configuration
-options allow specification of such details as:
+A simple tree sync is a convenient way to define and schedule an rsync task.
+Configuration options for this plugin are:
 
-  * identification of the upstream rsync server
-  * excluding certain directories from the transfer
-  * addition of arbitrary rsync filtering options
-  * storage of the downloaded tree at a specific path
+* ``tree_name``: A short text name for the tree
+* ``remote_server``: The host name or IPv4 address of the source rsync server
+* ``remote_path``: The path to read from on the remote server
+* ``local_path``: The local destination path for the received tree
+* ``excluded_files``: A list of rsync ``--exclude`` patterns applied to the
+  tree synchronisation operation. Defaults to no filtering.
+* ``sync_filters``: A list of rsync ``--filter`` patterns applied to the
+  tree synchronisation operation. Defaults to no filtering.
+* ``bandwidth_limit``: If provided and not zero, passed to rsync as "--bwlimit"
+  to limit the amount of bandwidth used by the operation.
+* ``old_remote_daemon``:  If provided and true, passes ``--old-d`` to rsync to
+  run it in a mode compatible with older versions of the rsync daemon.
+* ``rsync_port``: If provided and not zero, passed to rsync as "--port" to
+  allow connections to a remote daemon that isn't running on the default port.
+* ``enabled``: If provided and true, actually performs a sync operation when
+  invoked by Pulp. Defaults to ignoring sync requests (NOT YET IMPLEMENTED
+  - sync requests are currently always processed)
+* ``test_run_only``: If provided and true, passes ``-n`` to rsync to run it in
+  "dry run" mode. (NOT YET IMPLEMENTED - currently called ``is_test_run``)
 
-Adding files names "PROTECTED" to directories at downstream sites will
+Adding files named "PROTECTED" to directories at downstream sites will
 keep the plugin from overwriting (or otherwise altering) them.
 
 
@@ -28,26 +43,51 @@ Versioned Tree Sync
 -------------------
 
 A versioned tree sync works like a series of simple tree syncs. It is
-intended for directories containing multiple versions of single tree,
+intended for directories containing multiple versions of a single tree,
 where each tree may change over time. The trees are synchronised in separate
 operations, but the sync process attempts to create hard links between
 the trees whenever possible.
+
+In addition to all of the simple tree sync configuration options, the
+versioned tree sync has the following additional options that are used to
+build the list of individual subtrees to be synchronised:
+
+* ``version_pattern``: An rsync ``--include`` pattern identifying the subtrees
+  to synchronise. Defaults to all subdirectories of ``remote_path``.
+* ``excluded_versions``: A list of rsync ``--exclude`` patterns applied to the
+  subtree identification operation. Defaults to no filtering.
+* ``subdir_filters``: A list of rsync ``--filter`` patterns applied to the
+  subtree identification operation. Defaults to no filtering.
+* ``delete_old_dirs``: If provided and true, removes local subdirectories that
+  are no longer present on the source server. By default, local subdirectories
+  are retained until explicitly deleted by a system administrator. (NOT YET
+  IMPLEMENTED - currently never deletes old subdirectories)
 
 
 Snapshot Tree Sync
 ------------------
 
 A snapshot tree sync works like a versioned tree sync, but versions are
-never updated after their initial release. "STATUS" marker files are
-used to indicate when a tree is completed.
+never updated after their initial release. "STATUS" marker files in the root
+directory of each tree are used to indicate when a tree is completed.
 
 The big advantage of snapshot tree syncs is that once a tree has been
 marked as complete locally, it never needs to be checked against the
 upstream site again.
 
+In addition to all of the versioned tree sync configuration options, the
+snapshot tree sync has one additional option that is used to
+create a consistent symbolic link to the most recent snapshot:
+
+* ``latest_link_name``: If provided and not ``None``, a local symbolic link
+  is created with this name that points to the most recent snapshot after
+  each sync operation. By default, no symbolic link is created.
+
 
 Snapshot Delta Sync
 -------------------
+
+.. note: The plugins for delta sync support are not yet implemented.
 
 Delta syncs actually require an upstream Pulp server (rather than just
 an rsync daemon) and use a chain of 3 custom Pulp plugins.
