@@ -25,6 +25,16 @@
         {% endif %}
         {% trans 'Log out' %}</a>
       {% endif %}
+      {% if user.is_staff %}
+        {% url pulpdist_admin as admin_url %}
+        {% if admin_url %}
+            <a href="{{ admin_url }}">
+        {% else %}
+            <a href="{{ root_path }}admin/">
+        {% endif %}
+        {% trans 'Site Admin' %}</a>
+      {% endif %}
+
     {% endblock %}
   </div>
 {% endif %}

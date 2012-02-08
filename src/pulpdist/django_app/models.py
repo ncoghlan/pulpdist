@@ -56,7 +56,7 @@ class PulpServer(models.Model):
         except AttributeError:
             self._init_server()
         return self._server
-        
+
     def _init_server(self):
         self._server = pulpapi.PulpServer(self.hostname,
                                           self.oauth_key.encode('utf-8'),
@@ -64,7 +64,7 @@ class PulpServer(models.Model):
 
     def __unicode__(self):
         return "Pulp server: %s(%s)" % (self.pulp_site, self.hostname)
-      
+
     def clean(self):
         super(PulpServer, self).clean()
         if not self.server_slug:
