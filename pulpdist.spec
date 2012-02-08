@@ -6,7 +6,7 @@
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
 Version:        0.0.4
-Release:        2%{?dist}
+Release:        3%{?dist}
 Group:          Development/Tools
 License:        GPLv2
 Source0:        %{name}-%{version}.tar.gz
@@ -195,8 +195,8 @@ if [ "$1" = "1" ]; then
 fi
 %{run_manage_site} migrate
 popd
-chmod -R u=rwX,g=rX,o=rX %{data_dir}
-chown -R apache:apache %{data_dir}
+chmod -R u=rwX,g=rX,o=rX %{data_dir} %{log_dir}
+chown -R apache:apache %{data_dir} %{log_dir}
 
 # Static files (CSS, JS, images)
 pushd src
@@ -264,6 +264,9 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* Wed Feb 08 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.4-3
+- Set correct permissions on logging directory in pulpdist-httpd
+
 * Tue Feb 07 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.4-2
 - Convert PyPI dependencies to real dependencies (these will be published
   soon in a pulpdist repo at repos.fedorapeople.org)
