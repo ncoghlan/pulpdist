@@ -266,6 +266,8 @@ fi
 %changelog
 * ??? Feb ?? 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.5-1
 - Fix Pulp Server form in Django admin interface
+- Provide link to Django admin from main site when logged in as a site admin
+- "pulpdist.manage_repos" CLI added to the core RPM
 
 * Wed Feb 08 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.4-3
 - Set correct permissions on logging directory in pulpdist-httpd
@@ -275,7 +277,6 @@ fi
   soon in a pulpdist repo at repos.fedorapeople.org)
 
 * Tue Feb 07 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.4-1
-- "pulpdist.manage_repos" CLI added to the core RPM
 - Correctly configure permissions for site administrators
 - Default to Kerberos authentication in pulpdist-httpd
 - Better handling of web server based authentication
