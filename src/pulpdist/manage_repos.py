@@ -15,12 +15,13 @@
 import argparse
 import json
 import sys
-import pprint
 import contextlib
 
-def _format_data(data, prefix=2, indent=1):
-    details = pprint.pformat(data, indent=indent)
-    return "\n".join(prefix * " " + line for line in details.splitlines())
+def _format_data(data, prefix=0, indent=2):
+    out = json.dumps(data, indent=indent)
+    if prefix:
+        out = "\n".join(prefix * " " + line for line in out.splitlines())
+    return out
 
 def _print_server_error(msg, ex):
     details = "{0} ({1})\n".format(msg, ex)
