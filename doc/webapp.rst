@@ -32,7 +32,10 @@ colocated Pulp server is::
 After installation, a few configuration settings need to be adjusted.
 
 1. Update ``/etc/pulp/pulp.conf`` in accordance with the `Pulp Installation
-   Guide`_, including setting up `OAuth authentication`_.
+   Guide`_, including:
+
+   * setting up `OAuth authentication`_
+   * setting up `LDAP user authentication`_
 
 2. Update ``/etc/pulpdist/site.conf`` in accordance with the embedded comments.
    Notably:
@@ -60,8 +63,27 @@ After installation, a few configuration settings need to be adjusted.
    * Oauth key: the Pulp OAuth key configured in Step 1
    * Oauth secret: the Pulp OAuth key configured in Step 2
 
+6. Update ``/etc/pulp/admin/admin.conf`` to replace ``localhost.localdomain``
+   with the fully qualified domain of the server
+
+7. Set up at least one administrator for the Pulp server and restrict the
+   default admin account to read-only access (currently used via the web
+   UI over OAuth) ::
+
+   pulp-admin auth login --username admin
+   pulp-admin user create --username ncoghlan --name "Nick Coghlan" --ldap
+   pulp-admin role add --role super-users --user ncoghlan
+   pulp-admin auth login --username ncoghlan
+   pulp-admin role create --role read-only
+   pulp-admin permission grant --resource / --role read-only -o read
+   pulp-admin role add --role read-only --user admin
+   pulp-admin role remove --role super-users --user admin
+   pulp-admin permission show --resource /
+
+
 .. _`Pulp Installation Guide`: http://pulpproject.org/ug/UGInstallation.html
 .. _OAuth authentication: https://fedorahosted.org/pulp/wiki/AuthenticationOAuth#HowTo
+.. _LDAP user authentication: https://fedorahosted.org/pulp/wiki/AuthenticationLDAP#ConfigurepulptouseLDAP:
 
 
 Django Admin CLI
