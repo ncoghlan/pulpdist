@@ -64,31 +64,21 @@ First, install the pulp-admin client as described in the
 The following set of instructions should then provide a working development
 instance of the ``pulpdist`` web application on a Fedora 16 system::
 
-    $ sudo yum install Django
-    $ sudo yum install Django-south
-    $ sudo yum install python-nose
-    $ sudo yum install python-m2crypto
-    $ sudo yum install python-oauth2
+    $ sudo yum install Django Django-south python-nose python-m2crypto python-oauth2 tito
     $ sudo wget -O /etc/yum.repos.d/fedora-pulpdist.repo http://repos.fedorapeople.org/repos/pulpdist/pulpdist/fedora-pulpdist.repo
-    $ sudo yum install python-django-tables2
-    $ sudo yum install python-djangorestframework
-    $ sudo yum install python-mock
-    $ sudo yum install python-djangosanetesting
+    $ sudo yum install python-django-tables2 python-djangorestframework python-mock python-djangosanetesting python-setuptools-git
 
-    git clone git://fedorahosted.org/pulpdist.git pulpdist
-    cd pulpdist/src/pulpdist
-    ./manage.py syncdb
-    ./manage.py migrate django_pulpdist
-    ./manage.py runserver
+    $ git clone git://fedorahosted.org/pulpdist.git pulpdist
+    $ cd pulpdist/src
+    $ python -m pulpdist.manage_site syncdb
+    $ python -m pulpdist.manage_site migrate
+    $ python -m pulpdist.manage_site runserver
 
 Pointing your preferred browser at ``http://localhost:8000/pulpdist``
-should then display the web UI. Pulp server definitions can be
-entered either through the REST API or else via the Django admin
-interface.
-
-(Once an initial public RPM release is available in the Fedora People repo then
-the above will be simplified to just installing and removing the ``pulpdist``
-RPM in order to download all the relevant dependencies)
+should then display the web UI with the dummy authentication scheme enabled.
+Pulp server definitions can be entered either through the REST API or else
+via the Django admin interface (use ``pulpdist-test-su`` as the login name to
+get access to the latter).
 
 _`Pulp Installation Guide`: http://pulpproject.org/ug/UGInstallation.html
 
@@ -96,12 +86,46 @@ _`Pulp Installation Guide`: http://pulpproject.org/ug/UGInstallation.html
 Running the unit tests
 ----------------------
 
-Running the test suite (from the base directory)::
+Running the test suite (from the base directory of the source checkout)::
 
-    make test
+    $ make test
 
 Some of these test may require a Pulp server running on the local machine with
 OAuth enabled. Refer to the `Pulp Installation Guide`_ and
 `OAuth authentication`_ for details.
 
 .. _OAuth authentication: https://fedorahosted.org/pulp/wiki/AuthenticationOAuth#HowTo
+
+
+.. _building-rpms:
+
+Building the PulpDist RPMs
+--------------------------
+
+Currently, there are no prebuilt RPMs for PulpDist available. However,creating
+them locally is intended to be straightforward::
+
+    $ make rpm
+
+This will create a ``pulpdist`` SRPM, along with the following ``noarch`` RPMs:
+
+* ``pulpdist`` - the core Python package for PulpDist
+* ``pulpdist-plugins`` - the custom Pulp plugins for tree synchronisation
+* ``pulpdist-django``  - a meta-package that brings in the additional
+  dependencies needed to actually run ``pulpdist.django_app``
+* ``pulpdist-django``  - a meta-package that brings in the additional
+  dependencies needed to actually run ``pulpdist.django_app``
+* ``pulpdist-httpd`` - installs the PulpDist web application, largely
+  preconfigured to run under Apache using Kerberos-over-Basic-Auth for
+  authentication.
+* ``pulpdist-devel`` - a meta-package that isn't currently very useful,
+  but will eventually be available in the public repo to make it easy to
+  bring in all the dependencies needed to work on PulpDist.
+
+``pulpdist-plugins`` should be installed on all Pulp servers in a PulpDist
+network.
+
+``pulpdist-httpd`` can be installed directly to use the standard PulpDist
+Django site settings. Alternatively, any RPM-based Django site definitions
+that use the PulpDist Django application should depend on
+``pulpdist-django``.

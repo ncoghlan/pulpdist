@@ -6,11 +6,62 @@ PulpDist Web Application
 The PulpDist web application is a Django-based web service that can be set
 up to monitor a network of Pulp servers.
 
-Early iterations will focus purely on status monitoring, leaving
+Current iterations focus primarily on status monitoring, leaving
 configuration tasks to command line scripting tools. Longer term,
-some configuration tasks may be permitted through the web application
-(there are many steps to be taken before that will be possible, such
-as implementing a robust authorisation scheme).
+some configuration tasks may be permitted through forms in the web
+application.
+
+This page focuses on deployment of a single PulpDist web app instance with
+a colocated Pulp server. Other configurations are of course possible - the
+two communicate solely through the Pulp REST API (Note: the PulpDist web app
+does not yet cache results received from the Pulp server, so expect abysmal
+performance from the current version if the two aren't at least on the same
+LAN).
+
+Deployment
+----------
+
+The first step in deploying a standard PulpDist web application with a
+colocated Pulp server is::
+
+   $ sudo yum install pulpdist-httpd pulpdist-plugins
+
+(Note: prebuilt RPMs are not yet available from the public repo. See
+:ref:`building-rpms`)
+
+After installation, a few configuration settings need to be adjusted.
+
+1. Update ``/etc/pulp/pulp.conf`` in accordance with the `Pulp Installation
+   Guide`_, including setting up `OAuth authentication`_.
+
+2. Update ``/etc/pulpdist/site.conf`` in accordance with the embedded comments.
+   Notably:
+
+   * Enter the initial list of system administrators
+   * Set the passphrase for encrypted database fields
+   * Generate and enter a private Django secret key
+
+3. Update  ``/etc/httpd/conf.d/pulpdist.conf`` to set the Kerberos domain
+   correctly (and, optionally, add a keytab reference for single-sign-on
+   support). Note that ``pulpdist-httpd`` makes a number of assumptions that
+   are only valid when using Kerberos for authentication - if you want to do
+   something else (e.g. use Django's native authentication), install
+   ``pulpdist-django`` instead and add ``pulpdist.django_app`` to a custom
+   Django site definition.
+
+4. Start (or restart) Apache
+
+5. Log in to the web application as one of the system administrators configured
+   in Step 2. Click the "Site Admin" link, then use the Django admin UI to add
+   a reference to the colocated Pulp server. The fields are as follows:
+
+   * Pulp site: name used in the user interface for this server
+   * Hostname: fully qualified hostname for this server (will be checked by SSL)
+   * Oauth key: the Pulp OAuth key configured in Step 1
+   * Oauth secret: the Pulp OAuth key configured in Step 2
+
+.. _`Pulp Installation Guide`: http://pulpproject.org/ug/UGInstallation.html
+.. _OAuth authentication: https://fedorahosted.org/pulp/wiki/AuthenticationOAuth#HowTo
 
 
 REST API
