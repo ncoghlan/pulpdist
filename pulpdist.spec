@@ -268,6 +268,7 @@ fi
 - Fix Pulp Server form in Django admin interface
 - Provide link to Django admin from main site when logged in as a site admin
 - "pulpdist.manage_repos" CLI added to the core RPM
+- the "is_test_run" plugin option is now called "dry_run_only"
 
 * Wed Feb 08 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.4-3
 - Set correct permissions on logging directory in pulpdist-httpd

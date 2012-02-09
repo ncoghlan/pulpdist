@@ -32,8 +32,8 @@ Configuration options for this plugin are:
 * ``enabled``: If provided and true, actually performs a sync operation when
   invoked by Pulp. Defaults to ignoring sync requests (NOT YET IMPLEMENTED
   - sync requests are currently always processed)
-* ``test_run_only``: If provided and true, passes ``-n`` to rsync to run it in
-  "dry run" mode. (NOT YET IMPLEMENTED - currently called ``is_test_run``)
+* ``dry_run_only``: If provided and true, passes ``-n`` to rsync to run it in
+  "dry run" mode (i.e. no actual file transfers will take place).
 
 Adding files named "PROTECTED" to directories at downstream sites will
 keep the plugin from overwriting (or otherwise altering) them.

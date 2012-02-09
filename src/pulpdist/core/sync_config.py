@@ -26,7 +26,7 @@ class TreeSyncConfig(object):
         u"excluded_files": validation.check_sequence(validation.check_rsync_filter()),
         u"sync_filters": validation.check_sequence(validation.check_rsync_filter()),
         u"bandwidth_limit": validation.check_type(int),
-        u"is_test_run": validation.check_type(int),
+        u"dry_run_only": validation.check_type(int),
         u"old_remote_daemon": validation.check_type(int),
         u"rsync_port": validation.check_type(int, allow_none=True),
     }
@@ -34,7 +34,7 @@ class TreeSyncConfig(object):
         u"excluded_files": (),
         u"sync_filters": (),
         u"bandwidth_limit": 0,
-        u"is_test_run": False,
+        u"dry_run_only": False,
         u"old_remote_daemon": False,
         u"rsync_port": None,
     }

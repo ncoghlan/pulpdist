@@ -195,7 +195,7 @@ class BaseSyncCommand(object):
     def _send_amqp_message(self, result, sync_stats):
         details = "{0!r} transfer {1!r} -> {2!r}: {3}, {4}".format(
             self.tree_name, self.remote_path, self.local_path, result, sync_stats)
-        if self.is_test_run:
+        if self.dry_run_only:
             msg = "Not sending AMQP message for test run ({0})"
         msg = "AMQP support not yet implemented ({0})"
         self._update_run_log(msg, details)
@@ -206,7 +206,7 @@ class BaseSyncCommand(object):
         self._update_run_log("Syncing tree {0!r} at {1}", self.tree_name, start_time)
 
         with self._indent_run_log():
-            if self.is_test_run:
+            if self.dry_run_only:
                 self._update_run_log("Performing test run (no file transfer)")
             elif not path.exists(self.local_path):
                 self._update_run_log("Local path {0!r} does not exist, creating it", self.local_path)
@@ -242,7 +242,7 @@ class BaseSyncCommand(object):
         """Construct rsync parameters to fetch a remote directory"""
         params = _BASE_FETCH_DIR_PARAMS[:]
         params.extend(self._build_common_rsync_params())
-        if self.is_test_run:
+        if self.dry_run_only:
             params.append("-n")
         if self.bandwidth_limit:
             params.append("--bwlimit={0}".format(self.bandwidth_limit))
@@ -285,7 +285,7 @@ class BaseSyncCommand(object):
         self._update_run_log("Downloading {0!r} -> {1!r}", remote_source_path, local_dest_path)
         for seed_path in local_seed_paths:
             self._update_run_log("Using {0!r} as local seed data", seed_path)
-        if not self.is_test_run and not os.path.exists(local_dest_path):
+        if not self.dry_run_only and not os.path.exists(local_dest_path):
             self._update_run_log("Creating destination directory {0!r}", local_dest_path)
             os.makedirs(local_dest_path)
         with self._indent_run_log():
@@ -519,7 +519,7 @@ class SyncSnapshotTree(SyncVersionedTree):
         link_path = os.path.join(local_path, link_name)
         self._update_run_log("Updating {0!r} symlink to refer to latest version", link_path)
         with self._indent_run_log():
-            if self.is_test_run:
+            if self.dry_run_only:
                 self._update_run_log("Skipping creation of {0!r} for test run", link_path)
                 return
             try:
