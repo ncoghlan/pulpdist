@@ -16,11 +16,12 @@ Contents:
 
 .. toctree::
    :maxdepth: 2
+   :numbered:
 
    architecture.rst
-   plugins.rst
-   cli.rst
    webapp.rst
+   cli.rst
+   plugins.rst
    about.rst
 
 Indices and tables
