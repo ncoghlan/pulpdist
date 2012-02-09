@@ -64,6 +64,20 @@ After installation, a few configuration settings need to be adjusted.
 .. _OAuth authentication: https://fedorahosted.org/pulp/wiki/AuthenticationOAuth#HowTo
 
 
+Django Admin CLI
+----------------
+
+The command line interface for Django administration of the site is available
+as::
+
+   $ sudo python -m pulpdist.manage_site --help
+
+Refer to the `Django documentation` for details of what this command supports
+(like the default ``manage.py``, ``pulpdist.manage_site`` is a thin
+convenience wrapper around ``django-admin``).
+
+.. _Django documentation: https://docs.djangoproject.com/en/1.3/ref/django-admin/#django-admin-py-and-manage-py
+
 REST API
 --------
 
