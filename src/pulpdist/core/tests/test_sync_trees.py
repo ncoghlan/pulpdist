@@ -22,7 +22,7 @@ from datetime import datetime, timedelta
 from .. import sync_trees
 from . example_trees import TreeTestCase
 
-class TestSyncTree(TreeTestCase):
+class BaseTestCase(TreeTestCase):
     def check_datetime(self, actual, reference, max_error_seconds=2):
         max_delta = timedelta(seconds=max_error_seconds)
         self.assertLessEqual(reference - actual, max_delta)
@@ -35,12 +35,14 @@ class TestSyncTree(TreeTestCase):
         self.check_datetime(finish_time, now)
         self.check_stats(stats, expected_stats)
 
+class TestSyncTree(BaseTestCase):
+
     def test_sync(self):
         local_path = self.local_path
         params = self.params
         params.update(self.CONFIG_TREE_SYNC)
         task = sync_trees.SyncTree(params)
-        stats = self.EXPECTED_TREE_STATS
+        stats = dict(self.EXPECTED_TREE_STATS)
         self.check_sync_details(task.run_sync(), "SYNC_COMPLETED", stats)
         self.check_tree_layout(local_path)
         stats.update(self.EXPECTED_REPEAT_STATS)
@@ -52,7 +54,7 @@ class TestSyncTree(TreeTestCase):
         params = self.params
         params.update(self.CONFIG_VERSIONED_SYNC)
         task = sync_trees.SyncVersionedTree(params)
-        stats = self.EXPECTED_VERSIONED_STATS
+        stats = dict(self.EXPECTED_VERSIONED_STATS)
         self.check_sync_details(task.run_sync(), "SYNC_COMPLETED", stats)
         self.check_versioned_layout(local_path)
         stats.update(self.EXPECTED_REPEAT_STATS)
@@ -65,7 +67,7 @@ class TestSyncTree(TreeTestCase):
         params.update(self.CONFIG_SNAPSHOT_SYNC)
         details = self.setup_snapshot_layout(local_path)
         task = sync_trees.SyncSnapshotTree(params)
-        stats = self.EXPECTED_SNAPSHOT_STATS
+        stats = dict(self.EXPECTED_SNAPSHOT_STATS)
         self.check_sync_details(task.run_sync(), "SYNC_COMPLETED", stats)
         self.check_snapshot_layout(local_path, *details)
         # For an up-to-date tree, we transfer *nothing*
@@ -156,6 +158,94 @@ class TestSyncTree(TreeTestCase):
 
     # TODO: Verify copying of other symlinks
     # TODO: Delete old versioned directories
+
+class TestSyncTreeDisabled(BaseTestCase):
+    EXPECTED_NULL_STATS = sync_trees._null_sync_stats._asdict()
+
+    def check_sync_details(self, details):
+        local_path = self.local_path
+        result, start_time, finish_time, stats = details
+        self.assertEqual(result, "SYNC_DISABLED")
+        now = datetime.utcnow()
+        self.check_datetime(start_time, now)
+        self.check_datetime(finish_time, now)
+        self.check_stats(stats, self.EXPECTED_NULL_STATS)
+        self.assertEqual(os.listdir(local_path), [])
+
+    def check_disabled_sync(self, sync_type, sync_config):
+        params = self.params
+        params.update(sync_config)
+        # Check with enabled set to False
+        params["enabled"] = False
+        task = sync_type(params)
+        self.check_sync_details(task.run_sync())
+        # Check with enabled not provided at all
+        del params["enabled"]
+        task = sync_type(params)
+        self.check_sync_details(task.run_sync())
+
+    def test_disabled_sync(self):
+        self.check_disabled_sync(sync_trees.SyncTree,
+                                 self.CONFIG_TREE_SYNC)
+
+    def test_disabled_sync_versioned(self):
+        self.check_disabled_sync(sync_trees.SyncVersionedTree,
+                                 self.CONFIG_VERSIONED_SYNC)
+
+    def test_disabled_sync_snapshot(self):
+        self.check_disabled_sync(sync_trees.SyncSnapshotTree,
+                                 self.CONFIG_SNAPSHOT_SYNC)
+
+class TestSyncTreeDryRun(BaseTestCase):
+
+    EXPECTED_DRY_RUN_STATS = dict(
+        literal_bytes = 0,
+        matched_bytes = 0,
+    )
+
+    def check_sync_details(self, details, expected_stats, expected_listdir):
+        local_path = self.local_path
+        result, start_time, finish_time, stats = details
+        self.assertEqual(result, "SYNC_COMPLETED_DRY_RUN")
+        now = datetime.utcnow()
+        self.check_datetime(start_time, now, 60)
+        self.check_datetime(finish_time, now)
+        self.check_stats(stats, expected_stats)
+        self.assertEqual(os.listdir(local_path), expected_listdir)
+
+    def check_dry_run_sync(self, sync_type, sync_config,
+                                 expected_stats, expected_listdir=[]):
+        params = self.params
+        params.update(sync_config)
+        params["dry_run_only"] = True
+        task = sync_type(params)
+        expected_stats.update(self.EXPECTED_DRY_RUN_STATS)
+        self.check_sync_details(task.run_sync(),
+                                expected_stats, expected_listdir)
+
+    def test_dry_run_sync(self):
+        self.check_dry_run_sync(sync_trees.SyncTree,
+                                self.CONFIG_TREE_SYNC,
+                                dict(self.EXPECTED_TREE_STATS))
+
+    def test_dry_run_sync_versioned(self):
+        stats = dict(self.EXPECTED_VERSIONED_STATS)
+        stats["transferred_bytes"] *= self.NUM_TREES_VERSIONED
+        stats["transferred_file_count"] *= self.NUM_TREES_VERSIONED
+        self.check_dry_run_sync(sync_trees.SyncVersionedTree,
+                                self.CONFIG_VERSIONED_SYNC,
+                                stats)
+
+    def test_dry_run_sync_snapshot(self):
+        local_path = self.local_path
+        existing_dir, __, __ = self.setup_snapshot_layout(local_path)
+        stats = dict(self.EXPECTED_SNAPSHOT_STATS)
+        stats["transferred_bytes"] *= self.NUM_TREES_SNAPSHOT
+        stats["transferred_file_count"] *= self.NUM_TREES_SNAPSHOT
+        self.check_dry_run_sync(sync_trees.SyncSnapshotTree,
+                                self.CONFIG_SNAPSHOT_SYNC,
+                                stats,
+                                [os.path.basename(existing_dir)])
 
 
 if __name__ == '__main__':

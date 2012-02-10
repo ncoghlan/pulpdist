@@ -9,6 +9,24 @@ directly, but may eventually move to a more programmatic API based on
 ``librsync``.
 
 
+Sync Operation Results
+----------------------
+
+Each of the PulpDist sync plugins may report the following results:
+
+* ``SYNC_UP_TO_DATE``: the local copy was up to date, no changes were made.
+* ``SYNC_COMPLETED``: upstream changes were found and applied locally
+* ``SYNC_PARTIAL``: upstream changes were found, but the attempt to apply them
+  locally failed to incorporate some changes (see log output for details)
+* ``SYNC_FAILED``: sync completely failed (e.g. upstream could not be reached)
+* ``SYNC_DISABLED``: the plugin has been set to ignore sync requests
+
+These statuses may also be reported with ``_DRY_RUN`` appended to indicate
+that a sync operation was executed with rsync configured to avoid actually
+transferring any files (some temporary local copies of small metadata files
+may still be made in order to determine the details of the dry run operation).
+
+
 Simple Tree Sync
 ----------------
 
@@ -30,7 +48,7 @@ Configuration options for this plugin are:
 * ``rsync_port``: If provided and not zero, passed to rsync as "--port" to
   allow connections to a remote daemon that isn't running on the default port.
 * ``enabled``: If provided and true, actually performs a sync operation when
-  invoked by Pulp. Defaults to ignoring sync requests (NOT YET IMPLEMENTED
+  invoked by Pulp. Defaults to ignoring sync requests.
   - sync requests are currently always processed)
 * ``dry_run_only``: If provided and true, passes ``-n`` to rsync to run it in
   "dry run" mode (i.e. no actual file transfers will take place).

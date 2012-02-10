@@ -269,6 +269,10 @@ fi
 - Provide link to Django admin from main site when logged in as a site admin
 - "pulpdist.manage_repos" CLI added to the core RPM
 - the "is_test_run" plugin option is now called "dry_run_only"
+- dry runs now append "_DRY_RUN" to their status result
+- the "snapshot_tree" plugin now correctly supports the "dry_run_only" option
+- all plugins now support an "enabled" option (defaulting to False), and
+  SYNC_DISABLED is a possible status result for a sync request.
 
 * Wed Feb 08 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.4-3
 - Set correct permissions on logging directory in pulpdist-httpd

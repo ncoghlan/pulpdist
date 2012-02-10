@@ -13,5 +13,6 @@ network using a number of custom :ref:`Pulp plugins <pulp-plugins>`.
 
 The status of these transfers can then be monitored using a central
 :ref:`web application <web-application>` which uses OAuth to retrieve
-information from each Pulp server in the network.
-
+information from each Pulp server in the network. An instance of the
+web app may also be run at each site with a Pulp mirror server for local
+status monitoring.

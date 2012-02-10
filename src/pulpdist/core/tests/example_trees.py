@@ -104,7 +104,8 @@ class TreeTestCase(unittest.TestCase):
         remote_server = u"localhost",
         remote_path = u"/test_data/simple/",
         excluded_files = u"*skip*".split(),
-        sync_filters = u"exclude_irrelevant/ exclude_dull/".split()
+        sync_filters = u"exclude_irrelevant/ exclude_dull/".split(),
+        enabled = True,
     )
 
     CONFIG_VERSIONED_SYNC = dict(
@@ -114,7 +115,8 @@ class TreeTestCase(unittest.TestCase):
         version_pattern = u"relevant*",
         excluded_versions = u"relevant-but*".split(),
         excluded_files = u"*skip*".split(),
-        sync_filters = u"exclude_irrelevant/ exclude_dull/".split()
+        sync_filters = u"exclude_irrelevant/ exclude_dull/".split(),
+        enabled = True,
     )
 
     CONFIG_SNAPSHOT_SYNC = dict(
@@ -124,15 +126,23 @@ class TreeTestCase(unittest.TestCase):
         version_pattern = u"relevant*",
         excluded_versions = u"relevant-but*".split(),
         excluded_files = u"*skip*".split(),
-        sync_filters = u"exclude_irrelevant/ exclude_dull/".split()
+        sync_filters = u"exclude_irrelevant/ exclude_dull/".split(),
+        enabled = True,
     )
+
+    NUM_TREES_VERSIONED = 4
+    NUM_TREES_SNAPSHOT = 2
 
     EXPECTED_TREE_STATS = dict(
         total_file_count = 12,
         total_bytes = 160,
     )
-    EXPECTED_VERSIONED_STATS = dict(((k, v * 4) for k, v in EXPECTED_TREE_STATS.iteritems()))
-    EXPECTED_SNAPSHOT_STATS = dict(((k, v * 2) for k, v in EXPECTED_TREE_STATS.iteritems()))
+    EXPECTED_VERSIONED_STATS = dict(EXPECTED_TREE_STATS)
+    EXPECTED_SNAPSHOT_STATS = dict(EXPECTED_TREE_STATS)
+    for k in EXPECTED_TREE_STATS:
+        EXPECTED_VERSIONED_STATS[k] *= NUM_TREES_VERSIONED
+        EXPECTED_SNAPSHOT_STATS[k] *= NUM_TREES_SNAPSHOT
+    del k
 
     _COMMON_STATS = dict(
         transferred_file_count = 8,
@@ -240,7 +250,8 @@ class TreeTestCase(unittest.TestCase):
             actual = sync_trees.SyncStats(**actual)
         for field, expected_value in expected.iteritems():
             actual_value = getattr(actual, field)
-            msg = "sync stats field {0!r}".format(field)
+            msg_fmt = "sync stats field {0!r} ({1!r} != {2!r})"
+            msg = msg_fmt.format(field, actual_value, expected_value)
             self.assertEqual(actual_value, expected_value, msg)
 
     def check_log_output(self, log_data, expected_result, expected_stats):

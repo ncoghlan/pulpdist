@@ -120,6 +120,9 @@ class BaseSyncCommand(object):
     SYNC_COMPLETED = "SYNC_COMPLETED"
     SYNC_PARTIAL = "SYNC_PARTIAL"
     SYNC_FAILED = "SYNC_FAILED"
+    SYNC_DISABLED = "SYNC_DISABLED"
+
+    DRY_RUN_SUFFIX = "_DRY_RUN"
 
     CONFIG_TYPE = None
 
@@ -203,6 +206,10 @@ class BaseSyncCommand(object):
     def run_sync(self):
         """Execute the full synchronisation task"""
         start_time = datetime.utcnow()
+        if not self.enabled:
+            self._update_run_log("Ignoring sync request for {0!r} at {1}", self.tree_name, start_time)
+            return self.SYNC_DISABLED, start_time, start_time, _null_sync_stats
+
         self._update_run_log("Syncing tree {0!r} at {1}", self.tree_name, start_time)
 
         with self._indent_run_log():
@@ -223,6 +230,9 @@ class BaseSyncCommand(object):
                     self._send_amqp_message(result, sync_stats)
 
         finish_time = datetime.utcnow()
+        if self.dry_run_only:
+            result += self.DRY_RUN_SUFFIX
+
         msg = "Completed sync of {0!r} at {1} (Result: {2}, Duration: {3})"
         self._update_run_log(msg, self.tree_name,
                              finish_time, result, finish_time - start_time)
@@ -507,8 +517,9 @@ class SyncSnapshotTree(SyncVersionedTree):
             # and manage to hard link everything
             return result
         result = self.SYNC_COMPLETED
-        with open(status_path, 'w') as f:
-            f.write("FINISHED\n")
+        if not self.dry_run_only:
+            with open(status_path, 'w') as f:
+                f.write("FINISHED\n")
         return result
 
     def _link_to_latest(self):

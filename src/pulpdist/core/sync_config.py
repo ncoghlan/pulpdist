@@ -29,6 +29,7 @@ class TreeSyncConfig(object):
         u"dry_run_only": validation.check_type(int),
         u"old_remote_daemon": validation.check_type(int),
         u"rsync_port": validation.check_type(int, allow_none=True),
+        u"enabled": validation.check_type(int),
     }
     _DEFAULTS = {
         u"excluded_files": (),
@@ -37,6 +38,7 @@ class TreeSyncConfig(object):
         u"dry_run_only": False,
         u"old_remote_daemon": False,
         u"rsync_port": None,
+        u"enabled": False,
     }
 
     def __init__(self, config=None):
