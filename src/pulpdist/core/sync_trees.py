@@ -422,15 +422,21 @@ class SyncVersionedTree(BaseSyncCommand):
         pass
 
     def _delete_old_dirs(self, remote_dir_entries):
+        self._update_run_log("Checking for removal of directories on remote server")
         local_dirs = set(os.path.basename(d) for d in self._iter_local_versions())
         remote_dirs = set(d for mtime, d in remote_dir_entries)
         dirs_to_delete = sorted(local_dirs - remote_dirs)
         local_path = self.local_path
+        deleted = 0
         for dirname in dirs_to_delete:
             dirpath = os.path.join(local_path, dirname)
+            if os.path.exists(os.path.join(dirpath, "PROTECTED")):
+                self._update_run_log("Not deleting {0!r} (PROTECTED file found)", dirpath)
+                continue
             self._update_run_log("Deleting {0!r} (not on remote server)", dirpath)
             shutil.rmtree(dirpath)
-        return len(dirs_to_delete)
+            deleted += 1
+        return deleted
 
     def _do_transfer(self):
         sync_stats = _null_sync_stats

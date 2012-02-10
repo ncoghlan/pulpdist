@@ -156,31 +156,53 @@ class TestSyncTree(BaseTestCase):
                               "SYNC_COMPLETED",
                               self.EXPECTED_TREE_STATS)
 
+    def _remove_remote_trees(self, stats):
+        source_dir = self.rsyncd.data_dir
+        subtrees = "relevant-1 relevant-3".split()
+        for tree in subtrees:
+            shutil.rmtree(os.path.join(source_dir, "versioned", tree))
+        stats.update(self.EXPECTED_REPEAT_STATS)
+        num_trees = len(subtrees)
+        for k, v in stats.iteritems():
+            if v:
+                stats[k] = v - self.EXPECTED_TREE_STATS[k] * num_trees
+        return subtrees
+
+    def _protect_local_trees(self, trees):
+        local_path = self.local_path
+        for tree in trees:
+            protected = os.path.join(local_path, tree, "PROTECTED")
+            with open(protected, 'w'):
+                pass
+
+    def _unprotect_local_trees(self, trees):
+        local_path = self.local_path
+        for tree in trees:
+            protected = os.path.join(local_path, tree, "PROTECTED")
+            os.unlink(protected)
+
     def test_delete_old_dirs(self):
         local_path = self.local_path
-        source_dir = self.rsyncd.data_dir
         params = self.params
         params.update(self.CONFIG_VERSIONED_SYNC)
         task = sync_trees.SyncVersionedTree(params)
         stats = dict(self.EXPECTED_VERSIONED_STATS)
         self.check_sync_details(task.run_sync(), "SYNC_COMPLETED", stats)
         self.check_versioned_layout(local_path)
-        stats.update(self.EXPECTED_REPEAT_STATS)
-        shutil.rmtree(os.path.join(source_dir, "versioned/relevant-1"))
-        shutil.rmtree(os.path.join(source_dir, "versioned/relevant-3"))
-        for k, v in stats.iteritems():
-            if v:
-                stats[k] = v - self.EXPECTED_TREE_STATS[k] * 2
+        subtrees = self._remove_remote_trees(stats)
         self.check_sync_details(task.run_sync(), "SYNC_UP_TO_DATE", stats)
         self.check_versioned_layout(local_path)
         params["delete_old_dirs"] = True
+        self._protect_local_trees(subtrees)
         task = sync_trees.SyncVersionedTree(params)
+        self.check_sync_details(task.run_sync(), "SYNC_UP_TO_DATE", stats)
+        self.check_versioned_layout(local_path)
+        self._unprotect_local_trees(subtrees)
         self.check_sync_details(task.run_sync(), "SYNC_COMPLETED", stats)
         self.check_versioned_layout(local_path, ["relevant-2", "relevant-4"])
 
 
     # TODO: Verify copying of other symlinks
-    # TODO: Delete old versioned directories
 
 class TestSyncTreeDisabled(BaseTestCase):
     EXPECTED_NULL_STATS = sync_trees._null_sync_stats._asdict()
@@ -234,7 +256,7 @@ class TestSyncTreeDryRun(BaseTestCase):
         self.check_datetime(start_time, now, 60)
         self.check_datetime(finish_time, now)
         self.check_stats(stats, expected_stats)
-        self.assertEqual(os.listdir(local_path), expected_listdir)
+        self.assertEqual(set(os.listdir(local_path)), set(expected_listdir))
 
     def check_dry_run_sync(self, sync_type, sync_config,
                                  expected_stats, expected_listdir=[]):

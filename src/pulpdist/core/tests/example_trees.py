@@ -199,6 +199,7 @@ class TreeTestCase(unittest.TestCase):
     def check_versioned_layout(self, versioned_path, expected_trees=None):
         if expected_trees is None:
             expected_trees = _expected_versioned_trees
+        self.assertEqual(set(os.listdir(versioned_path)), set(expected_trees))
         for tree in expected_trees:
             tree_path = os.path.join(versioned_path, tree)
             self.check_tree_layout(tree_path)
