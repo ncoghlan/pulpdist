@@ -78,8 +78,7 @@ build the list of individual subtrees to be synchronised:
   subtree identification operation. Defaults to no filtering.
 * ``delete_old_dirs``: If provided and true, removes local subdirectories that
   are no longer present on the source server. By default, local subdirectories
-  are retained until explicitly deleted by a system administrator. (NOT YET
-  IMPLEMENTED - currently never deletes old subdirectories)
+  are retained until explicitly deleted by a system administrator.
 
 
 Snapshot Tree Sync

@@ -272,7 +272,10 @@ fi
 - dry runs now append "_DRY_RUN" to their status result
 - the "snapshot_tree" plugin now correctly supports the "dry_run_only" option
 - all plugins now support an "enabled" option (defaulting to False), and
-  SYNC_DISABLED is a possible status result for a sync request.
+  SYNC_DISABLED is a possible status result for a sync request
+- the "versioned_tree" and "snapshot_tree" plugins now support a
+  "delete_old_dirs" to remove local directories that are no longer present
+  on the remote server
 
 * Wed Feb 08 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.4-3
 - Set correct permissions on logging directory in pulpdist-httpd

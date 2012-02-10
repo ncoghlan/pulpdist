@@ -196,8 +196,10 @@ class TreeTestCase(unittest.TestCase):
             dpath = os.path.join(tree_path, dname)
             self.assertNotExists(dpath)
 
-    def check_versioned_layout(self, versioned_path):
-        for tree in _expected_versioned_trees:
+    def check_versioned_layout(self, versioned_path, expected_trees=None):
+        if expected_trees is None:
+            expected_trees = _expected_versioned_trees
+        for tree in expected_trees:
             tree_path = os.path.join(versioned_path, tree)
             self.check_tree_layout(tree_path)
 

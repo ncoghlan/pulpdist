@@ -18,6 +18,7 @@ import os
 from os import path
 import sys # We use stdout for testing purposes
 import shellutil
+import shutil
 import subprocess
 import traceback
 import collections
@@ -246,7 +247,7 @@ class BaseSyncCommand(object):
         if self.rsync_port:
             params.append("--port={0}".format(self.rsync_port))
         return params
-        
+
     def _build_fetch_dir_rsync_params(self, remote_source_path, local_dest_path,
                                       local_seed_paths=()):
         """Construct rsync parameters to fetch a remote directory"""
@@ -421,7 +422,15 @@ class SyncVersionedTree(BaseSyncCommand):
         pass
 
     def _delete_old_dirs(self, remote_dir_entries):
-        pass
+        local_dirs = set(os.path.basename(d) for d in self._iter_local_versions())
+        remote_dirs = set(d for mtime, d in remote_dir_entries)
+        dirs_to_delete = sorted(local_dirs - remote_dirs)
+        local_path = self.local_path
+        for dirname in dirs_to_delete:
+            dirpath = os.path.join(local_path, dirname)
+            self._update_run_log("Deleting {0!r} (not on remote server)", dirpath)
+            shutil.rmtree(dirpath)
+        return len(dirs_to_delete)
 
     def _do_transfer(self):
         sync_stats = _null_sync_stats
@@ -444,18 +453,23 @@ class SyncVersionedTree(BaseSyncCommand):
             tallies[dir_result] += 1
             sync_stats += dir_stats
         self._fix_link_entries(link_entries)
-        self._delete_old_dirs(dir_entries)
         up_to_date = tallies[self.SYNC_UP_TO_DATE]
         completed = tallies[self.SYNC_COMPLETED]
         partial = tallies[self.SYNC_PARTIAL]
         failed = tallies[self.SYNC_FAILED]
+        deleted = 0
+        if self.delete_old_dirs:
+            if failed or partial:
+                self._update_run_log("Errors occurred, not deleting old directories in {0!r}", self.local_path)
+            else:
+                deleted = self._delete_old_dirs(dir_entries)
         if failed and not (partial or completed or up_to_date):
             # Absolutely nothing worked
             result = self.SYNC_FAILED
         elif failed or partial:
             # Got at least some failures
             result = self.SYNC_PARTIAL
-        elif completed:
+        elif completed or deleted:
             # Had to actually do something
             result = self.SYNC_COMPLETED
         else:

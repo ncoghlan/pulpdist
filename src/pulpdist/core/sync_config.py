@@ -57,11 +57,13 @@ class VersionedSyncConfig(TreeSyncConfig):
         u"version_pattern": validation.check_rsync_filter(),
         u"excluded_versions": validation.check_sequence(validation.check_rsync_filter()),
         u"subdir_filters": validation.check_sequence(validation.check_rsync_filter()),
+        u"delete_old_dirs": validation.check_type(int),
     })
     _DEFAULTS = _updated(TreeSyncConfig._DEFAULTS, {
         u"version_pattern": u'*',
         u"excluded_versions": (),
         u"subdir_filters": (),
+        u"delete_old_dirs": False,
     })
 
 class SnapshotSyncConfig(VersionedSyncConfig):
