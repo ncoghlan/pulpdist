@@ -70,15 +70,15 @@ After installation, a few configuration settings need to be adjusted.
    default admin account to read-only access (currently used via the web
    UI over OAuth) ::
 
-   pulp-admin auth login --username admin
-   pulp-admin user create --username ncoghlan --name "Nick Coghlan" --ldap
-   pulp-admin role add --role super-users --user ncoghlan
-   pulp-admin auth login --username ncoghlan
-   pulp-admin role create --role read-only
-   pulp-admin permission grant --resource / --role read-only -o read
-   pulp-admin role add --role read-only --user admin
-   pulp-admin role remove --role super-users --user admin
-   pulp-admin permission show --resource /
+      pulp-admin auth login --username admin
+      pulp-admin user create --username ncoghlan --name "Nick Coghlan" --ldap
+      pulp-admin role add --role super-users --user ncoghlan
+      pulp-admin auth login --username ncoghlan
+      pulp-admin role create --role read-only
+      pulp-admin permission grant --resource / --role read-only -o read
+      pulp-admin role add --role read-only --user admin
+      pulp-admin role remove --role super-users --user admin
+      pulp-admin permission show --resource /
 
 
 .. _`Pulp Installation Guide`: http://pulpproject.org/ug/UGInstallation.html
