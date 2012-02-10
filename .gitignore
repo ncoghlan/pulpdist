@@ -18,4 +18,4 @@ cover
 *djangoORM.db
 doc/_build
 *kate-swp
-var/log/pulpdist/*.log
+var/log/pulpdist/*.log*
