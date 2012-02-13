@@ -92,12 +92,24 @@ def make_layout(base_dir,
     # flagged as being complete
     mark_trees_finished(base_dir, finished_trees)
 
-def start_rsyncd():
+def start_rsyncd(make_layout=make_layout):
     rsyncd = rsync_daemon.RsyncDaemon(make_layout)
     rsyncd.start()
     return rsyncd
 
 class TreeTestCase(unittest.TestCase):
+    TEST_DATA_LAYOUT = test_data_layout
+    TEST_FILENAMES = test_files
+    TEST_FINISHED_TREES = test_trees_finished
+
+    def make_layout(self, base_dir):
+        return make_layout(base_dir,
+                           self.TEST_DATA_LAYOUT,
+                           self.TEST_FILENAMES,
+                           self.TEST_FINISHED_TREES)
+
+    def start_rsyncd(self):
+        return start_rsyncd(self.make_layout)
 
     CONFIG_TREE_SYNC = dict(
         tree_name = u"Simple Tree",
@@ -163,7 +175,7 @@ class TreeTestCase(unittest.TestCase):
     )
 
     def setUp(self):
-        self.rsyncd = rsyncd = start_rsyncd()
+        self.rsyncd = rsyncd = self.start_rsyncd()
         self.local_path = local_path = tempfile.mkdtemp().decode("utf-8")
         self.params = dict(rsync_port = rsyncd.port,
                            local_path = local_path+'/')

@@ -112,7 +112,7 @@ _null_sync_stats = SyncStats(*([0]*len(SyncStats._fields)))
 _remote_ls_entry_pattern = re.compile(
 "^(?P<entry_kind>.).*"
 " (?P<mtime>\d\d\d\d\/\d\d\/\d\d \d\d:\d\d:\d\d)"
-" (?P<entry_details>[^\s]*)$", re.MULTILINE)
+" (?P<entry_details>.*)$", re.MULTILINE)
 
 
 class BaseSyncCommand(object):
@@ -364,10 +364,14 @@ class SyncVersionedTree(BaseSyncCommand):
             kind = entry.group("entry_kind")
             details = entry.group("entry_details")
             if kind == 'l':
-                link_entries.append(details)
+                link_entries.append(details.strip())
             elif kind == 'd':
                 mtime = entry.group("mtime")
-                dir_entries.append((mtime, details))
+                dir_entries.append((mtime, details.strip()))
+            else:
+                self._update_run_log("Unknown entry kind {0!r}", entry)
+        self._update_run_log("Identified directories {0!r}", dir_entries)
+        self._update_run_log("Identified symlinks {0!r}", link_entries)
         return dir_entries, link_entries
 
     def remote_ls(self, remote_ls_path):
@@ -419,7 +423,44 @@ class SyncVersionedTree(BaseSyncCommand):
         return True
 
     def _fix_link_entries(self, remote_link_entries):
-        pass
+        # ensure local symlinks match remote ones
+        self._update_run_log("Ensuring local validity of upstream symlinks")
+        with self._indent_run_log():
+            local_path = self.local_path
+            for ls_entry in remote_link_entries:
+                link_path, target_path = re.search("([^ ]*) -> ([^ ]*)$", ls_entry).groups()
+                # If those paths are absolute, os.path.join will just ignore 'local_path'
+                link_path = os.path.join(local_path, link_path)
+                full_target_path = os.path.join(local_path, target_path)
+                self._update_run_log("Checking symlink {0!r}->{1!r}", link_path, target_path)
+                # Only care about symlinks to directories
+                if not os.path.exists(full_target_path):
+                    self._update_run_log("No local {0!r}, ignoring symlink {1!r}", full_target_path, link_path)
+                    continue
+                if not os.path.isdir(full_target_path):
+                    self._update_run_log("Local {0!r} is not a directory, ignoring symlink {1!r}", full_target_path, link_path)
+                    continue
+                if os.path.islink(full_target_path) and os.path.samefile(os.readlink(full_target_path), link_path):
+                    self._update_run_log("Local {0!r} links backs to {1!r}, skipping", full_target_path, link_path)
+                    continue
+                if os.path.exists(link_path):
+                    if os.path.islink(link_path):
+                        if os.readlink(link_path) == target_path:
+                            self._update_run_log("Symlink {0!r}->{1!r} already exists", link_path, target_path)
+                            continue
+                        self._update_run_log("Unlinking old symlink {0!r}", link_path)
+                        os.unlink(link_path)
+                    elif os.path.isdir(link_path):
+                        if os.path.exists(os.path.join(link_path, "PROTECTED")):
+                            self._update_run_log("Skipping existing directory {0!r} (PROTECTED file found)", link_path)
+                            continue
+                        self._update_run_log("Removing old directory {0!r}", link_path)
+                        shutil.rmtree(link_path)
+                    else:
+                        self._update_run_log("Local {0!r} is not a directory or symlink, skipping", link_path)
+                        continue
+                self._update_run_log("Creating symlink {0!r}->{1!r}", link_path, target_path)
+                os.symlink(target_path, link_path)
 
     def _delete_old_dirs(self, remote_dir_entries):
         self._update_run_log("Checking for removal of directories on remote server")
@@ -428,14 +469,15 @@ class SyncVersionedTree(BaseSyncCommand):
         dirs_to_delete = sorted(local_dirs - remote_dirs)
         local_path = self.local_path
         deleted = 0
-        for dirname in dirs_to_delete:
-            dirpath = os.path.join(local_path, dirname)
-            if os.path.exists(os.path.join(dirpath, "PROTECTED")):
-                self._update_run_log("Not deleting {0!r} (PROTECTED file found)", dirpath)
-                continue
-            self._update_run_log("Deleting {0!r} (not on remote server)", dirpath)
-            shutil.rmtree(dirpath)
-            deleted += 1
+        with self._indent_run_log():
+            for dirname in dirs_to_delete:
+                dirpath = os.path.join(local_path, dirname)
+                if os.path.exists(os.path.join(dirpath, "PROTECTED")):
+                    self._update_run_log("Not deleting {0!r} (PROTECTED file found)", dirpath)
+                    continue
+                self._update_run_log("Deleting {0!r} (not on remote server)", dirpath)
+                shutil.rmtree(dirpath)
+                deleted += 1
         return deleted
 
     def _do_transfer(self):
@@ -458,7 +500,8 @@ class SyncVersionedTree(BaseSyncCommand):
             dir_result, dir_stats = self.fetch_dir(remote_source_path, local_dest_path, local_seed_paths)
             tallies[dir_result] += 1
             sync_stats += dir_stats
-        self._fix_link_entries(link_entries)
+        if link_entries:
+            self._fix_link_entries(link_entries)
         up_to_date = tallies[self.SYNC_UP_TO_DATE]
         completed = tallies[self.SYNC_COMPLETED]
         partial = tallies[self.SYNC_PARTIAL]

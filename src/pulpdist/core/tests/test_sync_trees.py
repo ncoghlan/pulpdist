@@ -293,6 +293,66 @@ class TestSyncTreeDryRun(BaseTestCase):
                                 [os.path.basename(existing_dir)])
 
 
+class TestLinkValidation(TreeTestCase):
+    CONFIG_TREE_SYNC = dict(
+        tree_name = u"Link Sanity Check",
+        remote_server = u"localhost",
+        remote_path = u"/test_data/",
+        enabled = True,
+    )
+
+    CONFIG_TREE_VERSIONED = dict(
+        tree_name = u"Versioned Link Check",
+        remote_server = u"localhost",
+        remote_path = u"/test_data/",
+        enabled = True,
+    )
+
+    def dirnames(self):
+        return ["dir" + str(i) for i in xrange(1, 6)]
+
+    def linknames(self):
+        return ["link" + str(i) for i in xrange(1, 6)]
+
+    def make_layout(self, data_dir):
+        os.mkdir(data_dir)
+        for dirname, linkname in zip(self.dirnames(), self.linknames()):
+            dirpath = os.path.join(data_dir, dirname)
+            os.mkdir(dirpath)
+            with open(os.path.join(dirpath, "dummy.txt"), "w"):
+                pass
+            os.symlink(dirname, os.path.join(data_dir, linkname))
+
+    def check_layout(self):
+        local_path = self.local_path
+        dirnames = self.dirnames()
+        linknames = self.linknames()
+        self.assertEqual(sorted(os.listdir(local_path)), dirnames+linknames)
+        for dirname in dirnames:
+            dirpath = os.path.join(local_path, dirname)
+            self.assertTrue(os.path.isdir(dirpath))
+            self.assertFalse(os.path.islink(dirpath))
+        for linkname in linknames:
+            linkpath = os.path.join(local_path, linkname)
+            self.assertTrue(os.path.isdir(linkpath))
+            self.assertTrue(os.path.islink(linkpath))
+
+    def test_tree_sync(self):
+        # Sanity check that the tree is being created and served correctly
+        params = self.params
+        params.update(self.CONFIG_TREE_SYNC)
+        task = sync_trees.SyncTree(params)
+        task.run_sync()
+        self.check_layout()
+
+    def test_tree_versioned(self):
+        params = self.params
+        params.update(self.CONFIG_TREE_VERSIONED)
+        task = sync_trees.SyncVersionedTree(params)
+        task.run_sync()
+        self.check_layout()
+
+
 if __name__ == '__main__':
     import unittest
     unittest.main()
