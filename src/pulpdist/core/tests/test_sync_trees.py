@@ -22,6 +22,8 @@ from datetime import datetime, timedelta
 from .. import sync_trees
 from . example_trees import TreeTestCase
 
+_path = os.path.join
+
 class BaseTestCase(TreeTestCase):
     def check_datetime(self, actual, reference, max_error_seconds=2):
         max_delta = timedelta(seconds=max_error_seconds)
@@ -81,7 +83,7 @@ class TestSyncTree(BaseTestCase):
         params = self.params
         params.update(self.CONFIG_SNAPSHOT_SYNC)
         link_name = u"latest-relevant"
-        link_path = os.path.join(local_path, link_name)
+        link_path = _path(local_path, link_name)
         params["latest_link_name"] = link_name
         __, expect_sync, __ = self.setup_snapshot_layout(local_path)
         task = sync_trees.SyncSnapshotTree(params)
@@ -98,12 +100,12 @@ class TestSyncTree(BaseTestCase):
         params = self.params
         params.update(self.CONFIG_TREE_SYNC)
         task = sync_trees.SyncTree(params)
-        protected_path = os.path.join(local_path, "safe")
-        protected_fname = os.path.join(protected_path, "PROTECTED")
+        protected_path = _path(local_path, "safe")
+        protected_fname = _path(protected_path, "PROTECTED")
         os.makedirs(protected_path)
         with open(protected_fname, 'w') as f:
             pass
-        unprotected_path = os.path.join(local_path, "deleted")
+        unprotected_path = _path(local_path, "deleted")
         os.makedirs(unprotected_path)
         task.run_sync()
         self.check_tree_layout(local_path)
@@ -119,16 +121,16 @@ class TestSyncTree(BaseTestCase):
         params.update(self.CONFIG_TREE_SYNC)
         task = sync_trees.SyncTree(params)
         rsyncd_path = self.rsyncd.tmp_dir + params["remote_path"]
-        extra_path = os.path.join(rsyncd_path, "extra.txt")
-        copied_path = os.path.join(rsyncd_path, "copied.txt")
+        extra_path = _path(rsyncd_path, "extra.txt")
+        copied_path = _path(rsyncd_path, "copied.txt")
         with open(extra_path, 'w') as f:
             f.write("Hello world!")
         shutil.copy2(extra_path, copied_path)
         self.assertFalse(os.path.samefile(extra_path, copied_path))
         task.run_sync()
         local_path = self.local_path
-        extra_path = os.path.join(local_path, "extra.txt")
-        copied_path = os.path.join(local_path, "copied.txt")
+        extra_path = _path(local_path, "extra.txt")
+        copied_path = _path(local_path, "copied.txt")
         self.assertTrue(os.path.samefile(extra_path, copied_path))
 
 
@@ -160,7 +162,7 @@ class TestSyncTree(BaseTestCase):
         source_dir = self.rsyncd.data_dir
         subtrees = "relevant-1 relevant-3".split()
         for tree in subtrees:
-            shutil.rmtree(os.path.join(source_dir, "versioned", tree))
+            shutil.rmtree(_path(source_dir, "versioned", tree))
         stats.update(self.EXPECTED_REPEAT_STATS)
         num_trees = len(subtrees)
         for k, v in stats.iteritems():
@@ -171,14 +173,14 @@ class TestSyncTree(BaseTestCase):
     def _protect_local_trees(self, trees):
         local_path = self.local_path
         for tree in trees:
-            protected = os.path.join(local_path, tree, "PROTECTED")
+            protected = _path(local_path, tree, "PROTECTED")
             with open(protected, 'w'):
                 pass
 
     def _unprotect_local_trees(self, trees):
         local_path = self.local_path
         for tree in trees:
-            protected = os.path.join(local_path, tree, "PROTECTED")
+            protected = _path(local_path, tree, "PROTECTED")
             os.unlink(protected)
 
     def test_delete_old_dirs(self):
@@ -308,34 +310,68 @@ class TestLinkValidation(TreeTestCase):
         enabled = True,
     )
 
+    NUM_LINKS = 6
+
     def dirnames(self):
-        return ["dir" + str(i) for i in xrange(1, 6)]
+        return [u"dir" + str(i) for i in xrange(1, self.NUM_LINKS + 1)]
 
     def linknames(self):
-        return ["link" + str(i) for i in xrange(1, 6)]
+        return [u"link" + str(i) for i in xrange(1, self.NUM_LINKS + 1)]
+
+    def misc_links(self):
+        return (u"link_etc link_missing link_file "
+                 "link_loop_A link_loop_B").split()
 
     def make_layout(self, data_dir):
         os.mkdir(data_dir)
         for dirname, linkname in zip(self.dirnames(), self.linknames()):
-            dirpath = os.path.join(data_dir, dirname)
+            dirpath = _path(data_dir, dirname)
             os.mkdir(dirpath)
-            with open(os.path.join(dirpath, "dummy.txt"), "w"):
+            with open(_path(dirpath, u"dummy.txt"), "w"):
                 pass
-            os.symlink(dirname, os.path.join(data_dir, linkname))
+            os.symlink(dirname, _path(data_dir, linkname))
+        os.symlink(u"/etc", _path(data_dir, u"link_etc"))
+        os.symlink(u"../test_data", _path(data_dir, u"link_missing"))
+        os.symlink(u"dir1/dummy.txt", _path(data_dir, u"link_file"))
+        os.symlink(u"link_loop_A", _path(data_dir, u"link_loop_B"))
+        os.symlink(u"link_loop_B", _path(data_dir, u"link_loop_A"))
 
-    def check_layout(self):
+    def check_layout(self, dirnames=None, linknames=None,
+                           extra_dirs=(), extra_links=None, extra_files=()):
         local_path = self.local_path
-        dirnames = self.dirnames()
-        linknames = self.linknames()
-        self.assertEqual(sorted(os.listdir(local_path)), dirnames+linknames)
-        for dirname in dirnames:
-            dirpath = os.path.join(local_path, dirname)
+        if dirnames is None:
+            dirnames = self.dirnames()
+        if linknames is None:
+            linknames = self.linknames()
+        expected = dirnames + linknames
+        if extra_links is None:
+            extra_links = ["link_etc"]
+        expected.extend(extra_links)
+        expected.extend(extra_dirs)
+        expected.extend(extra_files)
+        expected.sort()
+        self.assertEqual(sorted(os.listdir(local_path)), expected)
+        for dirname, linkname in zip(dirnames, linknames):
+            # Check the directory details
+            dirpath = _path(local_path, dirname)
             self.assertTrue(os.path.isdir(dirpath))
             self.assertFalse(os.path.islink(dirpath))
-        for linkname in linknames:
-            linkpath = os.path.join(local_path, linkname)
+            # Check the link details
+            linkpath = _path(local_path, linkname)
             self.assertTrue(os.path.isdir(linkpath))
             self.assertTrue(os.path.islink(linkpath))
+            self.assertEqual(os.readlink(linkpath), dirname)
+        for name in extra_links:
+            path = _path(local_path, name)
+            self.assertTrue(os.path.islink(path))
+        for name in extra_dirs:
+            path = _path(local_path, name)
+            self.assertFalse(os.path.islink(path))
+            self.assertTrue(os.path.isdir(path))
+        for name in extra_files:
+            path = _path(local_path, name)
+            self.assertFalse(os.path.islink(path))
+            self.assertFalse(os.path.isdir(path))
 
     def test_tree_sync(self):
         # Sanity check that the tree is being created and served correctly
@@ -343,7 +379,7 @@ class TestLinkValidation(TreeTestCase):
         params.update(self.CONFIG_TREE_SYNC)
         task = sync_trees.SyncTree(params)
         task.run_sync()
-        self.check_layout()
+        self.check_layout(extra_links=self.misc_links())
 
     def test_tree_versioned(self):
         params = self.params
@@ -351,6 +387,60 @@ class TestLinkValidation(TreeTestCase):
         task = sync_trees.SyncVersionedTree(params)
         task.run_sync()
         self.check_layout()
+
+    def test_tree_fixes(self):
+        params = self.params
+        params.update(self.CONFIG_TREE_VERSIONED)
+        local_path = self.local_path
+        dirnames = self.dirnames()
+        linknames = self.linknames()
+        extra_links = [u"link_etc"]
+        extra_dirs = []
+        extra_files = []
+        # Check a local directory will be replaced with a link
+        os.mkdir(_path(local_path, u"link1"))
+        # Check that an existing link will be overwritten
+        os.symlink(u"elsewhere", _path(local_path, u"link2"))
+        # An existing link to the right place will be left alone
+        os.symlink(u"dir3", _path(local_path, u"link3"))
+        # Ordinary files are left alone
+        with open(_path(local_path, u"link4"), "w"):
+            pass
+        linknames.remove(u"link4")
+        dirnames.remove(u"dir4")
+        extra_dirs.append(u"dir4")
+        extra_files.append(u"link4")
+        # Protected directories are left alone
+        protected_path = _path(local_path, u"link5")
+        os.mkdir(protected_path)
+        with open(_path(protected_path, "PROTECTED"), "w"):
+            pass
+        linknames.remove(u"link5")
+        dirnames.remove(u"dir5")
+        extra_dirs.extend(u"link5 dir5".split())
+        # Existing symlinks that loop back to the upstream name are left alone
+        os.mkdir(_path(local_path, u"link6"))
+        os.symlink(u"link6", _path(local_path, u"dir6"))
+        dirnames.remove(u"dir6")
+        linknames.remove(u"link6")
+        dirnames.append(u"link6")
+        linknames.append(u"dir6")
+        # Finished setting up the local path to be fixed, run it!
+        stream = StringIO()
+        task = sync_trees.SyncVersionedTree(params, stream)
+        task.run_sync()
+        self.check_layout(dirnames, linknames, extra_dirs, extra_links, extra_files)
+        start_symlink_checks = log_output.index("validity of upstream symlinks")
+        start_hardlink = log_output.index("Consolidating downloaded data")
+        symlink_data = log_output[start_symlink_checks:start_hardlink]
+        self.assertIn("Checking symlink", symlink_data)
+        self.assertIn("Removing old directory", symlink_data)
+        self.assertIn("already exists", symlink_data)
+        self.assertIn("not a directory or symlink, skipping", symlink_data)
+        self.assertIn("Skipping existing directory", symlink_data)
+        self.assertIn("links back to", symlink_data)
+        self.assertIn("is not a directory, ignoring symlink", symlink_data)
+        self.assertIn("does not exist, ignoring symlink", symlink_data)
 
 
 if __name__ == '__main__':

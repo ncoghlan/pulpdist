@@ -296,7 +296,8 @@ class BaseSyncCommand(object):
         self._update_run_log("Downloading {0!r} -> {1!r}", remote_source_path, local_dest_path)
         for seed_path in local_seed_paths:
             self._update_run_log("Using {0!r} as local seed data", seed_path)
-        if not self.dry_run_only and not os.path.exists(local_dest_path):
+        # BZ#790284: What to do when local_dest_path exists, but is not a directory?
+        if not self.dry_run_only and not os.path.lexists(local_dest_path):
             self._update_run_log("Creating destination directory {0!r}", local_dest_path)
             os.makedirs(local_dest_path)
         with self._indent_run_log():
@@ -432,23 +433,26 @@ class SyncVersionedTree(BaseSyncCommand):
                 # If those paths are absolute, os.path.join will just ignore 'local_path'
                 link_path = os.path.join(local_path, link_path)
                 full_target_path = os.path.join(local_path, target_path)
-                self._update_run_log("Checking symlink {0!r}->{1!r}", link_path, target_path)
-                # Only care about symlinks to directories
+                self._update_run_log("Checking symlink '{0} -> {1}'", link_path, target_path)
+                # Only care about symlinks to directories that exist on the local system
                 if not os.path.exists(full_target_path):
-                    self._update_run_log("No local {0!r}, ignoring symlink {1!r}", full_target_path, link_path)
+                    self._update_run_log("Local {0!r} does not exist, ignoring symlink {1!r}", full_target_path, ls_entry)
                     continue
                 if not os.path.isdir(full_target_path):
-                    self._update_run_log("Local {0!r} is not a directory, ignoring symlink {1!r}", full_target_path, link_path)
+                    self._update_run_log("Local {0!r} is not a directory, ignoring symlink {1!r}", full_target_path, ls_entry)
                     continue
-                if os.path.islink(full_target_path) and os.path.samefile(os.readlink(full_target_path), link_path):
-                    self._update_run_log("Local {0!r} links backs to {1!r}, skipping", full_target_path, link_path)
-                    continue
-                if os.path.exists(link_path):
+                if os.path.islink(full_target_path):
+                    old_target_link = os.path.join(os.path.dirname(full_target_path), os.readlink(full_target_path))
+                    if os.path.samefile(old_target_link, link_path):
+                        self._update_run_log("Local {0!r} links backs to {1!r}, ignoring symlink {2!r}", full_target_path, link_path, ls_entry)
+                        continue
+                if os.path.lexists(link_path):
                     if os.path.islink(link_path):
-                        if os.readlink(link_path) == target_path:
-                            self._update_run_log("Symlink {0!r}->{1!r} already exists", link_path, target_path)
+                        old_link_target = os.readlink(link_path)
+                        if old_link_target == target_path:
+                            self._update_run_log("Symlink {0!r} already exists at {1!r}", ls_entry, link_path)
                             continue
-                        self._update_run_log("Unlinking old symlink {0!r}", link_path)
+                        self._update_run_log("Unlinking old symlink '{0} -> {1}'", link_path, old_link_target)
                         os.unlink(link_path)
                     elif os.path.isdir(link_path):
                         if os.path.exists(os.path.join(link_path, "PROTECTED")):
@@ -459,7 +463,7 @@ class SyncVersionedTree(BaseSyncCommand):
                     else:
                         self._update_run_log("Local {0!r} is not a directory or symlink, skipping", link_path)
                         continue
-                self._update_run_log("Creating symlink {0!r}->{1!r}", link_path, target_path)
+                self._update_run_log("Creating symlink '{0} -> {1}'", link_path, target_path)
                 os.symlink(target_path, link_path)
 
     def _delete_old_dirs(self, remote_dir_entries):
