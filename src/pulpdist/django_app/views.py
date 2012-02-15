@@ -11,6 +11,8 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 """View definitions for Pulp UI"""
 
+import json
+
 from django.shortcuts import render
 from django.views.generic import DetailView
 from django.core.urlresolvers import reverse
@@ -58,11 +60,19 @@ class RepoView(RepoMixin, DetailView):
     urlname = 'pulp_repo_details'
     template_name='pulpdist/repo.tmpl'
 
+    def pretty_json(self, value):
+        return json.dumps(value, indent=2, separators=(',', ': '))
+
     def get_object(self, queryset=None):
         server = self.get_pulp_server()
         details = self.get_pulp_repo()
+        annotations = {}
+        for k, v in details["notes"].iteritems():
+            annotations[k] = self.pretty_json(v)
+        details["annotations"] = annotations
         importer_info = server.get_importer(self.repo_id)
-        details["importer_info"] = importer_info
+        if importer_info is not None:
+            details["importer_info"] = self.pretty_json(importer_info)
         return details
 
     def get_breadcrumbs(self):

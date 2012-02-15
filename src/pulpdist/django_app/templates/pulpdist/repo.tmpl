@@ -9,9 +9,9 @@
 
     <h3><p>{% trans 'Annotations' %}</p></h3>
     <ul>
-        {% if object.notes %}
-            {% for k, v in object.notes.iteritems %}
-                <li><b>{{ k }}:</b> {{ v }}</br></li>
+        {% if object.annotations %}
+            {% for k, v in object.annotations.iteritems %}
+                <li><b>{{ k }}:</b> <pre>{{ v }}</pre></br></li>
             {% endfor %}
         {% else %}
             <li>{% trans 'No repository annotations' %}</li>
