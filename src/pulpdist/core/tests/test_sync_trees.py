@@ -354,24 +354,24 @@ class TestLinkValidation(TreeTestCase):
         for dirname, linkname in zip(dirnames, linknames):
             # Check the directory details
             dirpath = _path(local_path, dirname)
-            self.assertTrue(os.path.isdir(dirpath))
-            self.assertFalse(os.path.islink(dirpath))
+            self.assertTrue(os.path.isdir(dirpath), dirpath)
+            self.assertFalse(os.path.islink(dirpath), dirpath)
             # Check the link details
             linkpath = _path(local_path, linkname)
-            self.assertTrue(os.path.isdir(linkpath))
-            self.assertTrue(os.path.islink(linkpath))
+            self.assertTrue(os.path.isdir(linkpath), linkpath)
+            self.assertTrue(os.path.islink(linkpath), linkpath)
             self.assertEqual(os.readlink(linkpath), dirname)
         for name in extra_links:
             path = _path(local_path, name)
-            self.assertTrue(os.path.islink(path))
+            self.assertTrue(os.path.islink(path), path)
         for name in extra_dirs:
             path = _path(local_path, name)
-            self.assertFalse(os.path.islink(path))
-            self.assertTrue(os.path.isdir(path))
+            self.assertFalse(os.path.islink(path), path)
+            self.assertTrue(os.path.isdir(path), path)
         for name in extra_files:
             path = _path(local_path, name)
-            self.assertFalse(os.path.islink(path))
-            self.assertFalse(os.path.isdir(path))
+            self.assertFalse(os.path.islink(path), path)
+            self.assertFalse(os.path.isdir(path), path)
 
     def test_tree_sync(self):
         # Sanity check that the tree is being created and served correctly
@@ -397,19 +397,18 @@ class TestLinkValidation(TreeTestCase):
         extra_links = [u"link_etc"]
         extra_dirs = []
         extra_files = []
-        # Check a local directory will be replaced with a link
+        # Check a local directory will be replaced with a link and vice-versa
         os.mkdir(_path(local_path, u"link1"))
+        os.symlink(u"link1", _path(local_path, u"dir1"))
         # Check that an existing link will be overwritten
         os.symlink(u"elsewhere", _path(local_path, u"link2"))
         # An existing link to the right place will be left alone
         os.symlink(u"dir3", _path(local_path, u"link3"))
-        # Ordinary files are left alone
+        # Ordinary files are converted to links and directories
+        with open(_path(local_path, u"dir4"), "w"):
+            pass
         with open(_path(local_path, u"link4"), "w"):
             pass
-        linknames.remove(u"link4")
-        dirnames.remove(u"dir4")
-        extra_dirs.append(u"dir4")
-        extra_files.append(u"link4")
         # Protected directories are left alone
         protected_path = _path(local_path, u"link5")
         os.mkdir(protected_path)
@@ -419,6 +418,8 @@ class TestLinkValidation(TreeTestCase):
         dirnames.remove(u"dir5")
         extra_dirs.extend(u"link5 dir5".split())
         # Existing symlinks that loop back to the upstream name are left alone
+        # Exclude this dir from the sync so the link remains in place
+        params["excluded_versions"] = [u"dir6"]
         os.mkdir(_path(local_path, u"link6"))
         os.symlink(u"link6", _path(local_path, u"dir6"))
         dirnames.remove(u"dir6")
@@ -429,15 +430,17 @@ class TestLinkValidation(TreeTestCase):
         stream = StringIO()
         task = sync_trees.SyncVersionedTree(params, stream)
         task.run_sync()
-        self.check_layout(dirnames, linknames, extra_dirs, extra_links, extra_files)
+        # Now check all the little scenarios have the expected results
         log_output = stream.getvalue()
+        self.assertIn("replacing with directory", log_output)
+        self.check_layout(dirnames, linknames, extra_dirs, extra_links, extra_files)
         start_symlink_checks = log_output.index("validity of upstream symlinks")
         start_hardlink = log_output.index("Consolidating downloaded data")
         symlink_data = log_output[start_symlink_checks:start_hardlink]
         self.assertIn("Checking symlink", symlink_data)
         self.assertIn("Removing old directory", symlink_data)
         self.assertIn("already exists", symlink_data)
-        self.assertIn("not a directory or symlink, skipping", symlink_data)
+        self.assertIn("Unlinking old file", symlink_data)
         self.assertIn("Skipping existing directory", symlink_data)
         self.assertIn("links back to", symlink_data)
         self.assertIn("is not a directory, ignoring symlink", symlink_data)

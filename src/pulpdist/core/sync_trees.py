@@ -296,10 +296,18 @@ class BaseSyncCommand(object):
         self._update_run_log("Downloading {0!r} -> {1!r}", remote_source_path, local_dest_path)
         for seed_path in local_seed_paths:
             self._update_run_log("Using {0!r} as local seed data", seed_path)
-        # BZ#790284: What to do when local_dest_path exists, but is not a directory?
-        if not self.dry_run_only and not os.path.lexists(local_dest_path):
-            self._update_run_log("Creating destination directory {0!r}", local_dest_path)
-            os.makedirs(local_dest_path)
+        if not self.dry_run_only:
+            # Remove any previously synchronised files and symlinks that have
+            # have been changed to directories on the source server
+            if (os.path.lexists(local_dest_path) and
+                (os.path.islink(local_dest_path) or
+                 not os.path.isdir(local_dest_path))):
+                self._update_run_log("Unlinking {0!r} (replacing with directory)", local_dest_path)
+                os.unlink(local_dest_path)
+            # Ensure the full path to the destination directory exists locally
+            if not os.path.lexists(local_dest_path):
+                self._update_run_log("Creating destination directory {0!r}", local_dest_path)
+                os.makedirs(local_dest_path)
         with self._indent_run_log():
             try:
                 return_code, captured = self._run_shell_command(rsync_fetch_command)
@@ -318,7 +326,7 @@ class BaseSyncCommand(object):
                         result_msg = "Partially updated {0!r} from {1!r}"
                         result = self.SYNC_PARTIAL
                     elif rsync_stats.transferred_file_count == 0:
-                        result_msg = "{1!r} already up to date relative to {0!r}"
+                        result_msg = "{0!r} already up to date relative to {1!r} (or all updates were found in seed directory)"
                         result = self.SYNC_UP_TO_DATE
                     else:
                         result_msg = "Successfully updated {0!r} from {1!r}"
@@ -461,8 +469,8 @@ class SyncVersionedTree(BaseSyncCommand):
                         self._update_run_log("Removing old directory {0!r}", link_path)
                         shutil.rmtree(link_path)
                     else:
-                        self._update_run_log("Local {0!r} is not a directory or symlink, skipping", link_path)
-                        continue
+                        self._update_run_log("Unlinking old file {0!r}", link_path)
+                        os.unlink(link_path)
                 self._update_run_log("Creating symlink '{0} -> {1}'", link_path, target_path)
                 os.symlink(target_path, link_path)
 
