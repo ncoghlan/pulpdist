@@ -164,7 +164,8 @@ class PulpServerClient(pulp.client.api.server.PulpServer):
         return PulpRepositories(self).delete_entry(repo_id)
 
     def get_importer(self, repo_id):
-        return self.get_importers(repo_id)[0]
+        importers = self.get_importers(repo_id)
+        return importers[0] if importers else None
 
     def get_importers(self, repo_id):
         return PulpRepositories(self).get_importers(repo_id)
