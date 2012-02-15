@@ -52,10 +52,12 @@ def _validate_repos(args):
     with open(args.repo_fname) as repo_file:
         repo_configs = json.load(repo_file)
     for repo_config in repo_configs:
+        repo_id = repo_config["repo_id"]
+        if verbose:
+            print("Validating config for {0}".format(repo_id))
         repo_config = RepoConfig.ensure_validated(repo_config)
         if verbose:
-            repo_id = repo_config["repo_id"]
-            print("Config for {0} is valid".format(repo_id))
+            print("  Config for {0} is valid".format(repo_id))
 
 def _init_repos(args):
     verbose = args.verbose
