@@ -31,8 +31,7 @@ Available Commands
 * ``sync``: Request immediate synchronisation of repositories
 * ``init``: Create or update repositories on the server
 * ``delete``: Remove repositories from the server
-* ``check``: Check the validity of a repository definition file
-  (NOT YET IMPLEMENTED)
+* ``validate``: Check the validity of a repository definition file
 
 
 The repository definition file format
