@@ -430,6 +430,7 @@ class TestLinkValidation(TreeTestCase):
         task = sync_trees.SyncVersionedTree(params, stream)
         task.run_sync()
         self.check_layout(dirnames, linknames, extra_dirs, extra_links, extra_files)
+        log_output = stream.getvalue()
         start_symlink_checks = log_output.index("validity of upstream symlinks")
         start_hardlink = log_output.index("Consolidating downloaded data")
         symlink_data = log_output[start_symlink_checks:start_hardlink]

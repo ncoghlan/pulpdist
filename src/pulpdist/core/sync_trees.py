@@ -444,7 +444,7 @@ class SyncVersionedTree(BaseSyncCommand):
                 if os.path.islink(full_target_path):
                     old_target_link = os.path.join(os.path.dirname(full_target_path), os.readlink(full_target_path))
                     if os.path.samefile(old_target_link, link_path):
-                        self._update_run_log("Local {0!r} links backs to {1!r}, ignoring symlink {2!r}", full_target_path, link_path, ls_entry)
+                        self._update_run_log("Local {0!r} links back to {1!r}, ignoring symlink {2!r}", full_target_path, link_path, ls_entry)
                         continue
                 if os.path.lexists(link_path):
                     if os.path.islink(link_path):
