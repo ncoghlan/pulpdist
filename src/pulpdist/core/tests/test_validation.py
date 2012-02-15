@@ -175,5 +175,7 @@ class TestValidation(unittest.TestCase):
             validator(None)
 
 
+# TODO: Unit tests for ValidatedTest
+
 if __name__ == '__main__':
     unittest.main()

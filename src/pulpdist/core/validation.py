@@ -14,7 +14,7 @@ import re
 
 class ValidationError(Exception): pass
 
-def _fail_validation(fmt, *args, **kwds):
+def fail_validation(fmt, *args, **kwds):
     raise ValidationError(fmt.format(*args, **kwds))
 
 def check_type(expected_type, allow_none=False):
@@ -22,7 +22,7 @@ def check_type(expected_type, allow_none=False):
         if allow_none and value is None:
             return
         if not isinstance(value, expected_type):
-            _fail_validation("Expected {0!r} for {1}, got {2!r}",
+            fail_validation("Expected {0!r} for {1}, got {2!r}",
                              expected_type, setting, type(value))
     return validator
 
@@ -32,8 +32,11 @@ def check_text(allow_none=False):
     #       Means fixing deserialisation interfaces :P
     return check_type(basestring, allow_none)
 
-def check_regex(pattern, expected, allow_none=False):
+def check_regex(pattern, expected=None, allow_none=False):
     _validate_text = check_text()
+    if expected is None:
+        expected = "text matching {0!r}".format(pattern)
+    err_msg = "Expected {0} for {{0}}, got {{1!r}}".format(expected)
     def validator(value, setting='setting'):
         if allow_none and value is None:
             return
@@ -41,13 +44,12 @@ def check_regex(pattern, expected, allow_none=False):
         # We use Unicode storage, but stick with the ASCII rules
         # for pattern matching on whitespace etc.
         if re.match(pattern, value) is None:
-            _fail_validation("Expected {0} for {1}, got {2!r}",
-                             expected, setting, value)
+            fail_validation(err_msg, setting, value)
     return validator
 
 PULP_ID_REGEX = r'^[_A-Za-z]+$'
-def check_pulp_id(allow_none=False):
-    return check_regex(PULP_ID_REGEX, 'valid Pulp ID', allow_none)
+def check_pulp_id(expected='valid Pulp ID', allow_none=False):
+    return check_regex(PULP_ID_REGEX, expected, allow_none)
 
 VALID_FILTER_REGEX = r'^[*?\w@%+=:,./-]*$'
 def check_rsync_filter(allow_none=False):
@@ -74,7 +76,7 @@ def check_remote_path(allow_none=False):
             return
         _validate_path(value, setting)
         if not value.startswith('/') or not value.endswith('/'):
-            _fail_validation("{0!r} must start and end with '/' "
+            fail_validation("{0!r} must start and end with '/' "
                              "characters, got {1!r}",
                              setting, value)
     return validator
@@ -85,15 +87,15 @@ def check_sequence(item_validator, allow_none=False):
             return
         # Check we've been given a sequence
         if isinstance(value, basestring):
-            _fail_validation("Strings not accepted for {0!r}, got {1!r}",
+            fail_validation("Strings not accepted for {0!r}, got {1!r}",
                               setting, value)
         if hasattr(value, 'keys'):
-            _fail_validation("Mappings not accepted for {0!r}, got {1!r}",
+            fail_validation("Mappings not accepted for {0!r}, got {1!r}",
                               setting, type(value))
         try:
             itr = iter(value)
         except (TypeError, AttributeError):
-            _fail_validation("Expected sequence for {0!r}, got {1!r}",
+            fail_validation("Expected sequence for {0!r}, got {1!r}",
                               setting, type(value))
         # Check individual items
         for i, item in enumerate(itr):
@@ -109,18 +111,18 @@ def check_mapping(spec, allow_none=False):
         try:
             value_items = value.items()
         except (AttributeError, TypeError):
-            _fail_validation("Expected mapping for {0}, got {1!r}",
+            fail_validation("Expected mapping for {0}, got {1!r}",
                                 setting, type(value))
         # Check for missing and extra attributes
         provided = set(value)
         expected = set(spec)
         missing = expected - provided
         if missing:
-            _fail_validation("{0!r} missing from {1}, got {2!r}",
+            fail_validation("{0!r} missing from {1}, got {2!r}",
                             sorted(missing), setting, value)
         extra = provided - expected
         if extra:
-            _fail_validation("{0!r} unexpected in {1}, got {2!r}",
+            fail_validation("{0!r} unexpected in {1}, got {2!r}",
                             sorted(extra), setting, value)
         # Check the validation of the individual items
         for key, value in value_items:
@@ -132,7 +134,27 @@ def validate_config(config, spec):
     check_mapping(spec)(config, 'config')
 
 
+class ValidatedConfig(object):
+    _SPEC = {}
+    _DEFAULTS = {}
 
+    def __init__(self, config=None):
+        self.spec = self._SPEC
+        self.config = saved = self._DEFAULTS.copy()
+        if config is not None:
+            saved.update(config)
+
+    def __iter__(self):
+        return self._SPEC.iterkeys()
+
+    def validate(self):
+        validate_config(self.config, self.spec)
+
+    @classmethod
+    def ensure_validated(cls, config):
+        checked_config = cls(config)
+        checked_config.validate()
+        return checked_config.config
 
 
 

@@ -17,7 +17,7 @@ def _updated(original, additions):
     new.update(additions)
     return new
 
-class TreeSyncConfig(object):
+class TreeSyncConfig(validation.ValidatedConfig):
     _SPEC = {
         u"tree_name": validation.check_text(),
         u"remote_server": validation.check_host(),
@@ -40,17 +40,6 @@ class TreeSyncConfig(object):
         u"rsync_port": None,
         u"enabled": False,
     }
-
-    def __init__(self, config=None):
-        self.config = saved = self._DEFAULTS.copy()
-        if config is not None:
-            saved.update(config)
-
-    def __iter__(self):
-        return self._SPEC.iterkeys()
-
-    def validate(self):
-        validation.validate_config(self.config, self._SPEC)
 
 class VersionedSyncConfig(TreeSyncConfig):
     _SPEC = _updated(TreeSyncConfig._SPEC, {

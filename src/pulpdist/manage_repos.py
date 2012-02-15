@@ -17,6 +17,18 @@ import json
 import sys
 import contextlib
 
+try:
+    import pulpdist
+except ImportError:
+    # Allow running from source checkout
+    import os.path
+    _this = os.path.dirname(os.path.abspath(__file__))
+    _src_dir = os.path.normpath(os.path.join(_this, "..", "src"))
+    sys.path.insert(0, _src_dir)
+
+from pulpdist.core.pulpapi import PulpServerClient, ServerRequestError
+from pulpdist.core.repo_config import RepoConfig
+
 def _format_data(data, prefix=0, indent=2):
     out = json.dumps(data, indent=indent)
     if prefix:
@@ -35,16 +47,15 @@ def _catch_server_error(msg):
     except ServerRequestError, ex:
         _print_server_error(msg, ex)
 
-try:
-    import pulpdist
-except ImportError:
-    # Allow running from source checkout
-    import os.path
-    _this = os.path.dirname(os.path.abspath(__file__))
-    _src_dir = os.path.normpath(os.path.join(_this, "..", "src"))
-    sys.path.insert(0, _src_dir)
-
-from pulpdist.core.pulpapi import PulpServerClient, ServerRequestError
+def _validate_repos(args):
+    verbose = args.verbose
+    with open(args.repo_fname) as repo_file:
+        repo_configs = json.load(repo_file)
+    for repo_config in repo_configs:
+        repo_config = RepoConfig.ensure_validated(repo_config)
+        if verbose:
+            repo_id = repo_config["repo_id"]
+            print("Config for {0} is valid".format(repo_id))
 
 def _init_repos(args):
     verbose = args.verbose
@@ -52,6 +63,7 @@ def _init_repos(args):
     with open(args.repo_fname) as repo_file:
         repo_configs = json.load(repo_file)
     for repo_config in repo_configs:
+        repo_config = RepoConfig.ensure_validated(repo_config)
         repo_id = repo_config["repo_id"]
         if verbose:
             print("Creating {0}".format(repo_id))
@@ -59,10 +71,11 @@ def _init_repos(args):
             print("Configuration:")
             print(_format_data(repo_config))
         try:
-            server.create_repo(repo_id,
-                               repo_config.get("display_name", None),
-                               repo_config.get("description", None),
-                               repo_config.get("notes", None))
+            server.create_or_save_repo(
+                repo_id,
+                repo_config.get("display_name", None),
+                repo_config.get("description", None),
+                repo_config.get("notes", None))
         except ServerRequestError, ex:
             msg = "Failed to create {0}".format(repo_id)
             _print_server_error(msg, ex)
@@ -122,6 +135,7 @@ _COMMANDS = {
     "sync": _sync_repos,
     "list": _list_repos,
     "delete": _delete_repos,
+    "validate": _validate_repos,
 }
 
 _REQUIRE_REPO_LIST = ["init"]
