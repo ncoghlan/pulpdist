@@ -30,9 +30,9 @@ urlpatterns = patterns('',
         login_required(ServerView.as_view()), name=ServerView.urlname),
     url(r'^server/(?P<server_slug>[-\w]+)/repos/$',
         login_required(RepoListView.as_view()), name=RepoListView.urlname),
-    url(r'^server/(?P<server_slug>[-\w]+)/repos/(?P<repo_id>\w+)/$',
+    url(r'^server/(?P<server_slug>[-\w]+)/repos/(?P<repo_id>[-\w]+)/$',
         login_required(RepoView.as_view()), name=RepoView.urlname),
-    url(r'^server/(?P<server_slug>[-\w]+)/repos/(?P<repo_id>\w+)/sync_history$',
+    url(r'^server/(?P<server_slug>[-\w]+)/repos/(?P<repo_id>[-\w]+)/sync_history$',
         login_required(SyncHistoryView.as_view()), name=SyncHistoryView.urlname),
 )
 

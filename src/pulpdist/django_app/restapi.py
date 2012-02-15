@@ -54,7 +54,7 @@ class BaseView(View):
                 part = r'(?P<server_slug>[-\w]+)'
             elif part.startswith('<'):
                 part = part.replace('<', r'(?P<')
-                part = part.replace('>', r'>\w+)')
+                part = part.replace('>', r'>[-\w]+)')
             regex_parts.append(part)
         regex_parts.append('$')
         return  '^' + '/'.join(regex_parts)
