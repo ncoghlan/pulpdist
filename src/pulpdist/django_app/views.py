@@ -71,8 +71,9 @@ class RepoView(RepoMixin, DetailView):
             annotations[k] = self.pretty_json(v)
         details["annotations"] = annotations
         importer_info = server.get_importer(self.repo_id)
-        if importer_info is not None:
-            details["importer_info"] = self.pretty_json(importer_info)
+        if importer_info["last_sync"] is None:
+            importer_info["last_sync"] = "Never"
+        details["importer_info"] = importer_info
         return details
 
     def get_breadcrumbs(self):

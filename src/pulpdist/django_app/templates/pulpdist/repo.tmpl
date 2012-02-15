@@ -7,17 +7,6 @@
     <h2>{% trans 'Pulp Repository Details for' %} {{ object.display_name }}</h2>
     {{ object.description }}
 
-    <h3><p>{% trans 'Annotations' %}</p></h3>
-    <ul>
-        {% if object.annotations %}
-            {% for k, v in object.annotations.iteritems %}
-                <li><b>{{ k }}:</b> <pre>{{ v }}</pre></br></li>
-            {% endfor %}
-        {% else %}
-            <li>{% trans 'No repository annotations' %}</li>
-        {% endif %}
-    </ul>
-
     <h3><p>{% trans 'Automatic Update Configuration' %}</p></h3>
     <ul>
         {% if object.importer_info %}
@@ -26,11 +15,22 @@
         <li><b>{% trans 'Update in progress?' %}:</b> {{ object.importer_info.sync_in_progress }}</br></li>
         <li><b>{% trans 'Configuration details' %}:</b><ul>
             {% for k, v in object.importer_info.config.iteritems %}
-            <li>{{ k }} = {{ v }}</br></li>
+            <li><b>{{ k }}:</b> {{ v }}</br></li>
             {% endfor %}
             </ul></li>
         {% else %}
             <li>{% trans 'Automatic updates not configured' %}</li>
+        {% endif %}
+    </ul>
+
+    <h3><p>{% trans 'Annotations' %}</p></h3>
+    <ul>
+        {% if object.annotations %}
+            {% for k, v in object.annotations.iteritems %}
+                <li><b>{{ k }}:</b> <pre>{{ v }}</pre></br></li>
+            {% endfor %}
+        {% else %}
+            <li>{% trans 'No repository annotations' %}</li>
         {% endif %}
     </ul>
 
