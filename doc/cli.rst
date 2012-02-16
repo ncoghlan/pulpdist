@@ -27,7 +27,8 @@ to create the login credentials for the Pulp server with the upstream
 Available Commands
 ------------------
 
-* ``list``: Display repository details
+* ``list``: Display id and name for repositories
+* ``info``: Display repository details
 * ``sync``: Request immediate synchronisation of repositories
 * ``init``: Create or update repositories on the server
 * ``delete``: Remove repositories from the server
