@@ -48,7 +48,8 @@ def _init_repos(args):
         repo_config = RepoConfig.ensure_validated(repo_config)
         repo_id = repo_config["repo_id"]
         if repo_id not in relevant:
-            print("Skipping {0}".format(repo_id))
+            if verbose > 1:
+                print("Skipping {0}".format(repo_id))
             continue
         if not _confirm_operation("Initialise", repo_id, args):
             if verbose:
@@ -189,44 +190,38 @@ def _delete_repos(args):
         with _catch_server_error("Failed to delete {0}".format(repo_id)):
                 server.delete_repo(repo_id)
 
-_COMMANDS = {
-    "init": _init_repos,
-    "sync": _sync_repos,
-    "list": _list_repo_summaries,
-    "info": _list_repo_details,
-    "status": _list_repo_status,
-    "delete": _delete_repos,
-    "validate": _validate_repos,
-}
+_COMMANDS = (
+    ("init", _init_repos, "Create or update repositories"),
+    ("sync", _sync_repos, "Sync repositories"),
+    ("list", _list_repo_summaries, "List repository names"),
+    ("info", _list_repo_details, "Display repository details"),
+    ("status", _list_repo_status, "Display repository sync status"),
+    ("delete", _delete_repos, "Delete repositories"),
+    ("validate", _validate_repos, "Validate repository configuration"),
+)
 
-_REQUIRE_CONFIG = ["init"]
-
-class StoreCommand(argparse.Action):
-    def __call__(self, parser, namespace, cmd, option_string=None):
-        namespace.command = cmd
-        namespace.command_func = _COMMANDS[cmd]
-        namespace.config_required = (cmd in _REQUIRE_CONFIG)
-
+_REQUIRE_CONFIG = set("init validate".split())
 
 def add_parser_subcommands(parser):
-    parser.add_argument("command", metavar="CMD", type=str, choices=_COMMANDS.keys(),
-                        action=StoreCommand, help="The operation to perform")
+    description = "Operation to apply to specified repositories "
+    subparser_help = "(use 'CMD --help' for subcommand details)"
+    subparsers = parser.add_subparsers(title="Repo Commands",
+                                       description=description,
+                                       help=subparser_help)
+    for name, func, cmd_help in _COMMANDS:
+        cmd_parser = subparsers.add_parser(name, help=cmd_help)
+        cmd_parser.set_defaults(command_func=func)
+        if name in _REQUIRE_CONFIG:
+            cmd_parser.add_argument("config_fname", metavar="CONFIG",
+                                    help="A JSON file with repo config details")
+    # Ensure config_fname is always set, even for commands that don't need it
+    parser.set_defaults(config_fname=None)
 
 def postprocess_args(parser, args):
-    args.server = server = PulpServerClient(args.pulp_host)
     # Must have already saved credentials with "pulp-admin auth login"
     pulp_host = args.pulp_host
-    config_fname = args.config_fname
-    if args.config_required and not config_fname:
-        parser.error("{0!r} command requires a configuration file".format(args.command))
-    if args.repo_list:
-        pass
-    elif config_fname:
-        with open(config_fname) as repo_file:
-            if args.verbose > 1:
-                print("Reading repository list from {0}".format(config_fname))
-            args.repo_list = [repo["repo_id"] for repo in json.load(repo_file)]
-    else:
+    args.server = server = PulpServerClient(pulp_host)
+    if args.config_fname is None and not args.repo_list:
         if args.verbose > 1:
             print("Retrieving repository list from {0}".format(pulp_host))
         args.repo_list = [repo["id"] for repo in server.get_repos()]

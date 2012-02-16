@@ -21,20 +21,14 @@ from .cli.commands import add_parser_subcommands, postprocess_args
 def make_parser():
     prog = "python -m {0}.manage_repos".format(__package__)
     description = "Manage Pulp Repositories"
-    epilog = ("The expected format for the JSON config file is a top level list "
-              "containing mappings with a 'repo_id' attribute. Any other fields "
-              "are only processed by the 'init' command.")
-    parser = argparse.ArgumentParser(prog=prog, description=description, epilog=epilog)
+    parser = argparse.ArgumentParser(prog=prog, description=description)
     parser.add_argument("--repo", metavar="REPO_ID",
                         dest="repo_list", action='append',
                         help="Apply requested operation to this repo "
                              "(may be specified multiple times)")
-    parser.add_argument("--config", metavar="CONFIG", dest="config_fname",
-                        help="A JSON file describing repos to manage")
-    fqdn = socket.getfqdn()
-    host_help = "The Pulp server to be managed (Default: {0})".format(fqdn)
+    host_help = "The Pulp server to be managed (Default: %(default)s)"
     parser.add_argument("--host", metavar="HOST", dest="pulp_host",
-                        default=fqdn, help=host_help)
+                        default=socket.getfqdn(), help=host_help)
     parser.add_argument("--force", action='store_true',
                         help="Automatically answer yes to all prompts")
     parser.add_argument("-v", "--verbose",

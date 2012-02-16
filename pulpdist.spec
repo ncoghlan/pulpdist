@@ -274,6 +274,7 @@ fi
 - manage_repos host selection is now a --host option (defaulting to local FQDN)
 - New manage_repos --force option to automatically answer 'yes' to prompts
 - "sync" and "init" commands now prompt for each repo by default
+- manage_repos now uses argparse subcommand support (much better help output)
 
 
 * Wed Feb 15 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.5-1
