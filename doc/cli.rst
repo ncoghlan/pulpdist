@@ -29,6 +29,7 @@ Available Commands
 
 * ``list``: Display id and name for repositories
 * ``info``: Display repository details
+* ``status``: Display repository synchronisation status
 * ``sync``: Request immediate synchronisation of repositories
 * ``init``: Create or update repositories on the server
 * ``delete``: Remove repositories from the server

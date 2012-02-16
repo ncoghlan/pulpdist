@@ -15,8 +15,21 @@
 import json
 import sys
 import contextlib
+from operator import itemgetter
 
 from ..core.pulpapi import ServerRequestError
+
+def _id_field_width(repos):
+    return max(map(len, map(itemgetter("id"), repos))) + 3
+
+def _print_repo_table(field_format, repos, header=None):
+    id_width = _id_field_width(repos)
+    if header is not None:
+        print("{1:{0}.{0}}{2}".format(id_width, "Repo ID", header))
+    row_format = "{id:{0}.{0}}" + field_format
+    for repo in repos:
+        print(row_format.format(id_width, **repo))
+
 
 def _format_data(data, prefix=0, indent=2):
     out = json.dumps(data, indent=indent)

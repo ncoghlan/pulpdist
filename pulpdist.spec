@@ -268,6 +268,7 @@ fi
 - Created pulpdist.cli subpackage for Management CLI support code
 - Renamed previous "list" command to "info"
 - Added new "list" command that just prints the repo id and name
+- Added "status" command to print repo sync status
 
 * Wed Feb 15 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.5-1
 - Fix Pulp Server form in Django admin interface
