@@ -5,7 +5,7 @@
 # -- headers - pulpdist Python package  --------------------------------------
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
-Version:        0.0.5
+Version:        0.0.6
 Release:        1%{?dist}
 Group:          Development/Tools
 License:        GPLv2
@@ -264,6 +264,9 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* ??? Feb ?? 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.6-1
+- Things!
+
 * Wed Feb 15 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.5-1
 - Fix Pulp Server form in Django admin interface
 - Provide link to Django admin from main site when logged in as a site admin
