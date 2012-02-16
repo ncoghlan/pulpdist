@@ -12,11 +12,19 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.\
 
+import argparse
 import json
 
-from ..core.pulpapi import ServerRequestError
+from ..core.pulpapi import PulpServerClient, ServerRequestError
 from ..core.repo_config import RepoConfig
 from .display import _format_data, _catch_server_error, _print_repo_table
+
+def _confirm_operation(action, repo_id, args):
+    if args.force:
+        return True
+    prompt = "{0} {1}? (y/n):".format(action, repo_id)
+    response = raw_input(prompt)
+    return response.lower() in ('y', 'yes')
 
 def _validate_repos(args):
     verbose = args.verbose
@@ -33,13 +41,21 @@ def _validate_repos(args):
 def _init_repos(args):
     verbose = args.verbose
     server = args.server
-    with open(args.repo_fname) as repo_file:
+    relevant = set(args.repo_list)
+    with open(args.config_fname) as repo_file:
         repo_configs = json.load(repo_file)
     for repo_config in repo_configs:
         repo_config = RepoConfig.ensure_validated(repo_config)
         repo_id = repo_config["repo_id"]
+        if repo_id not in relevant:
+            print("Skipping {0}".format(repo_id))
+            continue
+        if not _confirm_operation("Initialise", repo_id, args):
+            if verbose:
+                print("Not initialising {0}".format(repo_id))
+            continue
         if verbose:
-            print("Creating {0}".format(repo_id))
+            print("Creating or updating {0}".format(repo_id))
         if verbose > 1:
             print("Configuration:")
             print(_format_data(repo_config))
@@ -50,11 +66,11 @@ def _init_repos(args):
                 repo_config.get("description", None),
                 repo_config.get("notes", None))
         except ServerRequestError, ex:
-            msg = "Failed to create {0}".format(repo_id)
+            msg = "Failed to create or update {0}".format(repo_id)
             _print_server_error(msg, ex)
             continue
         if verbose:
-            print("Created {0}".format(repo_id))
+            print("Created or updated {0}".format(repo_id))
         importer_id = repo_config.get("importer_type_id", None)
         if importer_id is not None:
             if verbose:
@@ -151,6 +167,10 @@ def _sync_repos(args):
     verbose = args.verbose
     server = args.server
     for repo_id in args.repo_list:
+        if not _confirm_operation("Sync", repo_id, args):
+            if verbose:
+                print("Not syncing {0}".format(repo_id))
+            continue
         if verbose:
             print("Syncing {0}".format(repo_id))
         with _catch_server_error("Failed to sync {0}".format(repo_id)):
@@ -160,15 +180,14 @@ def _delete_repos(args):
     verbose = args.verbose
     server = args.server
     for repo_id in args.repo_list:
-        response = raw_input("Delete {0}? (y/n):".format(repo_id))
-        delete = response.lower() == 'y'
-        if delete:
+        if not _confirm_operation("Delete", repo_id, args):
             if verbose:
-                print("Deleting {0}".format(repo_id))
-            with _catch_server_error("Failed to delete {0}".format(repo_id)):
-                    server.delete_repo(repo_id)
-        elif verbose:
-            print("Not deleting {0}".format(repo_id))
+                print("Not deleting {0}".format(repo_id))
+            continue
+        if verbose:
+            print("Deleting {0}".format(repo_id))
+        with _catch_server_error("Failed to delete {0}".format(repo_id)):
+                server.delete_repo(repo_id)
 
 _COMMANDS = {
     "init": _init_repos,
@@ -180,5 +199,36 @@ _COMMANDS = {
     "validate": _validate_repos,
 }
 
-_REQUIRE_REPO_LIST = ["init"]
+_REQUIRE_CONFIG = ["init"]
+
+class StoreCommand(argparse.Action):
+    def __call__(self, parser, namespace, cmd, option_string=None):
+        namespace.command = cmd
+        namespace.command_func = _COMMANDS[cmd]
+        namespace.config_required = (cmd in _REQUIRE_CONFIG)
+
+
+def add_parser_subcommands(parser):
+    parser.add_argument("command", metavar="CMD", type=str, choices=_COMMANDS.keys(),
+                        action=StoreCommand, help="The operation to perform")
+
+def postprocess_args(parser, args):
+    args.server = server = PulpServerClient(args.pulp_host)
+    # Must have already saved credentials with "pulp-admin auth login"
+    pulp_host = args.pulp_host
+    config_fname = args.config_fname
+    if args.config_required and not config_fname:
+        parser.error("{0!r} command requires a configuration file".format(args.command))
+    if args.repo_list:
+        pass
+    elif config_fname:
+        with open(config_fname) as repo_file:
+            if args.verbose > 1:
+                print("Reading repository list from {0}".format(config_fname))
+            args.repo_list = [repo["repo_id"] for repo in json.load(repo_file)]
+    else:
+        if args.verbose > 1:
+            print("Retrieving repository list from {0}".format(pulp_host))
+        args.repo_list = [repo["id"] for repo in server.get_repos()]
+
 

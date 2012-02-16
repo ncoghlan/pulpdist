@@ -14,56 +14,46 @@
 
 import argparse
 import json
+import socket
 
-from .core.pulpapi import PulpServerClient
-from .cli.commands import _COMMANDS, _REQUIRE_REPO_LIST
+from .cli.commands import add_parser_subcommands, postprocess_args
 
-class StoreCommand(argparse.Action):
-    def __call__(self, parser, namespace, cmd, option_string=None):
-        namespace.command = cmd
-        namespace.fetch_repo_list = (cmd not in _REQUIRE_REPO_LIST)
-
-def _make_parser():
-    description="Manage Pulp Repositories"
-    epilog = ("The expected JSON file format is a top level list containing "
-              "mappings with a 'repo_id' attribute. Any other fields are "
-              "only processed by the 'init' command.")
-    parser = argparse.ArgumentParser(description=description, epilog=epilog)
-    parser.add_argument("-v", "--verbose", dest="verbose", action='count',
+def make_parser():
+    prog = "python -m {0}.manage_repos".format(__package__)
+    description = "Manage Pulp Repositories"
+    epilog = ("The expected format for the JSON config file is a top level list "
+              "containing mappings with a 'repo_id' attribute. Any other fields "
+              "are only processed by the 'init' command.")
+    parser = argparse.ArgumentParser(prog=prog, description=description, epilog=epilog)
+    parser.add_argument("--repo", metavar="REPO_ID",
+                        dest="repo_list", action='append',
+                        help="Apply requested operation to this repo "
+                             "(may be specified multiple times)")
+    parser.add_argument("--config", metavar="CONFIG", dest="config_fname",
+                        help="A JSON file describing repos to manage")
+    fqdn = socket.getfqdn()
+    host_help = "The Pulp server to be managed (Default: {0})".format(fqdn)
+    parser.add_argument("--host", metavar="HOST", dest="pulp_host",
+                        default=fqdn, help=host_help)
+    parser.add_argument("--force", action='store_true',
+                        help="Automatically answer yes to all prompts")
+    parser.add_argument("-v", "--verbose",
+                        dest="verbose", action='count',
                         help="Increase level of debugging information displayed")
-    parser.add_argument("-f", "--file", metavar="REPO_LIST", dest="repo_fname", type=str,
-                        help="A JSON file identifying repos to manage")
-    parser.add_argument("pulp_host", metavar="HOST", type=str,
-                        help="The Pulp server with the repos to be synchronised")
-    parser.add_argument("command", metavar="CMD", type=str, choices=_COMMANDS.keys(),
-                        action=StoreCommand, help="The operation to perform")
+    add_parser_subcommands(parser)
     return parser
 
-def _parse_args(argv):
-    parser = _make_parser()
+def parse_args(argv):
+    parser = make_parser()
     args = parser.parse_args(argv)
-    args.server = server = PulpServerClient(args.pulp_host)
-    # Must have already saved credentials with "pulp-admin auth login"
-    pulp_host = args.pulp_host
-    repo_fname = args.repo_fname
-    if repo_fname:
-        with open(repo_fname) as repo_file:
-            if args.verbose:
-                print("Reading repository list from {0}".format(repo_fname))
-            args.repo_list = [repo["repo_id"] for repo in json.load(repo_file)]
-    elif args.fetch_repo_list:
-        if args.verbose:
-            print("Retrieving repository list from {0}".format(pulp_host))
-        args.repo_list = [repo["id"] for repo in server.get_repos()]
-    else:
-        parser.error("{0} command requires an explicit repo list".format(args.command))
+    postprocess_args(parser, args)
     return args
 
-def _main(argv):
-    args = _parse_args(argv)
-    _COMMANDS[args.command](args)
+def main(argv):
+    args = parse_args(argv)
+    args.command_func(args)
 
 
 if __name__ == "__main__":
     import sys
-    _main(sys.argv[1:])
+    main(sys.argv[1:])
