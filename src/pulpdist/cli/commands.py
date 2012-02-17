@@ -41,13 +41,20 @@ def _validate_repos(args):
 def _init_repos(args):
     verbose = args.verbose
     server = args.server
-    relevant = set(args.repo_list)
+    repo_list = args.repo_list
+    if repo_list is not None:
+        relevant = set(repo_list)
+        def _is_relevant(repo_id):
+            return repo_id in relevant
+    else:
+        def _is_relevant(repo_id):
+            return True
     with open(args.config_fname) as repo_file:
         repo_configs = json.load(repo_file)
     for repo_config in repo_configs:
         repo_config = RepoConfig.ensure_validated(repo_config)
         repo_id = repo_config["repo_id"]
-        if repo_id not in relevant:
+        if not _is_relevant(repo_id):
             if verbose > 1:
                 print("Skipping {0}".format(repo_id))
             continue
@@ -156,6 +163,9 @@ def _list_repo_status(args):
     print("Sync status for repositories on {0}".format(server.host))
     _print_repo_table("{sync_summary}", repos, headings)
 
+def _list_repo_history(args):
+    raise NotImplementedError
+
 def _list_repo_details(args):
     server = args.server
     for repo_id in args.repo_list:
@@ -177,6 +187,15 @@ def _sync_repos(args):
         with _catch_server_error("Failed to sync {0}".format(repo_id)):
             server.sync_repo(repo_id)
 
+def _enable_repos(args):
+    raise NotImplementedError
+
+def _disable_repos(args):
+    raise NotImplementedError
+
+def _cron_sync_repos(args):
+    raise NotImplementedError
+
 def _delete_repos(args):
     verbose = args.verbose
     server = args.server
@@ -190,30 +209,55 @@ def _delete_repos(args):
         with _catch_server_error("Failed to delete {0}".format(repo_id)):
                 server.delete_repo(repo_id)
 
-_COMMANDS = (
-    ("init", _init_repos, "Create or update repositories"),
-    ("sync", _sync_repos, "Sync repositories"),
-    ("list", _list_repo_summaries, "List repository names"),
-    ("info", _list_repo_details, "Display repository details"),
-    ("status", _list_repo_status, "Display repository sync status"),
-    ("delete", _delete_repos, "Delete repositories"),
-    ("validate", _validate_repos, "Validate repository configuration"),
+def _add_config(cmd_parser):
+    cmd_parser.add_argument("config_fname", metavar="CONFIG",
+                            help="A JSON file with repo config details")
+
+def _add_dryrun(cmd_parser):
+    cmd_parser.add_argument("--dryrun", action='store_true',
+                            help="Dry run only (don't modify local filesystem)")
+
+def _add_force(cmd_parser):
+    cmd_parser.add_argument("--force", action='store_true',
+                            help="Automatically answer yes to all prompts")
+
+_INFO_COMMANDS = (
+    ("list", _list_repo_summaries, "List repository names", ()),
+    ("info", _list_repo_details, "Display repository details", ()),
+    ("status", _list_repo_status, "Display repository sync status", ()),
+    ("history", _list_repo_history, "(NYI) Display repository sync history", ()),
 )
 
-_REQUIRE_CONFIG = set("init validate".split())
+_SYNC_COMMANDS = (
+    ("sync", _sync_repos, "Sync repositories", [_add_force]),
+    ("enable", _enable_repos, "(NYI) Set repositories to accept sync commands", [_add_force, _add_dryrun]),
+    ("disable", _disable_repos, "(NYI) Set repositories to ignore sync commands", [_add_force]),
+    ("cron_sync", _cron_sync_repos, "(NYI) Selectively sync repositories based on metadata", ()),
+)
+
+_REPO_COMMANDS = (
+    ("validate", _validate_repos, "Validate repository configuration", [_add_config]),
+    ("init", _init_repos, "Create or update repositories", [_add_config, _add_force]),
+    ("delete", _delete_repos, "Delete repositories", [_add_force]),
+)
+
+_COMMANDS = (
+    ("Synchronisation Management", _SYNC_COMMANDS),
+    ("Status Queries", _INFO_COMMANDS),
+    ("Repository Management", _REPO_COMMANDS),
+)
 
 def add_parser_subcommands(parser):
-    description = "Operation to apply to specified repositories "
-    subparser_help = "(use 'CMD --help' for subcommand details)"
-    subparsers = parser.add_subparsers(title="Repo Commands",
-                                       description=description,
-                                       help=subparser_help)
-    for name, func, cmd_help in _COMMANDS:
-        cmd_parser = subparsers.add_parser(name, help=cmd_help)
-        cmd_parser.set_defaults(command_func=func)
-        if name in _REQUIRE_CONFIG:
-            cmd_parser.add_argument("config_fname", metavar="CONFIG",
-                                    help="A JSON file with repo config details")
+    # Add categorised subparsers
+    #   Alas, argparse doesn't let us group the subcommands, so we add the
+    #   alternatives as one big list (see http://bugs.python.org/issue14037)
+    subparsers = parser.add_subparsers(title="Repository Commands")
+    for title, subcommands in _COMMANDS:
+        for name, func, cmd_help, extra_args in subcommands:
+            cmd_parser = subparsers.add_parser(name, help=cmd_help)
+            cmd_parser.set_defaults(command_func=func)
+            for add_arg in extra_args:
+                add_arg(cmd_parser)
     # Ensure config_fname is always set, even for commands that don't need it
     parser.set_defaults(config_fname=None)
 
@@ -221,6 +265,8 @@ def postprocess_args(parser, args):
     # Must have already saved credentials with "pulp-admin auth login"
     pulp_host = args.pulp_host
     args.server = server = PulpServerClient(pulp_host)
+    # If the command doesn't accept a config file, and there's no repo
+    # list specified, apply the operation to every repo on the server
     if args.config_fname is None and not args.repo_list:
         if args.verbose > 1:
             print("Retrieving repository list from {0}".format(pulp_host))

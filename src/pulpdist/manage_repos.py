@@ -21,16 +21,17 @@ from .cli.commands import add_parser_subcommands, postprocess_args
 def make_parser():
     prog = "python -m {0}.manage_repos".format(__package__)
     description = "Manage Pulp Repositories"
-    parser = argparse.ArgumentParser(prog=prog, description=description)
+    epilog = "Use '%(prog)s CMD --help' for subcommand help"
+    parser = argparse.ArgumentParser(prog=prog,
+                                     description=description,
+                                     epilog=epilog)
     parser.add_argument("--repo", metavar="REPO_ID",
                         dest="repo_list", action='append',
                         help="Apply requested operation to this repo "
                              "(may be specified multiple times)")
-    host_help = "The Pulp server to be managed (Default: %(default)s)"
-    parser.add_argument("--host", metavar="HOST", dest="pulp_host",
-                        default=socket.getfqdn(), help=host_help)
-    parser.add_argument("--force", action='store_true',
-                        help="Automatically answer yes to all prompts")
+    parser.add_argument("--host", metavar="HOST",
+                        dest="pulp_host", default=socket.getfqdn(),
+                        help="The Pulp server to be managed (Default: %(default)s)")
     parser.add_argument("-v", "--verbose",
                         dest="verbose", action='count',
                         help="Increase level of debugging information displayed")

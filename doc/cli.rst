@@ -23,39 +23,81 @@ to create the login credentials for the Pulp server with the upstream
 
    $ pulp-admin --host <HOST> auth login --username <USER>
 
+Like ``pulp-admin`` the PulpDist repo management client defaults to using the
+fully qualified domain name of the current host as the target server. This can
+be overridden by passing a different hostname via the ``--host`` option.
 
-Available Commands
-------------------
+Synchronisation Management Commands
+-----------------------------------
+
+* ``sync``: Request immediate synchronisation of repositories
+* ``enable``: Configure repositories to respond to sync requests (Not Yet Implemented)
+* ``disable``: Configure repositories to ignore sync requests (Not Yet Implemented)
+* ``cron_sync``: Helper to schedule sync operations via a cron job (Not Yet Implemented)
+
+
+Repository Status Queries
+-------------------------
 
 * ``list``: Display id and name for repositories
 * ``info``: Display repository details
 * ``status``: Display repository synchronisation status
-* ``sync``: Request immediate synchronisation of repositories
+* ``history``: Display repository synchronisation history (Not Yet Implemented)
+
+
+Repository Management Commands
+------------------------------
+
 * ``init``: Create or update repositories on the server
 * ``delete``: Remove repositories from the server
 * ``validate``: Check the validity of a repository definition file
 
 
+Limiting a command to specific repositories
+-------------------------------------------
+
+The ``--repo`` option accepts repository identifiers and limits a command
+to affect only the named repositories. It may be supplied multiple times to
+run a command against multiple repositories.
+
+If no specific repositories are identified, most commands default to affecting
+every repository defined on the server, or, if the command accepts a
+configuration file, every repository named in the file.
+
+
 The repository definition file format
 -------------------------------------
 
-All of the management commands supported by ``manage_repos`` either accept or
+The ``init`` and ``validate`` commands provided by ``manage_repos`` both
 require a repository definition file.
 
-These are JSON files that identify exactly which repositories on the server
-should be affected by the command. For most commands, the only requirements are
-that the file be valid JSON consisting of:
+These are JSON files that specify the information needed to create the
+repository on the Pulp server, and appropriately configure the PulpDist
+importer plugin.
 
-* a single top-level list
-* each entry in the list is a mapping with at least a ``repo_id`` attribute
+Each config file is expected to contain a top-level JSON list, containing
+mappings with the following attributes:
 
-For commands where the repository definition file is optional, omitting it
-means "every repository currently defined on the server".
+* ``repo_id``: An identifier for the repository (alphanumeric and hyphens only)
+* ``display_name``: Human readable short name for the repository
+* ``description``: Longer description of the repository contents
+* ``notes``: Arbitrary notes about the repository as a JSON mapping
+* ``importer_type_id``: Importer plugin type identifier. See below.
+* ``importer_config``: JSON mapping with plugin configuration data. See below.
 
-For the ``init`` command (which actually creates and updates repositories on
-the server), additional information is needed in the repository definition
-file for each repo entry, as per the Pulp `Create Repository`_ and
-`Add Importer`_ REST API calls.
+The plugin names in the list below are the exact names that should be used in
+the ``importer_type_id`` field for the PulpDist plugins, while the links go
+to the descriptions of the individual plugins. The options described in those
+sections are the values that need to be provided in the ``importer_config``
+mapping.
+
+* ``simple_tree``: :ref:`simple-tree-sync`
+* ``versioned_tree``: :ref:`versioned-tree-sync`
+* ``snapshot_tree``: :ref:`snapshot-tree-sync`
+
+
+For further information, refer to the documentation for the Pulp
+`Create Repository`_ and `Add Importer`_ REST API calls.
 
 .. _Create Repository: https://fedorahosted.org/pulp/wiki/UGREST-v2-Repositories#CreateaRepository
 .. _Add Importer: https://fedorahosted.org/pulp/wiki/UGREST-v2-Repositories#AssociateanImportertoaRepository

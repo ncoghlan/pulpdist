@@ -27,6 +27,8 @@ transferring any files (some temporary local copies of small metadata files
 may still be made in order to determine the details of the dry run operation).
 
 
+.. _simple-tree-sync:
+
 Simple Tree Sync
 ----------------
 
@@ -41,11 +43,11 @@ Configuration options for this plugin are:
   tree synchronisation operation. Defaults to no filtering.
 * ``sync_filters``: A list of rsync ``--filter`` patterns applied to the
   tree synchronisation operation. Defaults to no filtering.
-* ``bandwidth_limit``: If provided and not zero, passed to rsync as "--bwlimit"
-  to limit the amount of bandwidth used by the operation.
+* ``bandwidth_limit``: If provided and not zero, passed to rsync as
+  ``--bwlimit`` to limit the amount of bandwidth used by the operation.
 * ``old_remote_daemon``:  If provided and true, passes ``--old-d`` to rsync to
   run it in a mode compatible with older versions of the rsync daemon.
-* ``rsync_port``: If provided and not zero, passed to rsync as "--port" to
+* ``rsync_port``: If provided and not zero, passed to rsync as ``--port`` to
   allow connections to a remote daemon that isn't running on the default port.
 * ``enabled``: If provided and true, actually performs a sync operation when
   invoked by Pulp. Defaults to ignoring sync requests.
@@ -56,6 +58,8 @@ Configuration options for this plugin are:
 Adding files named ``PROTECTED`` to directories at downstream sites will
 keep the plugin from overwriting (or otherwise altering) them.
 
+
+.. _versioned-tree-sync:
 
 Versioned Tree Sync
 -------------------
@@ -81,6 +85,11 @@ build the list of individual subtrees to be synchronised:
   are retained until explicitly deleted by a system administrator. Adding a
   ``PROTECTED`` file will also ensure a directory is not deleted automatically.
 
+The versioned tree sync also reproduces locally any upstream symlinks that
+match the version pattern and point to destinations that exist on the local
+server after the sync operation is otherwise complete.
+
+.. _snapshot-tree-sync:
 
 Snapshot Tree Sync
 ------------------
@@ -113,7 +122,7 @@ an rsync daemon) and use a chain of 3 custom Pulp plugins.
 At the upstream site, rsync is run in batch mode to generate delta files
 to update from the previous version of the tree to the latest snapshot.
 
-This delta files are then published for retrieval by the downstream servers.
+These delta files are then published for retrieval by the downstream servers.
 
 The downstream servers first check if a delta file is available that
 is applicable to the most recent version of the tree they have completed
