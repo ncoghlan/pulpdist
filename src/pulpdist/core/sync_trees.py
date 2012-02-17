@@ -27,8 +27,6 @@ import contextlib
 
 from . import sync_config
 
-_OLD_DAEMON = True
-
 _BASE_FETCH_DIR_PARAMS = """
     -rlptDvH --delete-after --ignore-errors --progress --stats --human-readable
     --timeout=18000 --partial --delay-updates
@@ -48,8 +46,23 @@ File list transfer time: (?P<listing_transfer_seconds>[.\d]+) seconds
 Total bytes sent: (?P<sent_size>[.\d]+)(?P<sent_size_kind>[BKMG]?)
 Total bytes received: (?P<received_size>[.\d]+)(?P<received_size_kind>[BKMG]?)
 
-sent \d+ bytes\s+received \d+ bytes\s+(?P<transfer_rate>[\d.]+)(?P<transfer_rate_kind>[BKMG]?)\s+bytes/sec
+sent [.\d]+[BKMG]? bytes\s+received [.\d]+[BKMG]? bytes\s+(?P<transfer_rate>[.\d]+)(?P<transfer_rate_kind>[BKMG]?)\s+bytes/sec
 """, re.DOTALL)
+
+_old_sync_stats_pattern = re.compile(r"""
+Number of files: (?P<total_file_count>\d+)
+Number of files transferred: (?P<transferred_file_count>\d+)
+Total file size: (?P<total_size>[.\d]+)(?P<total_size_kind>[BKMG]?) bytes
+Total transferred file size: (?P<transferred_size>[.\d]+)(?P<transferred_size_kind>[BKMG]?) bytes
+Literal data: (?P<literal_size>[.\d]+)(?P<literal_size_kind>[BKMG]?) bytes
+Matched data: (?P<matched_size>[.\d]+)(?P<matched_size_kind>[BKMG]?) bytes
+File list size: (?P<listing_size>[.\d]+)(?P<listing_size_kind>[BKMG]?)
+Total bytes sent: (?P<sent_size>[.\d]+)(?P<sent_size_kind>[BKMG]?)
+Total bytes received: (?P<received_size>[.\d]+)(?P<received_size_kind>[BKMG]?)
+
+sent [.\d]+[BKMG]? bytes\s+received [.\d]+[BKMG]? bytes\s+(?P<transfer_rate>[.\d]+)(?P<transfer_rate_kind>[BKMG]?)\s+bytes/sec
+""", re.DOTALL)
+
 
 _kind_scale = {
     None : 1,
@@ -81,11 +94,18 @@ class SyncStats(collections.namedtuple("SyncStats", _sync_stats_fields)):
         return SyncStats(*(a + b for a, b in zip(self, other)))
 
     @classmethod
-    def from_rsync_output(cls, raw_data):
+    def from_rsync_output(cls, raw_data, old_daemon=False):
         stats = collections.defaultdict(int)
         scraped = None
-        for scraped in _sync_stats_pattern.finditer(raw_data):
+        if old_daemon:
+            pattern = _old_sync_stats_pattern
+        else:
+            pattern = _sync_stats_pattern
+        for scraped in pattern.finditer(raw_data):
             data = scraped.groupdict()
+            if old_daemon:
+                data["listing_creation_seconds"] = 0
+                data["listing_transfer_seconds"] = 0
             for field in SyncStats._fields:
                 if field.endswith("_count"):
                     stats[field] += int(data[field])
@@ -278,7 +298,7 @@ class BaseSyncCommand(object):
 
     def _scrape_fetch_dir_rsync_stats(self, data):
         try:
-            return SyncStats.from_rsync_output(data)
+            return SyncStats.from_rsync_output(data, self.old_remote_daemon)
         except ValueError:
             self._update_run_log("No stats data found in rsync output")
             raise RuntimeError("No stats data found in rsync output")

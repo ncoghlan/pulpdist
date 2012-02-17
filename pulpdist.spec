@@ -264,7 +264,7 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
-* ??? Feb ?? 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.6-1
+* Fri Feb 17 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.6-1
 - Created pulpdist.cli subpackage for Management CLI support code
 - Renamed previous "list" command to "info"
 - Added new "list" command that just prints the repo id and name
@@ -281,6 +281,8 @@ fi
 - added "sync_log" command to display most recent sync log output
 - added "sync_stats" command to display most recent sync statistics
 - fixed NameError in importer plugin error handling
+- fixed rsync stat collection for large trees
+- fixed rsync stat collection for old remote daemons
 
 
 * Wed Feb 15 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.5-1
