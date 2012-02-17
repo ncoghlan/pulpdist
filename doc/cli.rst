@@ -51,6 +51,8 @@ Repository Management Commands
 * ``init``: Create or update repositories on the server
 * ``delete``: Remove repositories from the server
 * ``validate``: Check the validity of a repository definition file
+* ``export``: Create a repository definition file from an existing repository
+  (Not Yet Implemented)
 
 
 Limiting a command to specific repositories

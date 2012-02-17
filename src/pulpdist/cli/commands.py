@@ -209,6 +209,9 @@ def _delete_repos(args):
         with _catch_server_error("Failed to delete {0}".format(repo_id)):
                 server.delete_repo(repo_id)
 
+def _export_repos(args):
+    raise NotImplementedError
+
 def _add_config(cmd_parser):
     cmd_parser.add_argument("config_fname", metavar="CONFIG",
                             help="A JSON file with repo config details")
@@ -239,6 +242,7 @@ _REPO_COMMANDS = (
     ("validate", _validate_repos, "Validate repository configuration", [_add_config]),
     ("init", _init_repos, "Create or update repositories", [_add_config, _add_force]),
     ("delete", _delete_repos, "Delete repositories", [_add_force]),
+    ("export", _export_repos, "(NYI) Export repository configuration", [_add_config]),
 )
 
 _COMMANDS = (
