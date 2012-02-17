@@ -31,8 +31,8 @@ Synchronisation Management Commands
 -----------------------------------
 
 * ``sync``: Request immediate synchronisation of repositories
-* ``enable``: Configure repositories to respond to sync requests (Not Yet Implemented)
-* ``disable``: Configure repositories to ignore sync requests (Not Yet Implemented)
+* ``enable``: Configure repositories to respond to sync requests
+* ``disable``: Configure repositories to ignore sync requests
 * ``cron_sync``: Helper to schedule sync operations via a cron job (Not Yet Implemented)
 
 
@@ -42,7 +42,9 @@ Repository Status Queries
 * ``list``: Display id and name for repositories
 * ``info``: Display repository details
 * ``status``: Display repository synchronisation status
-* ``history``: Display repository synchronisation history (Not Yet Implemented)
+* ``history``: Display repository synchronisation history
+* ``sync_log``: Display most recent synchronisation log
+* ``sync_stats``: Display most recent synchronisation statistics
 
 
 Repository Management Commands

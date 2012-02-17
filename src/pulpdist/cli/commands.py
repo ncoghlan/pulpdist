@@ -163,8 +163,71 @@ def _list_repo_status(args):
     print("Sync status for repositories on {0}".format(server.host))
     _print_repo_table("{sync_summary}", repos, headings)
 
-def _list_repo_history(args):
-    raise NotImplementedError
+def _show_sync_history(args):
+    server = args.server
+    repos = _all_sync_history(server, args.repo_list)
+    if not repos:
+        print("No repositories defined on {0}".format(server.host))
+        return
+    for repo in repos:
+        repo_id = repo["id"]
+        history = repo["sync_history"]
+        if not history:
+            print("No sync history for {0}".format(repo_id))
+            continue
+        for sync_job in history:
+            print(_format_data(sync_job))
+
+def _show_sync_log(args):
+    server = args.server
+    repos = _all_sync_history(server, args.repo_list)
+    if not repos:
+        print("No repositories defined on {0}".format(server.host))
+        return
+    display_success = args.success
+    sync_version = "last_success" if display_success else "last_attempt"
+    for repo in repos:
+        repo_id = repo["id"]
+        sync_job = repo[sync_version]
+        if sync_job is None:
+            if display_success:
+                err_msg = "No successful sync entry for {0}"
+            else:
+                err_msg = "No sync attempts for {0}"
+            print(err_msg.format(repo_id))
+            continue
+        msg = "Most recent sync log for {0}".format(repo_id)
+        header = "="*len(msg)
+        print(header)
+        print(msg)
+        print(header)
+        print(sync_job["details"]["sync_log"])
+
+def _show_sync_stats(args):
+    # TODO: Eliminate the duplicated code between this and _show_sync_log
+    server = args.server
+    repos = _all_sync_history(server, args.repo_list)
+    if not repos:
+        print("No repositories defined on {0}".format(server.host))
+        return
+    display_success = args.success
+    sync_version = "last_success" if display_success else "last_attempt"
+    for repo in repos:
+        repo_id = repo["id"]
+        sync_job = repo[sync_version]
+        if sync_job is None:
+            if display_success:
+                err_msg = "No successful sync entry for {0}"
+            else:
+                err_msg = "No sync attempts for {0}"
+            print(err_msg.format(repo_id))
+            continue
+        msg = "Most recent sync statistics for {0}".format(repo_id)
+        header = "="*len(msg)
+        print(header)
+        print(msg)
+        print(header)
+        print(_format_data(sync_job["summary"]["stats"]))
 
 def _list_repo_details(args):
     server = args.server
@@ -236,6 +299,10 @@ def _add_dryrun(cmd_parser):
     cmd_parser.add_argument("--dryrun", action='store_true',
                             help="Dry run only (don't modify local filesystem)")
 
+def _add_success(cmd_parser):
+    cmd_parser.add_argument("--success", action='store_true',
+                            help="Report on most recent successful sync")
+
 def _add_force(cmd_parser):
     cmd_parser.add_argument("--force", action='store_true',
                             help="Automatically answer yes to all prompts")
@@ -244,7 +311,9 @@ _INFO_COMMANDS = (
     ("list", _list_repo_summaries, "List repository names", ()),
     ("info", _list_repo_details, "Display repository details", ()),
     ("status", _list_repo_status, "Display repository sync status", ()),
-    ("history", _list_repo_history, "(NYI) Display repository sync history", ()),
+    ("history", _show_sync_history, "(NYI) Display repository sync history", ()),
+    ("sync_log", _show_sync_log, "Display most recent sync log", [_add_success]),
+    ("sync_stats", _show_sync_stats, "Display most recent sync statistics", [_add_success]),
 )
 
 _SYNC_COMMANDS = (

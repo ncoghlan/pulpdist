@@ -277,6 +277,9 @@ fi
 - manage_repos now uses argparse subcommand support (much better help output)
 - added "enable" command to allow syncs on a repo ("--dryrun" for dry run only)
 - added "disable" command to prevent syncs on a repo
+- added "history" command to display full sync history
+- added "sync_log" command to display most recent sync log output
+- added "sync_stats" command to display most recent sync statistics
 
 
 * Wed Feb 15 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.5-1
