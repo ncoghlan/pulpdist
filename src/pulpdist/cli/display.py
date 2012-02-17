@@ -19,15 +19,17 @@ from operator import itemgetter
 
 from ..core.pulpapi import ServerRequestError
 
+_id_key = itemgetter("id")
+
 def _id_field_width(repos):
-    return max(map(len, map(itemgetter("id"), repos))) + 3
+    return max(map(len, map(_id_key, repos))) + 3
 
 def _print_repo_table(field_format, repos, header=None):
     id_width = _id_field_width(repos)
     if header is not None:
         print("{1:{0}.{0}}{2}".format(id_width, "Repo ID", header))
     row_format = "{id:{0}.{0}}" + field_format
-    for repo in repos:
+    for repo in sorted(repos, key=_id_key):
         print(row_format.format(id_width, **repo))
 
 
