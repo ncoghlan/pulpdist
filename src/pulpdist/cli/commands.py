@@ -182,6 +182,9 @@ def _show_sync_history(args):
         if not history:
             print("No sync history for {0}".format(repo_id))
             continue
+        num_entries = args.num_entries
+        if num_entries is not None:
+            history = history[:num_entries]
         for sync_job in history:
             print(_format_data(sync_job))
 
@@ -310,6 +313,11 @@ def _add_config(cmd_parser):
     cmd_parser.add_argument("config_fname", metavar="CONFIG",
                             help="A JSON file with repo config details")
 
+def _add_entries(cmd_parser):
+    cmd_parser.add_argument("-n", "--entries", metavar="NUM",
+                            dest="num_entries", type=int,
+                            help="Number of entries to display")
+
 def _add_dryrun(cmd_parser):
     cmd_parser.add_argument("--dryrun", action='store_true',
                             help="Dry run only (don't modify local filesystem)")
@@ -326,15 +334,15 @@ _INFO_COMMANDS = (
     ("list", _list_repo_summaries, "List repository names", ()),
     ("info", _list_repo_details, "Display repository details", ()),
     ("status", _list_repo_status, "Display repository sync status", ()),
-    ("history", _show_sync_history, "(NYI) Display repository sync history", ()),
+    ("history", _show_sync_history, "Display repository sync history", [_add_entries]),
     ("sync_log", _show_sync_log, "Display most recent sync log", [_add_success]),
     ("sync_stats", _show_sync_stats, "Display most recent sync statistics", [_add_success]),
 )
 
 _SYNC_COMMANDS = (
     ("sync", _sync_repos, "Sync repositories", [_add_force]),
-    ("enable", _enable_repos, "(NYI) Set repositories to accept sync commands", [_add_force, _add_dryrun]),
-    ("disable", _disable_repos, "(NYI) Set repositories to ignore sync commands", [_add_force]),
+    ("enable", _enable_repos, "Set repositories to accept sync commands", [_add_force, _add_dryrun]),
+    ("disable", _disable_repos, "Set repositories to ignore sync commands", [_add_force]),
     ("cron_sync", _cron_sync_repos, "(NYI) Selectively sync repositories based on metadata", ()),
 )
 
