@@ -180,6 +180,23 @@ class PulpServerClient(pulp.client.api.server.PulpServer):
     def sync_repo(self, repo_id):
         return PulpRepositories(self).sync_repo(repo_id)
 
+    def get_importer_config(self, repo_id):
+        importer = self.get_importer(repo_id)
+        if importer is None:
+            raise ServerRequestError(0, "No importer configured")
+        return importer["importer_type_id"], importer["config"]
+
+    def enable_sync(self, repo_id, dry_run_only=False):
+        type_id, config = self.get_importer_config(repo_id)
+        config["enabled"] = True
+        config["dry_run_only"] = dry_run_only
+        self.add_importer(repo_id, type_id, config)
+
+    def disable_sync(self, repo_id):
+        type_id, config = self.get_importer_config(repo_id)
+        config["enabled"] = False
+        self.add_importer(repo_id, type_id, config)
+
     def get_sync_history(self, repo_id):
         return PulpRepositories(self).get_sync_history(repo_id)
 

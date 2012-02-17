@@ -275,6 +275,8 @@ fi
 - New manage_repos --force option to automatically answer 'yes' to prompts
 - "sync" and "init" commands now prompt for each repo by default
 - manage_repos now uses argparse subcommand support (much better help output)
+- added "enable" command to allow syncs on a repo ("--dryrun" for dry run only)
+- added "disable" command to prevent syncs on a repo
 
 
 * Wed Feb 15 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.5-1

@@ -188,10 +188,26 @@ def _sync_repos(args):
             server.sync_repo(repo_id)
 
 def _enable_repos(args):
-    raise NotImplementedError
+    verbose = args.verbose
+    server = args.server
+    for repo_id in args.repo_list:
+        if not _confirm_operation("Enable sync for", repo_id, args):
+            if verbose:
+                print("Not enabling sync on {0}".format(repo_id))
+            continue
+        if verbose:
+            print("Enabling sync on {0}".format(repo_id))
+        with _catch_server_error("Failed to enable sync on {0}".format(repo_id)):
+            server.enable_sync(repo_id, args.dryrun)
 
 def _disable_repos(args):
-    raise NotImplementedError
+    verbose = args.verbose
+    server = args.server
+    for repo_id in args.repo_list:
+        if verbose:
+            print("Disabling sync on {0}".format(repo_id))
+        with _catch_server_error("Failed to disable sync on {0}".format(repo_id)):
+            server.disable_sync(repo_id)
 
 def _cron_sync_repos(args):
     raise NotImplementedError
