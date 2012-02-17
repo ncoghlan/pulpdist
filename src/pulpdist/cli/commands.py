@@ -128,7 +128,10 @@ def _all_sync_history(server, repo_ids):
                 continue
             repo["last_attempt"] = history[0]
             for sync in history:
-                result = sync["summary"]["result"]
+                summary = sync["summary"]
+                if summary is None:
+                    continue
+                result = summary["result"]
                 if result in "SYNC_COMPLETED SYNC_UP_TO_DATE".split():
                     repo["last_success"] = sync
                     break
@@ -152,7 +155,11 @@ def _list_repo_status(args):
         if last_attempt is None:
             repo["sync_summary"] = "Never synchronised"
             continue
-        attempt_result = last_attempt["summary"]["result"]
+        attempt_summary = last_attempt["summary"]
+        if attempt_summary is None:
+            attempt_result = "PLUGIN_ERROR"
+        else:
+            attempt_result = attempt_summary["result"]
         attempt_time = last_attempt["started"]
         last_success = repo["last_success"]
         if last_success is None:
@@ -196,12 +203,16 @@ def _show_sync_log(args):
                 err_msg = "No sync attempts for {0}"
             print(err_msg.format(repo_id))
             continue
+        details = sync_job["details"]
+        if details is None:
+            print("No sync details for {0}".format(repo_id))
+            continue
         msg = "Most recent sync log for {0}".format(repo_id)
         header = "="*len(msg)
         print(header)
         print(msg)
         print(header)
-        print(sync_job["details"]["sync_log"])
+        print(details["sync_log"])
 
 def _show_sync_stats(args):
     # TODO: Eliminate the duplicated code between this and _show_sync_log
@@ -222,12 +233,16 @@ def _show_sync_stats(args):
                 err_msg = "No sync attempts for {0}"
             print(err_msg.format(repo_id))
             continue
+        summary = sync_job["summary"]
+        if summary is None:
+            print("No sync details for {0}".format(repo_id))
+            continue
         msg = "Most recent sync statistics for {0}".format(repo_id)
         header = "="*len(msg)
         print(header)
         print(msg)
         print(header)
-        print(_format_data(sync_job["summary"]["stats"]))
+        print(_format_data(summary["stats"]))
 
 def _list_repo_details(args):
     server = args.server
