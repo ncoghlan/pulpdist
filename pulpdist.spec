@@ -280,6 +280,7 @@ fi
 - added "history" command to display full sync history
 - added "sync_log" command to display most recent sync log output
 - added "sync_stats" command to display most recent sync statistics
+- fixed NameError in importer plugin error handling
 
 
 * Wed Feb 15 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.5-1

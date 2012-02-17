@@ -63,7 +63,7 @@ class _BaseImporter(Importer):
             sync_info = command.run_sync()
         except:
             et, ev, tb = sys.exc_info()
-            msg_format = (
+            msg = (
                 "exception: {0}\n"
                 "error_message: {1}\n"
                 "traceback:\n{2}\n"
