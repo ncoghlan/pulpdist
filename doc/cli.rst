@@ -245,8 +245,16 @@ The local tree settings are a mapping with the following attributes:
 
 * ``site``: The name of the local site
 * ``storage_prefix``: The shared path prefix for the local data storage area
-* ``server_prefixes``: mapping from ``server_id`` values to path segents
-* ``source_prefixes``: mapping from ``source_id`` values to path segents
+* ``server_prefixes``: mapping from ``server_id`` values to path segments
+* ``source_prefixes``: mapping from ``source_id`` values to path segments
+
+The local path used for a tree is calculated as::
+
+   storage_prefix/server_prefix/source_prefix/local_tree_path
+
+where ``server_prefix`` and ``source_prefix`` are determined by looking up the
+appropriate server and source ID values in the prefix mappings (if no prefix is
+defined, then the empty string is used).
 
 
 Remote Tree Definitions
@@ -320,6 +328,10 @@ The remote tree settings are a mapping with the following attributes:
 
 * ``version_suffix``: rsync wildcard pattern to append when a remote tree
   definition uses the ``version_prefix`` setting
+
+The remote path used for a tree is calculated as::
+
+   rsync://server_dns/source_remote_path/remote_tree_path
 
 
 Raw Tree Definitions
