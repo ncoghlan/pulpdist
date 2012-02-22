@@ -319,6 +319,8 @@ A remote server definition is a mapping with the following attributes:
 * ``server_id``: locally unique ID (alphanumeric characters and hyphens only)
 * ``name``: human readable name for this server
 * ``dns``: DNS name used to access this server
+* ``old_daemon``: Server runs an old version of rsync (default: False)
+* ``rsync_port``: Port rsync daemon is listening on (default: rsync default)
 
 
 Remote Tree Settings
