@@ -17,7 +17,7 @@ import json
 
 from ..core.pulpapi import PulpServerClient, ServerRequestError
 from ..core.repo_config import RepoConfig
-from .display import _format_data, _catch_server_error, _print_repo_table
+from .display import _format_data, _catch_server_error, _print_repo_table, _print_server_error
 
 def _confirm_operation(action, repo_id, args):
     if args.force:
@@ -186,6 +186,9 @@ def _show_sync_history(args):
         if num_entries is not None:
             history = history[:num_entries]
         for sync_job in history:
+            details = sync_job.get("details")
+            if details and not args.showlog:
+                details.pop("sync_log", None)
             print(_format_data(sync_job))
 
 def _show_sync_log(args):
@@ -318,6 +321,10 @@ def _add_entries(cmd_parser):
                             dest="num_entries", type=int,
                             help="Number of entries to display")
 
+def _add_showlog(cmd_parser):
+    cmd_parser.add_argument("--showlog", action='store_true',
+                            help="Include the sync log in each history entry")
+
 def _add_dryrun(cmd_parser):
     cmd_parser.add_argument("--dryrun", action='store_true',
                             help="Dry run only (don't modify local filesystem)")
@@ -334,7 +341,7 @@ _INFO_COMMANDS = (
     ("list", _list_repo_summaries, "List repository names", ()),
     ("info", _list_repo_details, "Display repository details", ()),
     ("status", _list_repo_status, "Display repository sync status", ()),
-    ("history", _show_sync_history, "Display repository sync history", [_add_entries]),
+    ("history", _show_sync_history, "Display repository sync history", [_add_entries, _add_showlog]),
     ("sync_log", _show_sync_log, "Display most recent sync log", [_add_success]),
     ("sync_stats", _show_sync_stats, "Display most recent sync statistics", [_add_success]),
 )
