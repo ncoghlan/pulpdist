@@ -26,6 +26,7 @@ Requires: python-dateutil
 Requires: m2crypto
 Requires: openssl
 Requires: python-ldap
+Requires: python-sqlalchemy
 
 # Note: pulpdist.django_app/site require additional dependencies to execute
 #       Refer to the pulpdist-django meta package dependencies listed below.
@@ -264,6 +265,9 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* ??? Feb ?? 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.7-1
+- Added new higher level site configuration format
+
 * Fri Feb 17 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.6-1
 - Created pulpdist.cli subpackage for Management CLI support code
 - Renamed previous "list" command to "info"
