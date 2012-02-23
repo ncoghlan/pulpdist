@@ -18,7 +18,7 @@ BuildRequires: rpm-python
 BuildRequires: python2-devel
 BuildRequires: python-setuptools
 
-Requires: pulp-admin
+Requires: pulp-admin >= 0.0.262
 Requires: python >= 2.6
 Requires: python-oauth2
 Requires: python-httplib2
@@ -26,7 +26,8 @@ Requires: python-dateutil
 Requires: m2crypto
 Requires: openssl
 Requires: python-ldap
-Requires: python-sqlalchemy
+Requires: python-sqlalchemy >= 0.6
+Requires: python-argparse
 
 # Note: pulpdist.django_app/site require additional dependencies to execute
 #       Refer to the pulpdist-django meta package dependencies listed below.
@@ -50,9 +51,9 @@ The PulpDist Python package includes all of the Python components needed by
 Summary:        Additional dependencies for the PulpDist Django app component
 
 Requires: Django >= 1.3
-Requires: Django-south
-Requires: python-django-tables2
-Requires:  python-djangorestframework
+Requires: Django-south >= 0.7
+Requires: python-django-tables2 >= 0.8
+Requires:  python-djangorestframework >= 0.3
 
 %description -n %{django_meta}
 Additional dependencies needed to actually use the Django app component
@@ -84,8 +85,9 @@ Django site on Apache.
 Summary:        Pulp plugins to support PulpDist mirroring network
 
 Requires: %{name} = %{version}
-Requires: pulp
+Requires: pulp >= 0.0.262
 Requires: rsync
+Requires: hardlink
 
 %description -n %{plugin_package}
 The Pulp plugins to be installed on each Pulp server in a PulpDist mirroring network
