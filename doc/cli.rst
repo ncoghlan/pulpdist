@@ -64,6 +64,11 @@ The ``--repo`` option accepts repository identifiers and allows a command
 to run against the named repository. It may be supplied multiple times to
 run a command against multiple repositories.
 
+The ``--remote-tree`` option accepts remote tree identifiers and allows a
+command to run against repositories that were configured from a site
+configuration file to sync with a particular remote tree. It may be
+supplied multiple times to run a command against mirrors of multiple trees.
+
 The ``--remote-source`` option accepts remote source identifiers and allows a
 command to run against repositories that were configured from a site
 configuration file to sync with a tree from that remote source. It may be
@@ -80,7 +85,10 @@ If no specific repositories are identified, most commands default to affecting
 every repository defined on the server, or, if the command accepts a
 configuration file, every repository named in the file.
 
-.. note:: ``--remote-source`` and ``--remote-server`` are not yet implemented
+.. note::
+
+   ``--remote-tree``, ``--remote-source`` and ``--remote-server`` are not yet
+   implemented
 
 Scheduling sync operations
 --------------------------
@@ -330,6 +338,13 @@ The remote tree settings are a mapping with the following attributes:
 
 * ``version_suffix``: rsync wildcard pattern to append when a remote tree
   definition uses the ``version_prefix`` setting
+* ``default_excluded_versions``: rsync wildcard patterns to ignore by default
+  when determining which version directories to synchronise (if one of these
+  filters matches the wildcard pattern identifying *desired* versions, then
+  that exclusion filter will be omitted from the raw tree definition).
+* ``default_excluded_files``: rsync wildcard patterns that are always ignored
+  when creating a raw tree definition (e.g. to exclude standard locations for
+  temporary working files)
 
 The remote path used for a tree is calculated as::
 
