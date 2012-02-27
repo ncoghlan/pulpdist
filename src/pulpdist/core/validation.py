@@ -51,7 +51,7 @@ PULP_ID_REGEX = r'^[_A-Za-z]+$'
 def check_pulp_id(expected='valid Pulp ID', allow_none=False):
     return check_regex(PULP_ID_REGEX, expected, allow_none)
 
-VALID_FILTER_REGEX = r'^[][*?\w@%+=:,./-]+$'
+VALID_FILTER_REGEX = r'^[][*?@%+=:,./~_\w\-]+$'
 def check_rsync_filter(allow_none=False):
     return check_regex(VALID_FILTER_REGEX, 'valid rsync filter', allow_none)
 
