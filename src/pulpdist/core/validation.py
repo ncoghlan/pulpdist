@@ -11,11 +11,21 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 """Config definitions and helpers for pulpdist importer plugins"""
 import re
+import copy
 
 class ValidationError(Exception): pass
 
 def fail_validation(fmt, *args, **kwds):
     raise ValidationError(fmt.format(*args, **kwds))
+
+def check_value(allowed_values, allow_none=False):
+    def validator(value, setting='setting'):
+        if allow_none and value is None:
+            return
+        if value not in allowed_values:
+            fail_validation("Expected one of {0!r} for {1}, got {2!r}",
+                             allowed_values, setting, value)
+    return validator
 
 def check_type(expected_type, allow_none=False):
     def validator(value, setting='setting'):
@@ -47,6 +57,10 @@ def check_regex(pattern, expected=None, allow_none=False):
             fail_validation(err_msg, setting, value)
     return validator
 
+SIMPLE_ID_REGEX = r'^[\w\-]+$'
+def check_simple_id(expected='simple ID (alphanumeric, underscores, hyphens)', allow_none=False):
+    return check_regex(SIMPLE_ID_REGEX, expected, allow_none)
+
 PULP_ID_REGEX = r'^[_A-Za-z]+$'
 def check_pulp_id(expected='valid Pulp ID', allow_none=False):
     return check_regex(PULP_ID_REGEX, expected, allow_none)
@@ -54,6 +68,10 @@ def check_pulp_id(expected='valid Pulp ID', allow_none=False):
 VALID_FILTER_REGEX = r'^[][*?@%+=:,./~_\w\-]+$'
 def check_rsync_filter(allow_none=False):
     return check_regex(VALID_FILTER_REGEX, 'valid rsync filter', allow_none)
+
+def check_rsync_filter_sequence():
+    return check_sequence(check_rsync_filter())
+
 
 # We seriously need some better URL handling infrastructure in the stdlib...
 # From http://stackoverflow.com/questions/106179/regular-expression-to-match-hostname-or-ip-address
@@ -103,6 +121,12 @@ def check_sequence(item_validator, allow_none=False):
             item_validator(item, item_setting)
     return validator
 
+def check_mapping_values(item_validator, allow_none=False):
+    seq_validator = check_sequence(item_validator, allow_none)
+    def validator(value, setting='setting'):
+        seq_validator(value.values(), setting)
+    return validator
+
 def check_mapping(spec, allow_none=False):
     def validator(value, setting='setting'):
         if allow_none and value is None:
@@ -127,12 +151,16 @@ def check_mapping(spec, allow_none=False):
         # Check the validation of the individual items
         for key, value in value_items:
             value_setting = setting + "[{0!r}]".format(key)
-            spec[key](value, value_setting)
+            checker = spec[key]
+            if isinstance(checker, ValidatedConfig):
+                checker = checker.check()
+            elif isinstance(checker, list):
+                checker = check_sequence(checker[0].check())
+            checker(value, value_setting)
     return validator
 
 def validate_config(config, spec):
     check_mapping(spec)(config, 'config')
-
 
 class ValidatedConfig(object):
     _SPEC = {}
@@ -140,15 +168,46 @@ class ValidatedConfig(object):
 
     def __init__(self, config=None):
         self.spec = self._SPEC
-        self.config = saved = self._DEFAULTS.copy()
+        self.config = self._init_config(config)
+
+    def _init_config(self, config):
+        if config is None:
+            return
+        config = config.copy()
+        complete = copy.deepcopy(self._DEFAULTS)
         if config is not None:
-            saved.update(config)
+            # Check for subspecs first
+            for key, spec in self._SPEC.items():
+                try:
+                    value = config.pop(key)
+                except KeyError:
+                    continue
+                if isinstance(spec, ValidatedConfig):
+                    complete[key] = spec(value)
+                elif isinstance(spec, list):
+                    spec = spec[0]
+                    complete[key] = [spec(entry) for entry in value]
+                else:
+                    complete[key] = value
+            # Make sure any unexpected values get reported on validation
+            complete.update(config)
+        return complete
 
     def __iter__(self):
         return self._SPEC.iterkeys()
 
     def validate(self):
         validate_config(self.config, self.spec)
+
+    @classmethod
+    def check(cls):
+        mapping_validator = check_mapping(cls._SPEC)
+        def validator(value, setting='setting'):
+            if not isinstance(value, cls):
+                fail_validation("Expected {0!r} for {1}, got {2!r}",
+                                cls, setting, type(value))
+            mapping_validator(value.config, setting)
+        return validator
 
     @classmethod
     def ensure_validated(cls, config):

@@ -42,9 +42,20 @@ class TestValidation(unittest.TestCase):
             details = str(exc.exception)
             self.assertIn(setting, details)
 
+    def test_check_values(self):
+        allowed = range(5)
+        self.check_validator(validation.check_value(allowed), allowed, [None, 10, ''])
+        allowed = "one two three".split()
+        self.check_validator(validation.check_value(allowed), allowed, [None, 10, ''])
+
     def test_check_type(self):
         self.check_validator(validation.check_type(str), [''], [None, 1])
         self.check_validator(validation.check_type(int), [1], [None, ''])
+
+    def test_check_simple_id(self):
+        valid = [u'hello', u'hello_world', u'hello-world']
+        invalid = [None, 'hello world', 1]
+        self.check_validator(validation.check_simple_id(), valid, invalid)
 
     def test_check_pulp_id(self):
         valid = [u'hello', u'hello_world']

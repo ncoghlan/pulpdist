@@ -13,9 +13,7 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 """Basic test suite for sync transfer operations"""
 
-import shutil
-import tempfile
-import os.path
+import json
 
 from .compat import unittest
 from .. import site_config, site_sql
@@ -28,6 +26,138 @@ class TestSiteConfig(unittest.TestCase):
         session = config.get_db_session()
         sync_types = session.query(site_sql.SyncType).order_by('sync_type')
         self.assertEqual([r.sync_type for r in sync_types], sorted(site_sql.SYNC_TYPES))
+
+    def test_read_config(self):
+        cfg_data = json.loads(TEST_CONFIG)
+        site_config.SiteConfig(cfg_data)._validate_spec()
+
+TEST_CONFIG = """\
+{
+  "SITE_SETTINGS": [
+    {
+      "site_id": "default",
+      "name": "Default Site",
+      "storage_prefix": "/var/www/pub",
+      "server_prefixes": {
+        "demo_server": "sync_demo"
+      },
+      "source_prefixes": {
+        "sync_demo": "sync_demo_trees"
+      },
+      "version_suffix": "*"
+    }
+  ],
+  "LOCAL_TREES": [
+    {
+      "repo_id": "simple_sync",
+      "tree_id": "simple_sync",
+      "excluded_files": ["*skip*"],
+      "sync_filters": ["exclude_irrelevant/"],
+      "notes": {
+        "basic": "note",
+        "site_custom": {
+          "origin": "PulpDist example repository"
+        }
+      }
+    },
+    {
+      "repo_id": "versioned_sync",
+      "tree_id": "versioned_sync",
+      "sync_filters": ["exclude_dull/"],
+      "excluded_versions": ["relevant-but*"],
+      "notes": {
+        "site_custom": {
+          "origin": "PulpDist example repository"
+        }
+      }
+    },
+    {
+      "repo_id": "snapshot_sync",
+      "tree_id": "snapshot_sync",
+      "notes": {
+        "site_custom": {
+          "origin": "PulpDist example repository"
+        }
+      }
+    }
+  ],
+  "REMOTE_TREES": [
+    {
+      "tree_id": "simple_sync",
+      "name": "Simple Sync Demo",
+      "description": "Demonstration of the simple tree sync plugin",
+      "tree_path": "simple",
+      "sync_type": "simple",
+      "sync_hours": 0,
+      "source_id": "sync_demo"
+    },
+    {
+      "tree_id": "versioned_sync",
+      "name": "Versioned Sync Demo",
+      "description": "Demonstration of the versioned tree sync plugin",
+      "tree_path": "versioned",
+      "sync_type": "versioned",
+      "sync_hours": 12,
+      "source_id": "sync_demo",
+      "version_pattern": "relevant*",
+      "excluded_files": ["*skip*"],
+      "sync_filters": ["exclude_irrelevant/"]
+    },
+    {
+      "tree_id": "snapshot_sync",
+      "name": "Snapshot Sync Demo",
+      "description": "Demonstration of the snapshot tree sync plugin",
+      "tree_path": "snapshot",
+      "sync_type": "snapshot",
+      "sync_hours": 1,
+      "source_id": "sync_demo",
+      "version_prefix": "relev",
+      "excluded_versions": ["relevant-but*"],
+      "excluded_files": ["*skip*"],
+      "sync_filters": ["exclude_irrelevant/", "exclude_dull/"]
+    }
+  ],
+  "REMOTE_SOURCES": [
+    {
+      "source_id": "sync_demo",
+      "server_id": "demo_server",
+      "name": "Sync Demo Trees",
+      "remote_path": "demo"
+    }
+  ],
+  "REMOTE_SERVERS": [
+    {
+      "server_id": "demo_server",
+      "name": "Sync Demo Server",
+      "dns": "localhost"
+    }
+  ],
+  "RAW_TREES": [
+    {
+      "repo_id": "raw_sync",
+      "display_name": "Raw Sync Demo",
+      "description": "Demonstration of raw sync configuration in site config",
+      "notes": {
+        "pulpdist": {
+          "sync_hours": 24
+        },
+        "site_custom": {
+          "origin": "PulpDist example repository"
+        }
+      },
+      "importer_type_id": "simple_tree",
+      "importer_config": {
+        "tree_name": "Raw Simple Tree",
+        "remote_server": "localhost",
+        "remote_path": "/demo/simple/",
+        "local_path": "/var/www/pub/sync_demo_raw/",
+        "excluded_files": ["*skip*"],
+        "sync_filters": ["exclude_irrelevant/", "exclude_dull/"]
+      }
+    }
+  ]
+}
+"""
 
 if __name__ == '__main__':
     unittest.main()

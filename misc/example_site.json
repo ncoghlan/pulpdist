@@ -1,5 +1,5 @@
 {
-  "LOCAL_SETTINGS": [
+  "SITE_SETTINGS": [
     {
       "site_id": "default",
       "name": "Default Site",
@@ -120,6 +120,6 @@
         "excluded_files": ["*skip*"],
         "sync_filters": ["exclude_irrelevant/", "exclude_dull/"]
       }
-    },
+    }
   ]
 }

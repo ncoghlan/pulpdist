@@ -23,8 +23,8 @@ class TreeSyncConfig(validation.ValidatedConfig):
         u"remote_server": validation.check_host(),
         u"remote_path": validation.check_remote_path(),
         u"local_path": validation.check_path(),
-        u"excluded_files": validation.check_sequence(validation.check_rsync_filter()),
-        u"sync_filters": validation.check_sequence(validation.check_rsync_filter()),
+        u"excluded_files": validation.check_rsync_filter_sequence(),
+        u"sync_filters": validation.check_rsync_filter_sequence(),
         u"bandwidth_limit": validation.check_type(int),
         u"dry_run_only": validation.check_type(int),
         u"old_remote_daemon": validation.check_type(int),
@@ -44,8 +44,8 @@ class TreeSyncConfig(validation.ValidatedConfig):
 class VersionedSyncConfig(TreeSyncConfig):
     _SPEC = _updated(TreeSyncConfig._SPEC, {
         u"version_pattern": validation.check_rsync_filter(),
-        u"excluded_versions": validation.check_sequence(validation.check_rsync_filter()),
-        u"subdir_filters": validation.check_sequence(validation.check_rsync_filter()),
+        u"excluded_versions": validation.check_rsync_filter_sequence(),
+        u"subdir_filters": validation.check_rsync_filter_sequence(),
         u"delete_old_dirs": validation.check_type(int),
     })
     _DEFAULTS = _updated(TreeSyncConfig._DEFAULTS, {

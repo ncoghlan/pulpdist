@@ -16,7 +16,7 @@ _fail_validation = validation.fail_validation
 
 class RepoConfig(validation.ValidatedConfig):
     _SPEC = {
-        u"repo_id": validation.check_regex("[-\w]+"),
+        u"repo_id": validation.check_simple_id(),
         u"display_name": validation.check_text(),
         u"description": validation.check_text(allow_none=True),
         u"notes": validation.check_type(dict, allow_none=True),
@@ -24,6 +24,7 @@ class RepoConfig(validation.ValidatedConfig):
         u"importer_config": validation.check_type(dict, allow_none=True),
     }
     _DEFAULTS = {
+        u"description": None,
         u"notes": None,
         u"importer_type_id": None,
         u"importer_config": None,
