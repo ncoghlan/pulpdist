@@ -1,20 +1,21 @@
 {
-  "LOCAL_SETTINGS": {
-    "site": "Brisbane",
-    "storage_prefix": "/var/www/pub",
-    "server_prefixes": {
-      "demo_server": "sync_demo"
-    },
-    "source_prefixes": {
-      "sync_demo": "sync_demo_trees"
+  "LOCAL_SETTINGS": [
+    {
+      "site_id": "default",
+      "name": "Default Site",
+      "storage_prefix": "/var/www/pub",
+      "server_prefixes": {
+        "demo_server": "sync_demo"
+      },
+      "source_prefixes": {
+        "sync_demo": "sync_demo_trees"
+      },
+      "version_suffix": "*"
     }
-  },
-  "REMOTE_SETTINGS": {
-    "version_suffix": "*"
-  },
+  ],
   "LOCAL_TREES": [
     {
-      "local_id": "simple_sync",
+      "repo_id": "simple_sync",
       "tree_id": "simple_sync",
       "excluded_files": ["*skip*"],
       "sync_filters": ["exclude_irrelevant/"],
@@ -26,7 +27,7 @@
       }
     },
     {
-      "local_id": "versioned_sync",
+      "repo_id": "versioned_sync",
       "tree_id": "versioned_sync",
       "sync_filters": ["exclude_dull/"],
       "excluded_versions": ["relevant-but*"],
@@ -37,7 +38,7 @@
       }
     },
     {
-      "local_id": "snapshot_sync",
+      "repo_id": "snapshot_sync",
       "tree_id": "snapshot_sync",
       "notes": {
         "site_custom": {

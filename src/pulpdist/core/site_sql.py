@@ -12,122 +12,134 @@
 """SQL definitions for site configuration database definition"""
 
 
-import sqlite3
+import sqlalchemy as sqla
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+from . import util
 
 SYNC_TYPES = "simple versioned snapshot".split()
 
-INSERT_SYNC_TYPE = """\
-INSERT INTO sync_types VALUES (?)
-"""
+Base = declarative_base()
 
-CREATE_SYNC_TYPES = """\
-CREATE TABLE sync_types (
-    sync_type TEXT PRIMARY KEY
-)
-"""
+class FieldsMixin(object):
+    _FIELDS = []
 
-CREATE_REMOTE_SETTINGS = """\
-CREATE TABLE remote_settings (
-    version_suffix TEXT DEFAULT ''
-)
-"""
+    @classmethod
+    def from_fields(cls, *args):
+        self = cls()
+        for attr, val in zip(self._FIELDS, args):
+            setattr(self, attr, val)
+        return self
 
-CREATE_REMOTE_SERVERS = """\
-CREATE TABLE remote_servers (
-    server_id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    dns TEXT NOT NULL,
-    old_daemon INTEGER DEFAULT 0,
-    rsync_port INTEGER
-)
-"""
+    @classmethod
+    def from_mapping(cls, mapping):
+        self = cls()
+        for attr, val in mapping.items():
+            setattr(self, attr, val)
+        return self
 
-CREATE_SERVER_PREFIXES = """\
-CREATE TABLE server_prefixes (
-    server_id TEXT NOT NULL REFERENCES remote_servers,
-    local_prefix TEXT NOT NULL
-)
-"""
+    def __repr__(self):
+        return "<{0}>".format(util.obj_repr(self, self._FIELDS))
 
-CREATE_REMOTE_SOURCES = """\
-CREATE TABLE remote_sources (
-    source_id TEXT PRIMARY KEY,
-    server_id TEXT NOT NULL REFERENCES remote_servers,
-    name TEXT NOT NULL,
-    remote_path TEXT NOT NULL
-)
-"""
-
-CREATE_SOURCE_PREFIXES = """\
-CREATE TABLE source_prefixes (
-    source_id TEXT NOT NULL REFERENCES remote_sources,
-    local_prefix TEXT NOT NULL
-)
-"""
-
-CREATE_REMOTE_TREES = """\
-CREATE TABLE remote_trees (
-    tree_id TEXT PRIMARY KEY,
-    source_id TEXT NOT NULL REFERENCES remote_sources,
-    name TEXT NOT NULL,
-    description TEXT DEFAULT '',
-    tree_path TEXT NOT NULL,
-    sync_hours INTEGER,
-    sync_type TEXT NOT NULL REFERENCES sync_types,
-    excluded_files TEXT DEFAULT '',
-    sync_filters TEXT DEFAULT '',
-    version_pattern TEXT,
-    version_prefix TEXT,
-    excluded_versions TEXT DEFAULT '',
-    version_filters TEXT DEFAULT '',
-    CHECK (version_pattern IS NOT NULL OR version_prefix IS NOT NULL)
-)
-"""
-
-CREATE_LOCAL_SETTINGS = """\
-CREATE TABLE local_settings (
-    site TEXT,
-    storage_prefix TEXT
-)
-"""
-
-CREATE_LOCAL_TREES = """\
-CREATE TABLE local_trees (
-    repo_id TEXT PRIMARY KEY,
-    tree_id TEXT NOT NULL REFERENCES remote_trees,
-    name TEXT,
-    description TEXT,
-    tree_path TEXT,
-    enabled INTEGER DEFAULT 0,
-    dry_run_only INTEGER DEFAULT 0,
-    delete_old_dirs INTEGER DEFAULT 0,
-    excluded_files TEXT,
-    sync_filters TEXT,
-    excluded_versions TEXT,
-    version_filters TEXT
-)
-"""
+class SyncType(Base, FieldsMixin):
+    __tablename__ = "sync_types"
+    _FIELDS = "sync_type".split()
+    sync_type = sqla.Column(sqla.String, primary_key=True)
 
 
-BUILD_DATABASE = (
-  CREATE_SYNC_TYPES,
-  CREATE_REMOTE_SETTINGS,
-  CREATE_REMOTE_SERVERS,
-  CREATE_REMOTE_SOURCES,
-  CREATE_REMOTE_TREES,
-  CREATE_SERVER_PREFIXES,
-  CREATE_SOURCE_PREFIXES,
-  CREATE_LOCAL_SETTINGS,
-  CREATE_LOCAL_TREES,
-)
+class RemoteServer(Base, FieldsMixin):
+    __tablename__ = "remote_servers"
+    _FIELDS = "server_id name dns old_daemon rsync_port".split()
+    server_id = sqla.Column(sqla.String, primary_key=True)
+    name = sqla.Column(sqla.String, nullable=False)
+    dns = sqla.Column(sqla.String, nullable=False)
+    old_daemon = sqla.Column(sqla.Boolean, default=False)
+    rsync_port = sqla.Column(sqla.Integer)
+
+
+class RemoteSource(Base, FieldsMixin):
+    __tablename__ = "remote_sources"
+    _FIELDS = "source_id server_id name remote_path".split()
+    source_id = sqla.Column(sqla.String, primary_key=True)
+    server_id = sqla.Column(sqla.String, sqla.ForeignKey("remote_servers.server_id"))
+    name = sqla.Column(sqla.String, nullable=False)
+    remote_path = sqla.Column(sqla.String, nullable=False)
+
+
+class RemoteTree(Base, FieldsMixin):
+    __tablename__ = "remote_trees"
+    _FIELDS = """tree_id source_id name description tree_path sync_hours
+                 sync_type excluded_files sync_filters version_pattern
+                 version_prefix excluded_versions version_filters""".split()
+    tree_id = sqla.Column(sqla.String, primary_key=True)
+    source_id = sqla.Column(sqla.String, sqla.ForeignKey("remote_sources.source_id"))
+    name = sqla.Column(sqla.String, nullable=False)
+    description = sqla.Column(sqla.String, server_default='')
+    tree_path = sqla.Column(sqla.String, nullable=False)
+    sync_type = sqla.Column(sqla.String, sqla.ForeignKey("sync_types.sync_type"))
+    excluded_files = sqla.Column(sqla.PickleType)
+    sync_filters = sqla.Column(sqla.PickleType)
+    version_pattern = sqla.Column(sqla.String)
+    version_prefix = sqla.Column(sqla.String)
+    excluded_versions = sqla.Column(sqla.PickleType)
+    version_filters = sqla.Column(sqla.PickleType)
+    sync_hours = sqla.Column(sqla.Integer)
+
+
+class LocalTree(Base, FieldsMixin):
+    __tablename__ = "local_trees"
+    _FIELDS = """repo_id tree_id name description tree_path sync_hours
+                 sync_type excluded_files sync_filters version_pattern
+                 version_prefix excluded_versions version_filters""".split()
+    repo_id = sqla.Column(sqla.String, primary_key=True)
+    tree_id = sqla.Column(sqla.String, sqla.ForeignKey("remote_trees.tree_id"))
+    name = sqla.Column(sqla.String)
+    description = sqla.Column(sqla.String)
+    tree_path = sqla.Column(sqla.String)
+    excluded_files = sqla.Column(sqla.PickleType)
+    sync_filters = sqla.Column(sqla.PickleType)
+    excluded_versions = sqla.Column(sqla.PickleType)
+    version_filters = sqla.Column(sqla.PickleType)
+    enabled = sqla.Column(sqla.Boolean, default=False)
+    dry_run_only = sqla.Column(sqla.Boolean, default=False)
+    delete_old_dirs = sqla.Column(sqla.Boolean, default=False)
+
+
+class SiteSettings(Base, FieldsMixin):
+    __tablename__ = "site_settings"
+    _FIELDS = """site_id name storage_prefix version_suffix
+                 default_excluded_files default_excluded_versions""".split()
+    site_id = sqla.Column(sqla.String, nullable=False, primary_key=True)
+    name = sqla.Column(sqla.String, nullable=False)
+    storage_prefix = sqla.Column(sqla.String, nullable=False)
+    version_suffix = sqla.Column(sqla.String, server_default='')
+    default_excluded_files = sqla.Column(sqla.PickleType)
+    default_excluded_versions = sqla.Column(sqla.PickleType)
+
+
+class ServerPrefixes(Base, FieldsMixin):
+    __tablename__ = "server_prefixes"
+    _FIELDS = "site_id server_id local_prefix".split()
+    site_id = sqla.Column(sqla.String, sqla.ForeignKey("site_settings.site_id"), primary_key=True)
+    server_id = sqla.Column(sqla.String, sqla.ForeignKey("remote_servers.server_id"), primary_key=True)
+    local_prefix = sqla.Column(sqla.String, nullable=False)
+
+
+class SourcePrefixes(Base, FieldsMixin):
+    __tablename__ = "source_prefixes"
+    _FIELDS = "site_id source_id local_prefix".split()
+    site_id = sqla.Column(sqla.String, sqla.ForeignKey("site_settings.site_id"), primary_key=True)
+    source_id = sqla.Column(sqla.String, sqla.ForeignKey("remote_sources.source_id"), primary_key=True)
+    local_prefix = sqla.Column(sqla.String, nullable=False)
+
 
 def in_memory_db():
-    conn = sqlite3.connect(":memory:")
-    conn.row_factory = sqlite3.Row
-    with conn:
-        for command in BUILD_DATABASE:
-            conn.execute(command)
-    with conn:
-        for sync_type in SYNC_TYPES:
-            conn.execute(INSERT_SYNC_TYPE, [sync_type])
-    return conn
+    engine = sqla.create_engine("sqlite:///:memory:", echo=True)
+    site_db = Base.metadata
+    site_db.create_all(engine)
+    Session = sessionmaker(engine)
+    session = Session()
+    session.add_all(SyncType.from_fields(sync_type) for sync_type in SYNC_TYPES)
+    session.commit()
+    return Session

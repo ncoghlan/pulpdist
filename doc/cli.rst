@@ -81,14 +81,21 @@ configuration file to sync with a tree from that remote server. It may be
 supplied multiple times to run a command against repositories from multiple
 servers.
 
+The ``--site`` option accepts site identifiers and allows a command to run
+against repositories that were configured from a site configuration file
+based on the specified site settings. It may be supplied multiple times to
+run a command against multiple local "sites". This option is only useful if
+repositories are configured against more than one site on the specified Pulp
+server.
+
 If no specific repositories are identified, most commands default to affecting
 every repository defined on the server, or, if the command accepts a
 configuration file, every repository named in the file.
 
 .. note::
 
-   ``--remote-tree``, ``--remote-source`` and ``--remote-server`` are not yet
-   implemented
+   ``--site``, ``--remote-tree``, ``--remote-source`` and ``--remote-server``
+   are not yet implemented
 
 Scheduling sync operations
 --------------------------
@@ -189,11 +196,10 @@ A site config file consists of a top-level JSON mapping, defining
 the following attributes:
 
 * ``LOCAL_TREES``: A sequence of `local tree definitions`_.
-* ``LOCAL_SETTINGS``: Mapping for common `local tree settings`_.
 * ``REMOTE_TREES``: A sequence of `remote tree definitions`_.
 * ``REMOTE_SOURCES``: A sequence of `remote source definitions`_.
 * ``REMOTE_SERVERS``: A sequence of `remote server definitions`_.
-* ``REMOTE_SETTINGS``: Mapping for common `remote tree settings`_.
+* ``SITE_SETTINGS``: A sequence of `site definitions`_.
 * ``RAW_TREES``: A sequence of `raw tree definitions`_.
 
 The general concept is that:
@@ -201,8 +207,8 @@ The general concept is that:
 * each local tree mirrors a particular remote tree
 * each remote tree is provided by a particular remote source
 * each remote source is provided by a particular remote server
-* these settings are combined with the common local and remote tree settings
-  to create raw tree definitions that are uploaded to the server
+* these settings are combined with the appropriate site settings to create
+  raw tree definitions that are uploaded to the server
 * details of the original settings are stored in the raw tree metadata,
   allowing them to be exported again if necessary
 * additional raw trees can be defined and are passed directly to the Pulp
@@ -244,25 +250,6 @@ the use of either ``versioned`` or ``snapshot`` as the sync algorithm:
 
 The ``excluded_versions`` and ``version_filters`` settings are appended to
 the default filtering options including in the remote tree definition.
-
-
-Local Tree Settings
-^^^^^^^^^^^^^^^^^^^
-
-The local tree settings are a mapping with the following attributes:
-
-* ``site``: The name of the local site
-* ``storage_prefix``: The shared path prefix for the local data storage area
-* ``server_prefixes``: mapping from ``server_id`` values to path segments
-* ``source_prefixes``: mapping from ``source_id`` values to path segments
-
-The local path used for a tree is calculated as::
-
-   storage_prefix/server_prefix/source_prefix/local_tree_path
-
-where ``server_prefix`` and ``source_prefix`` are determined by looking up the
-appropriate server and source ID values in the prefix mappings (if no prefix is
-defined, then the empty string is used).
 
 
 Remote Tree Definitions
@@ -331,11 +318,16 @@ A remote server definition is a mapping with the following attributes:
 * ``rsync_port``: Port rsync daemon is listening on (default: rsync default)
 
 
-Remote Tree Settings
-^^^^^^^^^^^^^^^^^^^^
+Site Definitions
+^^^^^^^^^^^^^^^^
 
-The remote tree settings are a mapping with the following attributes:
+A site definition a mapping with the following attributes:
 
+* ``site_id``: locally unique ID (alphanumeric characters and hyphens only)
+* ``name``: human readable name for this site
+* ``storage_prefix``: The shared path prefix for the local data storage area
+* ``server_prefixes``: mapping from ``server_id`` values to path segments
+* ``source_prefixes``: mapping from ``source_id`` values to path segments
 * ``version_suffix``: rsync wildcard pattern to append when a remote tree
   definition uses the ``version_prefix`` setting
 * ``default_excluded_versions``: rsync wildcard patterns to ignore by default
@@ -346,10 +338,8 @@ The remote tree settings are a mapping with the following attributes:
   when creating a raw tree definition (e.g. to exclude standard locations for
   temporary working files)
 
-The remote path used for a tree is calculated as::
-
-   rsync://server_dns/source_remote_path/remote_tree_path
-
+The special ``default`` site settings are used if no more specific settings are
+provided to override them.
 
 Raw Tree Definitions
 ^^^^^^^^^^^^^^^^^^^^
@@ -383,6 +373,40 @@ For further information, refer to the documentation for the Pulp
 
 .. _Create Repository: https://fedorahosted.org/pulp/wiki/UGREST-v2-Repositories#CreateaRepository
 .. _Add Importer: https://fedorahosted.org/pulp/wiki/UGREST-v2-Repositories#AssociateanImportertoaRepository
+
+
+Deriving Raw Tree Definitions from Local Tree Definitions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Deriving raw tree definitions from a local tree definitions requires that a
+specific site be nominated (e.g. via the ``--site`` flag to the ``init``
+command). If no site is nominated, or the site settings have no entry for a
+particular value, then the corresponding settings for the ``default`` site
+are used instead.
+
+The local path used in the import configuration is calculated as::
+
+   storage_prefix/server_prefix/source_prefix/local_tree_path
+
+Where:
+
+* ``storage_prefix`` is taken directly from the site settings
+* ``server_prefix`` is looked up in the server prefixes map. If it is not
+  defined for either the specified site or the default site, then the empty
+  string is used.
+* ``source_prefix`` is looked up in the source prefixes map. If it is not
+  defined for either the specified site or the default site, then the empty
+  string is used.
+* ``local_tree_path`` is the ``tree_path`` setting for the local tree, if
+  it is defined, otherwise it uses the setting for the remote tree.
+
+The remote path used to retrieve a tree is calculated as::
+
+   rsync://server_dns/source_remote_path/remote_tree_path
+
+These values are all taken directly from the appropriate remote server, remote
+source and remote tree settings, respectively.
+
 
 
 Example site definition file
@@ -419,12 +443,10 @@ Additional information is also recorded in the ``notes`` field of each created
 Pulp repo to support some features of the PulpDist command line client. This
 additional metadata is stored in the format:
 
-* ``pulpdist``: Top-level mapping entry to separate out pulpdist metadata
+* ``pulpdist``: Top-level mapping entry to identify pulpdist related metadata
 
   * ``sync_hours``: The remote tree ``sync_hours`` setting (if any)
+  * ``site_id``: The site settings used to configure this repo
   * ``tree_id``: The remote tree mirrored by this repo
   * ``source_id``: The remote source for this tree
   * ``server_id``: The remote server for this tree
-
-The individual mappings in the metadata are then copies of the original
-definitions from the tree configuration file.

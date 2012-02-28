@@ -10,14 +10,13 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 """Config definitions and helpers for pulpdist site configuration"""
-from . import validation
-
-import sqlite3
+from . import validation, site_sql
 
 def check_mapping_sequence(spec):
     return validation.check_sequence(validation.check_mapping(spec))
 
 class SiteConfig(validation.ValidatedConfig):
+    """
     _SPEC = {
         u"LOCAL_SETTINGS": validation.check_mapping(LocalSettingsConfig),
         u"REMOTE_SETTINGS": validation.check_mapping(RemoteSettingsConfig),
@@ -27,6 +26,11 @@ class SiteConfig(validation.ValidatedConfig):
         u"REMOTE_SERVERS": validation.check_mapping_sequence(RemoteServerConfig),
         u"RAW_TREES": validation.check_mapping_sequence(RemoteTreeConfig),
     }
+    """
+
+    def __init__(self, *args, **kwds):
+        super(SiteConfig, self).__init__(*args, **kwds)
+        self._db_session_factory = site_sql.in_memory_db()
 
     @property
     def repo_config(self):
@@ -34,67 +38,21 @@ class SiteConfig(validation.ValidatedConfig):
             self.validate()
         return self._repo_config
 
-    def _make_repo_db(self):
-        
+    def get_db_session(self):
+        return self._db_session_factory()
+
+    def _populate_db(self):
+        db_session = self.get_db_session()
+        # Populate with data
 
     def make_repo_config(self):
-        
+        self._populate_db()
+        db_session = self.get_db_session()
+        # Query populated DB
 
     def validate(self):
         super(SiteConfig, self).validate()
         repo_config = self.make_repo_config()
         repo_config.validate()
         self._repo_config = repo_config
-
-class TreeSyncConfig(validation.ValidatedConfig):
-    _SPEC = {
-        u"tree_name": validation.check_text(),
-        u"remote_server": validation.check_host(),
-        u"remote_path": validation.check_remote_path(),
-        u"local_path": validation.check_path(),
-        u"excluded_files": validation.check_sequence(validation.check_rsync_filter()),
-        u"sync_filters": validation.check_sequence(validation.check_rsync_filter()),
-        u"bandwidth_limit": validation.check_type(int),
-        u"dry_run_only": validation.check_type(int),
-        u"old_remote_daemon": validation.check_type(int),
-        u"rsync_port": validation.check_type(int, allow_none=True),
-        u"enabled": validation.check_type(int),
-    }
-    _DEFAULTS = {
-        u"excluded_files": (),
-        u"sync_filters": (),
-        u"bandwidth_limit": 0,
-        u"dry_run_only": False,
-        u"old_remote_daemon": False,
-        u"rsync_port": None,
-        u"enabled": False,
-    }
-
-class VersionedSyncConfig(TreeSyncConfig):
-    _SPEC = _updated(TreeSyncConfig._SPEC, {
-        u"version_pattern": validation.check_rsync_filter(),
-        u"excluded_versions": validation.check_sequence(validation.check_rsync_filter()),
-        u"subdir_filters": validation.check_sequence(validation.check_rsync_filter()),
-        u"delete_old_dirs": validation.check_type(int),
-    })
-    _DEFAULTS = _updated(TreeSyncConfig._DEFAULTS, {
-        u"version_pattern": u'*',
-        u"excluded_versions": (),
-        u"subdir_filters": (),
-        u"delete_old_dirs": False,
-    })
-
-class SnapshotSyncConfig(VersionedSyncConfig):
-    _SPEC = _updated(VersionedSyncConfig._SPEC, {
-        u"latest_link_name": validation.check_path(allow_none=True),
-    })
-    _DEFAULTS = _updated(VersionedSyncConfig._DEFAULTS, {
-        u"latest_link_name": None,
-    })
-
-    def __init__(self, config=None):
-        super(SnapshotSyncConfig, self).__init__(config)
-        excluded_files = list(self.config[u"excluded_files"])
-        excluded_files += [u"STATUS", u".STATUS"]
-        self.config[u"excluded_files"] = excluded_files
 
