@@ -16,7 +16,7 @@ import copy
 class ValidationError(Exception): pass
 
 def fail_validation(fmt, *args, **kwds):
-    raise ValidationError(fmt.format(*args, **kwds))
+    raise ValidationError(str(fmt).format(*args, **kwds))
 
 def check_value(allowed_values, allow_none=False):
     def validator(value, setting='setting'):

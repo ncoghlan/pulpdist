@@ -195,7 +195,7 @@ around the idea of sharing common settings across multiple tree definitions.
 A site config file consists of a top-level JSON mapping, defining
 the following attributes:
 
-* ``LOCAL_TREES``: A sequence of `local tree definitions`_.
+* ``LOCAL_MIRRORS``: A sequence of `local mirror definitions`_.
 * ``REMOTE_TREES``: A sequence of `remote tree definitions`_.
 * ``REMOTE_SOURCES``: A sequence of `remote source definitions`_.
 * ``REMOTE_SERVERS``: A sequence of `remote server definitions`_.
@@ -215,18 +215,20 @@ The general concept is that:
   server
 
 
-Local Tree Definitions
-^^^^^^^^^^^^^^^^^^^^^^
+Local Mirror Definitions
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-A local tree is a PulpDist managed mirror of a remote tree.
+A local mirror is a PulpDist managed mirror (possibly filtered) of a remote
+tree.
 
-A local tree definition is a mapping with the following attributes:
+A local mirror definition is a mapping with the following attributes:
 
-* ``repo_id``: locally unique ID (alphanumeric characters and hyphens only)
+* ``mirror_id``: locally unique ID (alphanumeric characters and hyphens only)
 * ``tree_id``: the ID of the remote tree that this local tree mirrors
+* ``site_id``: the ID of the site settings used for this tree (default: ``"default"``)
 * ``name``: human readable name of local tree (default: same as remote tree)
 * ``description``: description of local tree (default: same as remote tree)
-* ``tree_path``: final path segment for this tree (default: same as remote tree)
+* ``mirror_path``: final path segment for this tree (default: same as tree_path)
 * ``enabled``: whether the tree starts with sync enabled (default: false)
 * ``dry_run_only``: whether the tree starts in dry run mode (default: false)
 * ``excluded_files``: rsync wildcard patterns to ignore when retrieving files
@@ -450,3 +452,6 @@ additional metadata is stored in the format:
   * ``tree_id``: The remote tree mirrored by this repo
   * ``source_id``: The remote source for this tree
   * ``server_id``: The remote server for this tree
+
+The ``mirror_id`` of the mirror definition is used as the ``repo_id`` of the
+associated Pulp repository.
