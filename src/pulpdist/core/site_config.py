@@ -136,6 +136,7 @@ class SiteConfig(validation.ValidatedConfig):
 
     def __init__(self, *args, **kwds):
         super(SiteConfig, self).__init__(*args, **kwds)
+        self._db_session_factory = None
 
     @property
     def repo_config(self):
@@ -164,6 +165,13 @@ class SiteConfig(validation.ValidatedConfig):
                     db_session.commit()
                 except site_sql.IntegrityError as exc:
                     validation.fail_validation(exc)
+
+    def query_mirrors(self, *args, **kwds):
+        """Returns an SQLAlchemy query result. See site_sql.query_mirrors"""
+        if self._db_session_factory is None:
+            self.validate()
+        db_session = self._get_db_session()
+        return site_sql.query_mirrors(db_session, *args, **kwds)
 
     def make_repo_configs(self):
         self._populate_db()

@@ -125,12 +125,68 @@ class TestSiteConfig(unittest.TestCase):
         self.assertSpecValid(site)
         self.assertInvalid(site)
 
+
+class TestQueryMirrors(unittest.TestCase):
+
+    def setUp(self):
+        self.config = config = json.loads(TEST_CONFIG)
+        self.site = site = site_config.SiteConfig(config)
+
+    def _get_mirrors(self, *args, **kwds):
+        return sorted(m.mirror_id for m in self.site.query_mirrors(*args, **kwds))
+
+    def test_simple_query(self):
+        self.assertEqual(self._get_mirrors(), ALL_MIRRORS)
+
+    def test_query_by_mirror_id(self):
+        mirrors = self._get_mirrors(DEFAULT_MIRRORS)
+        self.assertEqual(mirrors, DEFAULT_MIRRORS)
+
+    def test_query_by_source_id(self):
+        mirrors = self._get_mirrors(sources=[DEFAULT_SOURCE])
+        self.assertEqual(mirrors, DEFAULT_MIRRORS)
+
+    def test_query_by_server_id(self):
+        mirrors = self._get_mirrors(servers=[DEFAULT_SERVER])
+        self.assertEqual(mirrors, DEFAULT_MIRRORS)
+
+    def test_query_by_site_id(self):
+        mirrors = self._get_mirrors(sites=[DEFAULT_SITE])
+        self.assertEqual(mirrors, DEFAULT_MIRRORS)
+
+    def test_query_combined(self):
+        mirrors = self._get_mirrors(OTHER_MIRRORS, sites=[DEFAULT_SITE])
+        self.assertEqual(mirrors, ALL_MIRRORS)
+
+
+DEFAULT_SITE = "default"
+DEFAULT_SERVER = "demo_server"
+DEFAULT_SOURCE = "sync_demo"
+
+DEFAULT_MIRRORS = ["simple_sync", "snapshot_sync"]
+OTHER_MIRRORS = ["versioned_sync"]
+
+ALL_MIRRORS = sorted(DEFAULT_MIRRORS + OTHER_MIRRORS)
+
+
 TEST_CONFIG = """\
 {
   "SITE_SETTINGS": [
     {
       "site_id": "default",
       "name": "Default Site",
+      "storage_prefix": "/var/www/pub",
+      "server_prefixes": {
+        "demo_server": "sync_demo"
+      },
+      "source_prefixes": {
+        "sync_demo": "sync_demo_trees"
+      },
+      "version_suffix": "*"
+    },
+    {
+      "site_id": "other",
+      "name": "Other Site",
       "storage_prefix": "/var/www/pub",
       "server_prefixes": {
         "demo_server": "sync_demo"
@@ -157,6 +213,7 @@ TEST_CONFIG = """\
     {
       "mirror_id": "versioned_sync",
       "tree_id": "versioned_sync",
+      "site_id": "other",
       "sync_filters": ["exclude_dull/"],
       "excluded_versions": ["relevant-but*"],
       "notes": {
@@ -192,7 +249,7 @@ TEST_CONFIG = """\
       "tree_path": "versioned",
       "sync_type": "versioned",
       "sync_hours": 12,
-      "source_id": "sync_demo",
+      "source_id": "sync_demo_other",
       "version_pattern": "relevant*",
       "excluded_files": ["*skip*"],
       "sync_filters": ["exclude_irrelevant/"]
@@ -217,12 +274,23 @@ TEST_CONFIG = """\
       "server_id": "demo_server",
       "name": "Sync Demo Trees",
       "remote_path": "demo"
+    },
+    {
+      "source_id": "sync_demo_other",
+      "server_id": "other_demo_server",
+      "name": "Other Sync Demo Trees",
+      "remote_path": "demo"
     }
   ],
   "REMOTE_SERVERS": [
     {
       "server_id": "demo_server",
       "name": "Sync Demo Server",
+      "dns": "localhost"
+    },
+    {
+      "server_id": "other_demo_server",
+      "name": "Other Sync Demo Server",
       "dns": "localhost"
     }
   ],

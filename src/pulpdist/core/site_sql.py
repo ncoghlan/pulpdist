@@ -13,6 +13,7 @@
 
 
 import sqlalchemy as sqla
+from sqlalchemy.sql import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -86,6 +87,7 @@ class RemoteTree(Base, FieldsMixin):
     name = sqla.Column(sqla.String, nullable=False)
     description = sqla.Column(sqla.String, server_default="")
     tree_path = sqla.Column(sqla.String, nullable=False)
+    sync_hours = sqla.Column(sqla.Integer)
     sync_type = sqla.Column(sqla.String, sqla.ForeignKey("sync_types.sync_type"))
     excluded_files = sqla.Column(sqla.PickleType)
     sync_filters = sqla.Column(sqla.PickleType)
@@ -93,13 +95,13 @@ class RemoteTree(Base, FieldsMixin):
     version_prefix = sqla.Column(sqla.String)
     excluded_versions = sqla.Column(sqla.PickleType)
     version_filters = sqla.Column(sqla.PickleType)
-    sync_hours = sqla.Column(sqla.Integer)
 
 
 class SiteSettings(Base, FieldsMixin):
     __tablename__ = "site_settings"
     _FIELDS = """site_id name storage_prefix version_suffix
-                 default_excluded_files default_excluded_versions""".split()
+                 default_excluded_files default_excluded_versions
+                 server_prefixes source_prefixes""".split()
     site_id = sqla.Column(sqla.String, nullable=False, primary_key=True)
     name = sqla.Column(sqla.String, nullable=False)
     storage_prefix = sqla.Column(sqla.String, nullable=False)
@@ -159,9 +161,8 @@ class SourcePrefix(Base, FieldsMixin):
 class LocalMirror(Base, FieldsMixin):
     __tablename__ = "local_mirrors"
     _FIELDS = """mirror_id tree_id site_id name description mirror_path
-                 sync_hours sync_type excluded_files sync_filters
-                 version_pattern version_prefix
-                 excluded_versions version_filters""".split()
+                 excluded_files sync_filters excluded_versions version_filters
+                 enabled dry_run_only delete_old_dirs""".split()
     mirror_id = sqla.Column(sqla.String, primary_key=True)
     tree_id = sqla.Column(sqla.String, sqla.ForeignKey("remote_trees.tree_id"))
     source = relation(RemoteTree, backref=backref("mirrors", order_by=mirror_id))
@@ -177,6 +178,34 @@ class LocalMirror(Base, FieldsMixin):
     enabled = sqla.Column(sqla.Boolean, default=False)
     dry_run_only = sqla.Column(sqla.Boolean, default=False)
     delete_old_dirs = sqla.Column(sqla.Boolean, default=False)
+
+
+def query_mirrors(session, mirrors=(), sources=(), servers=(), sites=()):
+    """Build an SQLA query that filters for mirrors that match any of the
+       supplied settings.
+    """
+    query = session.query(LocalMirror)
+    filters = []
+    for mirror in mirrors:
+        filters.append(LocalMirror.mirror_id == mirror)
+    for site in sites:
+        filters.append(LocalMirror.site_id == site)
+    if sources or servers:
+        query = query.join(RemoteTree)
+        query = query.join(RemoteSource)
+        for source in sources:
+            filters.append(RemoteSource.source_id == source)
+        if servers:
+            query = query.join(RemoteServer)
+            for server in servers:
+                filters.append(RemoteServer.server_id == server)
+    if filters:
+        if len(filters) == 1:
+            qfilter = filters[0]
+        else:
+            qfilter = sqla.or_(*filters)
+        query = query.filter(qfilter)
+    return query
 
 
 def in_memory_db():
