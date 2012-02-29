@@ -76,7 +76,7 @@ class TestSiteConfig(unittest.TestCase):
         self.assertSpecInvalid(site)
         self.assertInvalid(site)
 
-    def test_server_prefix_missing_reference(self):
+    def test_server_prefix_missing_server(self):
         example = json.loads(TEST_CONFIG)
         example["SITE_SETTINGS"][0]["server_prefixes"]["missing"] = "path"
         site = site_config.SiteConfig(example)
@@ -90,13 +90,40 @@ class TestSiteConfig(unittest.TestCase):
         self.assertSpecInvalid(site)
         self.assertInvalid(site)
 
-    def test_source_prefix_missing_reference(self):
+    def test_source_prefix_missing_source(self):
         example = json.loads(TEST_CONFIG)
         example["SITE_SETTINGS"][0]["source_prefixes"]["missing"] = "path"
         site = site_config.SiteConfig(example)
         self.assertSpecValid(site)
         self.assertInvalid(site)
 
+    def test_local_mirror_missing_site(self):
+        example = json.loads(TEST_CONFIG)
+        example["LOCAL_MIRRORS"][0]["site_id"] = "missing"
+        site = site_config.SiteConfig(example)
+        self.assertSpecValid(site)
+        self.assertInvalid(site)
+
+    def test_local_mirror_missing_tree(self):
+        example = json.loads(TEST_CONFIG)
+        example["LOCAL_MIRRORS"][0]["tree_id"] = "missing"
+        site = site_config.SiteConfig(example)
+        self.assertSpecValid(site)
+        self.assertInvalid(site)
+
+    def test_remote_tree_missing_source(self):
+        example = json.loads(TEST_CONFIG)
+        example["REMOTE_TREES"][0]["source_id"] = "missing"
+        site = site_config.SiteConfig(example)
+        self.assertSpecValid(site)
+        self.assertInvalid(site)
+
+    def test_remote_source_missing_server(self):
+        example = json.loads(TEST_CONFIG)
+        example["REMOTE_SOURCES"][0]["server_id"] = "missing"
+        site = site_config.SiteConfig(example)
+        self.assertSpecValid(site)
+        self.assertInvalid(site)
 
 TEST_CONFIG = """\
 {

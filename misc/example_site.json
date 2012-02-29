@@ -13,9 +13,9 @@
       "version_suffix": "*"
     }
   ],
-  "LOCAL_TREES": [
+  "LOCAL_MIRRORS": [
     {
-      "repo_id": "simple_sync",
+      "mirror_id": "simple_sync",
       "tree_id": "simple_sync",
       "excluded_files": ["*skip*"],
       "sync_filters": ["exclude_irrelevant/"],
@@ -27,7 +27,7 @@
       }
     },
     {
-      "repo_id": "versioned_sync",
+      "mirror_id": "versioned_sync",
       "tree_id": "versioned_sync",
       "sync_filters": ["exclude_dull/"],
       "excluded_versions": ["relevant-but*"],
@@ -38,7 +38,7 @@
       }
     },
     {
-      "repo_id": "snapshot_sync",
+      "mirror_id": "snapshot_sync",
       "tree_id": "snapshot_sync",
       "notes": {
         "site_custom": {
@@ -71,7 +71,7 @@
     },
     {
       "tree_id": "snapshot_sync",
-      "display_name": "Snapshot Sync Demo",
+      "name": "Snapshot Sync Demo",
       "description": "Demonstration of the snapshot tree sync plugin",
       "tree_path": "snapshot",
       "sync_type": "snapshot",
