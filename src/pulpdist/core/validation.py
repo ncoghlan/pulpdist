@@ -196,6 +196,9 @@ class ValidatedConfig(object):
     def __iter__(self):
         return self._SPEC.iterkeys()
 
+    def post_validate(self):
+        pass
+
     def validate(self):
         validate_config(self.config, self.spec)
 
@@ -207,6 +210,7 @@ class ValidatedConfig(object):
                 fail_validation("Expected {0!r} for {1}, got {2!r}",
                                 cls, setting, type(value))
             mapping_validator(value.config, setting)
+            value.post_validate()
         return validator
 
     @classmethod

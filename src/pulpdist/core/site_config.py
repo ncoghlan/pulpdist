@@ -10,7 +10,7 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 """Config definitions and helpers for pulpdist site configuration"""
-from . import validation, site_sql, repo_config
+from . import validation, site_sql, repo_config, sync_config, mirror_config
 
 def check_path_mapping():
     return validation.check_mapping_values(validation.check_path(), allow_none=True)
@@ -44,26 +44,37 @@ class RemoteTreeConfig(validation.ValidatedConfig):
         u"source_id": validation.check_simple_id(),
         u"name": validation.check_text(),
         u"description": validation.check_text(allow_none=True),
-        u"tree_path": validation.check_text(),
-        u"sync_type": validation.check_value(site_sql.SYNC_TYPES),
+        u"tree_path": validation.check_path(),
+        u"sync_hours": validation.check_type(int, allow_none=True),
+        u"sync_type": validation.check_value(sync_config.SYNC_TYPES),
         u"excluded_files": validation.check_rsync_filter_sequence(),
         u"sync_filters": validation.check_rsync_filter_sequence(),
         u"version_pattern": validation.check_rsync_filter(allow_none=True),
-        u"version_prefix": validation.check_rsync_filter(allow_none=True),
+        u"version_prefix": validation.check_path(allow_none=True),
         u"excluded_versions": validation.check_rsync_filter_sequence(),
         u"version_filters": validation.check_rsync_filter_sequence(),
-        u"sync_hours": validation.check_type(int, allow_none=True),
     }
     _DEFAULTS =  {
         u"description": None,
+        u"sync_hours": None,
         u"excluded_files": [],
         u"sync_filters": [],
         u"version_pattern": None,
         u"version_prefix": None,
         u"excluded_versions": [],
         u"version_filters": [],
-        u"sync_hours": None,
     }
+
+    def post_validate(self):
+        config = self.config
+        pattern = config[u"version_pattern"]
+        prefix = config[u"version_prefix"]
+        sync_type = config[u"sync_type"]
+        if pattern is None:
+            if prefix is None and sync_config.requires_version(sync_type):
+                validation.fail_validation("Must set either version_prefix or version_pattern")
+        elif prefix is not None:
+            validation.fail_validation("Cannot set both version_prefix and version_pattern")
 
 
 class LocalMirrorConfig(validation.ValidatedConfig):
@@ -92,7 +103,7 @@ class LocalMirrorConfig(validation.ValidatedConfig):
         u"sync_filters": [],
         u"excluded_versions": [],
         u"version_filters": [],
-        u"notes": None,
+        u"notes": {},
         u"enabled": False,
         u"dry_run_only": False,
         u"delete_old_dirs": False,
@@ -147,11 +158,6 @@ class SiteConfig(validation.ValidatedConfig):
     def _init_db(self):
         self._db_session_factory = site_sql.in_memory_db()
 
-    def _get_db_session(self):
-        db_session = self._db_session_factory()
-        db_session.execute('pragma foreign_keys=on')
-        return db_session
-
     def _populate_db(self):
         # Always start with a fresh DB instance
         self._init_db()
@@ -166,25 +172,35 @@ class SiteConfig(validation.ValidatedConfig):
                 except site_sql.IntegrityError as exc:
                     validation.fail_validation(exc)
 
-    def query_mirrors(self, *args, **kwds):
-        """Returns an SQLAlchemy query result. See site_sql.query_mirrors"""
-        if self._db_session_factory is None:
-            self.validate()
-        db_session = self._get_db_session()
-        return site_sql.query_mirrors(db_session, *args, **kwds)
-
-    def make_repo_configs(self):
-        self._populate_db()
-        db_session = self._get_db_session()
-        # Query populated DB
-        return []
-
     def _validate_spec(self):
         super(SiteConfig, self).validate()
 
     def validate(self):
         self._validate_spec()
-        repo_configs = self.make_repo_configs()
-        map(repo_config.RepoConfig.validate, repo_configs)
-        self.repo_configs = repo_configs
+        self._populate_db()
+
+    def _get_db_session(self):
+        if self._db_session_factory is None:
+            self.validate()
+        db_session = self._db_session_factory()
+        db_session.execute('pragma foreign_keys=on')
+        return db_session
+
+    def query_mirrors(self, *args, **kwds):
+        """Returns an SQLAlchemy query result. See site_sql.query_mirrors"""
+        db_session = self._get_db_session()
+        return site_sql.query_mirrors(db_session, *args, **kwds)
+
+    def convert_mirror(self, mirror):
+        repo_data = mirror_config.make_repo(mirror)
+        return repo_config.RepoConfig.ensure_validated(repo_data)
+
+    def make_repo_configs(self, *args, **kwds):
+        db_session = self._get_db_session()
+        # Query populated DB
+        mirrors = self.query_mirrors(*args, **kwds)
+        repo_configs = [self.convert_mirror(m) for m in mirrors]
+        repo_configs.extend(r.config for r in self.config["RAW_TREES"])
+        return repo_configs
+
 

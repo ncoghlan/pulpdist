@@ -22,8 +22,6 @@ from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from . import util
 
-SYNC_TYPES = "simple versioned snapshot".split()
-
 def _linked_from(target, backref_attr, backref_key):
     return relation(target, backref=backref(backref_attr,
                     collection_class=attribute_mapped_collection(backref_key)))
@@ -49,12 +47,6 @@ class FieldsMixin(object):
 
     def __repr__(self):
         return "<{0}>".format(util.obj_repr(self, self._FIELDS))
-
-class SyncType(Base, FieldsMixin):
-    __tablename__ = "sync_types"
-    _FIELDS = "sync_type".split()
-    sync_type = sqla.Column(sqla.String, primary_key=True)
-
 
 class RemoteServer(Base, FieldsMixin):
     __tablename__ = "remote_servers"
@@ -88,7 +80,7 @@ class RemoteTree(Base, FieldsMixin):
     description = sqla.Column(sqla.String, server_default="")
     tree_path = sqla.Column(sqla.String, nullable=False)
     sync_hours = sqla.Column(sqla.Integer)
-    sync_type = sqla.Column(sqla.String, sqla.ForeignKey("sync_types.sync_type"))
+    sync_type = sqla.Column(sqla.String)
     excluded_files = sqla.Column(sqla.PickleType)
     sync_filters = sqla.Column(sqla.PickleType)
     version_pattern = sqla.Column(sqla.String)
@@ -124,7 +116,7 @@ class SiteSettings(Base, FieldsMixin):
         self._raw_server_prefixes = mapped
 
     @hybrid_property
-    def source_prefixes(self, key, prefixes):
+    def source_prefixes(self):
         mapped = {}
         for k, v in self._raw_source_prefixes.items():
             mapped[k] = v.local_prefix
@@ -162,12 +154,13 @@ class LocalMirror(Base, FieldsMixin):
     __tablename__ = "local_mirrors"
     _FIELDS = """mirror_id tree_id site_id name description mirror_path
                  excluded_files sync_filters excluded_versions version_filters
-                 enabled dry_run_only delete_old_dirs""".split()
+                 notes enabled dry_run_only delete_old_dirs""".split()
     mirror_id = sqla.Column(sqla.String, primary_key=True)
     tree_id = sqla.Column(sqla.String, sqla.ForeignKey("remote_trees.tree_id"))
-    source = relation(RemoteTree, backref=backref("mirrors", order_by=mirror_id))
+    tree = relation(RemoteTree, backref=backref("mirrors", order_by=mirror_id))
     site_id = sqla.Column(sqla.String, sqla.ForeignKey("site_settings.site_id"))
-    source = relation(SiteSettings, backref=backref("mirrors", order_by=mirror_id))
+    site = relation(SiteSettings, backref=backref("mirrors", order_by=mirror_id),
+                    primaryjoin = SiteSettings.site_id == site_id)
     name = sqla.Column(sqla.String)
     description = sqla.Column(sqla.String)
     mirror_path = sqla.Column(sqla.String)
@@ -175,10 +168,16 @@ class LocalMirror(Base, FieldsMixin):
     sync_filters = sqla.Column(sqla.PickleType)
     excluded_versions = sqla.Column(sqla.PickleType)
     version_filters = sqla.Column(sqla.PickleType)
+    notes = sqla.Column(sqla.PickleType)
     enabled = sqla.Column(sqla.Boolean, default=False)
     dry_run_only = sqla.Column(sqla.Boolean, default=False)
     delete_old_dirs = sqla.Column(sqla.Boolean, default=False)
 
+    default_site_id = sqla.Column(sqla.String,
+                                  sqla.ForeignKey("site_settings.site_id"),
+                                  default="default")
+    default_site = relation(SiteSettings, viewonly = True,
+                            primaryjoin = SiteSettings.site_id == default_site_id)
 
 def query_mirrors(session, mirrors=(), sources=(), servers=(), sites=()):
     """Build an SQLA query that filters for mirrors that match any of the
@@ -212,8 +211,4 @@ def in_memory_db():
     engine = sqla.create_engine("sqlite:///:memory:")
     site_db = Base.metadata
     site_db.create_all(engine)
-    Session = sessionmaker(engine)
-    session = Session()
-    session.add_all(SyncType.from_fields(sync_type) for sync_type in SYNC_TYPES)
-    session.commit()
-    return Session
+    return sessionmaker(engine)

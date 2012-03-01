@@ -12,6 +12,12 @@
 """Config definitions and helpers for pulpdist importer plugins"""
 from . import validation
 
+SYNC_TYPES = "simple versioned snapshot".split()
+REQUIRE_VERSION_PATTERN = SYNC_TYPES[1:]
+
+def requires_version(sync_type):
+    return sync_type in REQUIRE_VERSION_PATTERN
+
 def _updated(original, additions):
     new = original.copy()
     new.update(additions)

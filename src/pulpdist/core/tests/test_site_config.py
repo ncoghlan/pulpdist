@@ -15,8 +15,17 @@
 
 import json
 
+from . import test_sync_trees
 from .compat import unittest
-from .. import site_config, site_sql, validation
+from .. import site_config, site_sql, validation, sync_trees
+
+# The tests in this file revolve around the carefully crafted TEST_CONFIG
+# definition. It's designed to exercise most of the interest flows through
+# the validation and conversion code, as well as to be compatible with the
+# tree layouts expected by example_trees.TreeTestCase.
+
+# Individual tests can then tweak the known valid config to induce
+# expected failures and perform any other desired checks.
 
 class TestSiteConfig(unittest.TestCase):
 
@@ -25,8 +34,8 @@ class TestSiteConfig(unittest.TestCase):
         config = site_config.SiteConfig()
         config._init_db()
         session = config._get_db_session()
-        sync_types = session.query(site_sql.SyncType).order_by('sync_type')
-        self.assertEqual([r.sync_type for r in sync_types], sorted(site_sql.SYNC_TYPES))
+        mirrors = list(session.query(site_sql.LocalMirror))
+        self.assertEqual(mirrors, [])
 
     def assertSpecValid(self, config):
         # Checks that the document validation passes
@@ -125,6 +134,20 @@ class TestSiteConfig(unittest.TestCase):
         self.assertSpecValid(site)
         self.assertInvalid(site)
 
+    def test_remote_no_version_pattern(self):
+        example = json.loads(TEST_CONFIG)
+        example["REMOTE_TREES"][1]["version_pattern"] = None
+        example["REMOTE_TREES"][1]["version_prefix"] = None
+        site = site_config.SiteConfig(example)
+        self.assertSpecInvalid(site)
+
+    def test_remote_version_pattern_conflict(self):
+        example = json.loads(TEST_CONFIG)
+        example["REMOTE_TREES"][1]["version_pattern"] = "set"
+        example["REMOTE_TREES"][1]["version_prefix"] = "set"
+        site = site_config.SiteConfig(example)
+        self.assertSpecInvalid(site)
+
 
 class TestQueryMirrors(unittest.TestCase):
 
@@ -159,6 +182,56 @@ class TestQueryMirrors(unittest.TestCase):
         self.assertEqual(mirrors, ALL_MIRRORS)
 
 
+class TestConversion(unittest.TestCase):
+
+    def setUp(self):
+        self.config = config = json.loads(TEST_CONFIG)
+        self.site = site = site_config.SiteConfig(config)
+        self.expected = json.loads(EXPECTED_REPO_CONFIGS)
+
+    # Ideally this would be broken up into finer grained unit tests
+    # but at least this will pick up if anything major goes wrong in
+    # the converter, even if it doesn't make it all that easy to debug
+    # the fault
+    def test_make_repo_configs(self):
+        repo_configs = self.site.make_repo_configs()
+        self.assertEqual(repo_configs, self.expected)
+
+class TestDataTransfer(test_sync_trees.BaseTestCase):
+
+    def setUp(self):
+        super(TestDataTransfer, self).setUp()
+        self.config = config = json.loads(TEST_CONFIG)
+        for site in config["SITE_SETTINGS"]:
+            site["storage_prefix"] = self.local_path
+        for server in config["REMOTE_SERVERS"]:
+            server["rsync_port"] = self.rsyncd.port
+        for mirror in config["LOCAL_MIRRORS"]:
+            mirror["enabled"] = True
+        self.site = site_config.SiteConfig(config)
+
+    def test_simple_tree(self):
+        repo = self.site.make_repo_configs(mirrors=["simple_sync"])[0]
+        params = repo["importer_config"]
+        local_path = params["local_path"]
+        task = sync_trees.SyncTree(params)
+        stats = dict(self.EXPECTED_TREE_STATS)
+        self.check_sync_details(task.run_sync(), "SYNC_COMPLETED", stats)
+        self.check_tree_layout(local_path)
+        stats.update(self.EXPECTED_REPEAT_STATS)
+        self.check_sync_details(task.run_sync(), "SYNC_UP_TO_DATE", stats)
+        self.check_tree_layout(local_path)
+
+    def test_versioned_tree(self):
+        raise NotImplementedError
+
+    def test_snapshot_tree(self):
+        raise NotImplementedError
+
+    def test_raw_tree(self):
+        raise NotImplementedError
+
+
 DEFAULT_SITE = "default"
 DEFAULT_SERVER = "demo_server"
 DEFAULT_SOURCE = "sync_demo"
@@ -177,23 +250,19 @@ TEST_CONFIG = """\
       "name": "Default Site",
       "storage_prefix": "/var/www/pub",
       "server_prefixes": {
-        "demo_server": "sync_demo"
+        "demo_server": "sync_demo",
+        "other_demo_server": "sync_demo/sync_demo_trees"
       },
       "source_prefixes": {
         "sync_demo": "sync_demo_trees"
       },
-      "version_suffix": "*"
+      "version_suffix": "*",
+      "default_excluded_files": ["*dull*"]
     },
     {
       "site_id": "other",
       "name": "Other Site",
       "storage_prefix": "/var/www/pub",
-      "server_prefixes": {
-        "demo_server": "sync_demo"
-      },
-      "source_prefixes": {
-        "sync_demo": "sync_demo_trees"
-      },
       "version_suffix": "*"
     }
   ],
@@ -273,13 +342,13 @@ TEST_CONFIG = """\
       "source_id": "sync_demo",
       "server_id": "demo_server",
       "name": "Sync Demo Trees",
-      "remote_path": "demo"
+      "remote_path": "test_data"
     },
     {
       "source_id": "sync_demo_other",
       "server_id": "other_demo_server",
       "name": "Other Sync Demo Trees",
-      "remote_path": "demo"
+      "remote_path": "test_data"
     }
   ],
   "REMOTE_SERVERS": [
@@ -319,6 +388,152 @@ TEST_CONFIG = """\
     }
   ]
 }
+"""
+
+EXPECTED_REPO_CONFIGS = """\
+[
+  {
+    "repo_id": "simple_sync",
+    "display_name": "Simple Sync Demo",
+    "description": "Demonstration of the simple tree sync plugin",
+    "notes": {
+      "pulpdist": {
+        "source_id": "simple_sync",
+        "server_id": "demo_server",
+        "sync_hours": 0,
+        "site_id": "default",
+        "tree_id": "simple_sync"
+      },
+      "site_custom": {
+        "origin": "PulpDist example repository"
+      },
+      "basic": "note"
+    },
+    "importer_type_id": "simple_tree",
+    "importer_config": {
+      "sync_filters": [
+        "exclude_irrelevant/"
+      ],
+      "local_path": "/var/www/pub/sync_demo/sync_demo_trees/simple/",
+      "remote_server": "localhost",
+      "dry_run_only": false,
+      "old_remote_daemon": false,
+      "tree_name": "simple_sync",
+      "excluded_files": [
+        "*skip*",
+        "*dull*"
+      ],
+      "enabled": false,
+      "remote_path": "/test_data/simple/"
+    }
+  },
+  {
+    "repo_id": "versioned_sync",
+    "display_name": "Versioned Sync Demo",
+    "description": "Demonstration of the versioned tree sync plugin",
+    "notes": {
+      "pulpdist": {
+        "source_id": "versioned_sync",
+        "server_id": "other_demo_server",
+        "sync_hours": 12,
+        "site_id": "other",
+        "tree_id": "versioned_sync"
+      },
+      "site_custom": {
+        "origin": "PulpDist example repository"
+      }
+    },
+    "importer_type_id": "versioned_tree",
+    "importer_config": {
+      "sync_filters": [
+        "exclude_dull/",
+        "exclude_irrelevant/"
+      ],
+      "dry_run_only": false,
+      "subdir_filters": [],
+      "remote_path": "/test_data/versioned/",
+      "excluded_versions": [],
+      "old_remote_daemon": false,
+      "tree_name": "versioned_sync",
+      "excluded_files": [
+        "*skip*",
+        "*dull*"
+      ],
+      "remote_server": "localhost",
+      "version_pattern": "relevant*",
+      "enabled": false,
+      "delete_old_dirs": false,
+      "local_path": "/var/www/pub/sync_demo/sync_demo_trees/versioned/"
+    }
+  },
+  {
+    "repo_id": "snapshot_sync",
+    "display_name": "Snapshot Sync Demo",
+    "description": "Demonstration of the snapshot tree sync plugin",
+    "notes": {
+      "pulpdist": {
+        "source_id": "snapshot_sync",
+        "server_id": "demo_server",
+        "sync_hours": 1,
+        "site_id": "default",
+        "tree_id": "snapshot_sync"
+      },
+      "site_custom": {
+        "origin": "PulpDist example repository"
+      }
+    },
+    "importer_type_id": "snapshot_tree",
+    "importer_config": {
+      "sync_filters": [
+        "exclude_irrelevant/",
+        "exclude_dull/"
+      ],
+      "dry_run_only": false,
+      "subdir_filters": [],
+      "remote_path": "/test_data/snapshot/",
+      "excluded_versions": [],
+      "latest_link_name": "latest-relev",
+      "old_remote_daemon": false,
+      "tree_name": "snapshot_sync",
+      "excluded_files": [
+        "*skip*",
+        "*dull*"
+      ],
+      "remote_server": "localhost",
+      "version_pattern": "relev*",
+      "enabled": false,
+      "delete_old_dirs": false,
+      "local_path": "/var/www/pub/sync_demo/sync_demo_trees/snapshot/"
+    }
+  },
+  {
+    "repo_id": "raw_sync",
+    "display_name": "Raw Sync Demo",
+    "description": "Demonstration of raw sync configuration in site config",
+    "notes": {
+      "pulpdist": {
+        "sync_hours": 24
+      },
+      "site_custom": {
+        "origin": "PulpDist example repository"
+      }
+    },
+    "importer_type_id": "simple_tree",
+    "importer_config": {
+      "sync_filters": [
+        "exclude_irrelevant/",
+        "exclude_dull/"
+      ],
+      "remote_server": "localhost",
+      "remote_path": "/demo/simple/",
+      "local_path": "/var/www/pub/sync_demo_raw/",
+      "tree_name": "Raw Simple Tree",
+      "excluded_files": [
+        "*skip*"
+      ]
+    }
+  }
+]
 """
 
 if __name__ == '__main__':

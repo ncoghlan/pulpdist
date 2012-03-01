@@ -292,6 +292,9 @@ either ``versioned`` or ``snapshot``:
 * ``version_filters``: rsync filters applied when determining which version
   directories to synchronise (optional)
 
+When the ``version_prefix`` setting is used for a ``snapshot`` tree, a
+symbolic link to the latest version of the tree will automatically be
+generated as ``latest-<version_prefix>``.
 
 Remote Source Definitions
 ^^^^^^^^^^^^^^^^^^^^^^^^^
