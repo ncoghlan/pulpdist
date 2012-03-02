@@ -17,6 +17,7 @@ import json
 
 from ..core.pulpapi import PulpServerClient, ServerRequestError
 from ..core.repo_config import RepoConfig
+from ..core.site_config import SiteConfig
 from .display import _format_data, _catch_server_error, _print_repo_table, _print_server_error
 
 def _confirm_operation(action, repo_id, args):
@@ -50,7 +51,26 @@ def _init_repos(args):
         def _is_relevant(repo_id):
             return True
     with open(args.config_fname) as repo_file:
-        repo_configs = json.load(repo_file)
+        config = json.load(repo_file)
+    if isinstance(config, dict):
+        site_config = SiteConfig(config)
+        repo_configs = site_config.make_repo_configs()
+        if not _confirm_operation("Initialise PulpDist site", "metadata", args):
+            raise RuntimeError("Cannot configure from site definition without "
+                               "update site metadata first")
+        if verbose:
+            print("Initialising site metadata")
+        err_msg = "Failed to save PulpDist site config metadata to server"
+        with _catch_server_error(err_msg):
+            server.create_or_save_repo(
+                "pulpdist-meta",
+                "PulpDist Site Configuration",
+                "Metadata used to generate PulpDist repository configurations",
+                site_config.config)
+    elif isinstance(config, list):
+        repo_configs = config
+    else:
+        raise ValueError("Expected a site config or a list of repo configs")
     for repo_config in repo_configs:
         repo_config = RepoConfig.ensure_validated(repo_config)
         repo_id = repo_config["repo_id"]

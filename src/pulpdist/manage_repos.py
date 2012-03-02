@@ -18,6 +18,14 @@ import socket
 
 from .cli.commands import add_parser_subcommands, postprocess_args
 
+def _default_host():
+    # For reasons I don't understand, getfqdn() returns rubbish on Fedora
+    # but gethostname() returns the right answer
+    fqdn = socket.getfqdn()
+    if fqdn != "localhost.localdomain":
+        return fqdn
+    return socket.gethostname()
+
 def make_parser():
     prog = "python -m {0}.manage_repos".format(__package__)
     description = "Manage Pulp Repositories"
@@ -30,7 +38,7 @@ def make_parser():
                         help="Apply requested operation to this repo "
                              "(may be specified multiple times)")
     parser.add_argument("--host", metavar="HOST",
-                        dest="pulp_host", default=socket.getfqdn(),
+                        dest="pulp_host", default=_default_host(),
                         help="The Pulp server to be managed (Default: %(default)s)")
     parser.add_argument("-v", "--verbose",
                         dest="verbose", action='count',

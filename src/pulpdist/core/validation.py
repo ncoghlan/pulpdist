@@ -152,7 +152,7 @@ def check_mapping(spec, allow_none=False):
         for key, value in value_items:
             value_setting = setting + "[{0!r}]".format(key)
             checker = spec[key]
-            if isinstance(checker, ValidatedConfig):
+            if hasattr(checker, "check"):
                 checker = checker.check()
             elif isinstance(checker, list):
                 checker = check_sequence(checker[0].check())
@@ -167,15 +167,12 @@ class ValidatedConfig(object):
     _DEFAULTS = {}
 
     def __init__(self, config=None):
-        self.spec = self._SPEC
         self.config = self._init_config(config)
 
     def _init_config(self, config):
-        if config is None:
-            return
-        config = config.copy()
         complete = copy.deepcopy(self._DEFAULTS)
         if config is not None:
+            config = config.copy()
             # Check for subspecs first
             for key, spec in self._SPEC.items():
                 try:
@@ -183,10 +180,10 @@ class ValidatedConfig(object):
                 except KeyError:
                     continue
                 if isinstance(spec, ValidatedConfig):
-                    complete[key] = spec(value)
+                    complete[key] = spec(value).config
                 elif isinstance(spec, list):
                     spec = spec[0]
-                    complete[key] = [spec(entry) for entry in value]
+                    complete[key] = [spec(entry).config for entry in value]
                 else:
                     complete[key] = value
             # Make sure any unexpected values get reported on validation
@@ -196,21 +193,19 @@ class ValidatedConfig(object):
     def __iter__(self):
         return self._SPEC.iterkeys()
 
-    def post_validate(self):
-        pass
-
     def validate(self):
-        validate_config(self.config, self.spec)
+        self.check()(self.config, "config")
+
+    @classmethod
+    def post_validate(cls, value):
+        pass
 
     @classmethod
     def check(cls):
         mapping_validator = check_mapping(cls._SPEC)
         def validator(value, setting='setting'):
-            if not isinstance(value, cls):
-                fail_validation("Expected {0!r} for {1}, got {2!r}",
-                                cls, setting, type(value))
-            mapping_validator(value.config, setting)
-            value.post_validate()
+            mapping_validator(value, setting)
+            cls.post_validate(value)
         return validator
 
     @classmethod

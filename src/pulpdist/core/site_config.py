@@ -65,8 +65,8 @@ class RemoteTreeConfig(validation.ValidatedConfig):
         u"version_filters": [],
     }
 
-    def post_validate(self):
-        config = self.config
+    @classmethod
+    def post_validate(self, config):
         pattern = config[u"version_pattern"]
         prefix = config[u"version_prefix"]
         sync_type = config[u"sync_type"]
@@ -166,7 +166,7 @@ class SiteConfig(validation.ValidatedConfig):
         for key, model in self._SQL_LOAD_ORDER:
             for model_data in config[key]:
                 db_session = self._get_db_session()
-                db_session.add(model.from_mapping(model_data.config))
+                db_session.add(model.from_mapping(model_data))
                 try:
                     db_session.commit()
                 except site_sql.IntegrityError as exc:
@@ -200,7 +200,7 @@ class SiteConfig(validation.ValidatedConfig):
         # Query populated DB
         mirrors = self.query_mirrors(*args, **kwds)
         repo_configs = [self.convert_mirror(m) for m in mirrors]
-        repo_configs.extend(r.config for r in self.config["RAW_TREES"])
+        repo_configs.extend(self.config["RAW_TREES"])
         return repo_configs
 
 
