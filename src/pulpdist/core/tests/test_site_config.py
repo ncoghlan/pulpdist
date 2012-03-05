@@ -118,33 +118,42 @@ class TestSiteConfig(unittest.TestCase):
         site = site_config.SiteConfig(example)
         self.assertSpecInvalid(site)
 
-    def test_local_mirror_missing_site(self):
+    def _check_missing_ref(self, kind, id_attr):
         example = json.loads(TEST_CONFIG)
-        example["LOCAL_MIRRORS"][0]["site_id"] = "missing"
+        example[kind][0][id_attr] = "missing"
         site = site_config.SiteConfig(example)
         self.assertSpecValid(site)
         self.assertInvalid(site)
+
+    def test_local_mirror_missing_site(self):
+        self._check_missing_ref("LOCAL_MIRRORS", "site_id")
 
     def test_local_mirror_missing_tree(self):
-        example = json.loads(TEST_CONFIG)
-        example["LOCAL_MIRRORS"][0]["tree_id"] = "missing"
-        site = site_config.SiteConfig(example)
-        self.assertSpecValid(site)
-        self.assertInvalid(site)
+        self._check_missing_ref("LOCAL_MIRRORS", "tree_id")
 
     def test_remote_tree_missing_source(self):
-        example = json.loads(TEST_CONFIG)
-        example["REMOTE_TREES"][0]["source_id"] = "missing"
-        site = site_config.SiteConfig(example)
-        self.assertSpecValid(site)
-        self.assertInvalid(site)
+        self._check_missing_ref("REMOTE_TREES", "source_id")
 
     def test_remote_source_missing_server(self):
+        self._check_missing_ref("REMOTE_SOURCES", "server_id")
+
+    def _check_null_ref(self, kind, id_attr):
         example = json.loads(TEST_CONFIG)
-        example["REMOTE_SOURCES"][0]["server_id"] = "missing"
+        example[kind][0][id_attr] = None
         site = site_config.SiteConfig(example)
-        self.assertSpecValid(site)
-        self.assertInvalid(site)
+        self.assertSpecInvalid(site)
+
+    def test_local_mirror_null_site(self):
+        self._check_null_ref("LOCAL_MIRRORS", "site_id")
+
+    def test_local_mirror_null_tree(self):
+        self._check_null_ref("LOCAL_MIRRORS", "tree_id")
+
+    def test_remote_tree_null_source(self):
+        self._check_null_ref("REMOTE_TREES", "source_id")
+
+    def test_remote_source_null_server(self):
+        self._check_null_ref("REMOTE_SOURCES", "server_id")
 
     def test_remote_no_version_pattern(self):
         example = json.loads(TEST_CONFIG)
