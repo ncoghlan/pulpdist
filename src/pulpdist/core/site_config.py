@@ -145,7 +145,6 @@ class SiteConfig(validation.ValidatedConfig):
         (u"REMOTE_TREES", site_sql.RemoteTree),
         (u"SITE_SETTINGS", site_sql.SiteSettings),
         (u"LOCAL_MIRRORS", site_sql.LocalMirror),
-        (u"RAW_TREES", site_sql.PulpRepository),
     )
 
     def __init__(self, *args, **kwds):
@@ -161,6 +160,11 @@ class SiteConfig(validation.ValidatedConfig):
     def _init_db(self):
         self._db_session_factory = site_sql.in_memory_db()
 
+    def _get_db_session(self):
+        if self._db_session_factory is None:
+            self.validate()
+        return self._db_session_factory()
+
     def _populate_db(self):
         # Always start with a fresh DB instance
         self._init_db()
@@ -174,6 +178,38 @@ class SiteConfig(validation.ValidatedConfig):
                     db_session.commit()
                 except site_sql.IntegrityError as exc:
                     validation.fail_validation(exc)
+        self._convert_raw_trees()
+        self._convert_mirrors()
+
+    def _store_repo(self, config):
+        db_session = self._get_db_session()
+        db_session.add(site_sql.PulpRepository.from_mapping(config))
+        try:
+            db_session.commit()
+        except site_sql.IntegrityError as exc:
+            validation.fail_validation(exc)
+
+    def _convert_raw_trees(self):
+        raw_trees = self.config["RAW_TREES"]
+        for repo_data in raw_trees:
+            repo_details = {
+                "repo_id": repo_data["repo_id"],
+                "config": repo_data,
+            }
+            self._store_repo(repo_details)
+
+    def _convert_mirror(self, mirror):
+        raw_data = mirror_config.make_repo(mirror)
+        repo_data = repo_config.RepoConfig.ensure_validated(raw_data)
+        repo_details = repo_data["notes"]["pulpdist"].copy()
+        repo_details["repo_id"] = repo_data["repo_id"]
+        repo_details["config"] = repo_data
+        self._store_repo(repo_details)
+
+    def _convert_mirrors(self):
+        mirrors = self.query_mirrors()
+        for m in mirrors:
+            self._convert_mirror(m)
 
     def _validate_spec(self):
         super(SiteConfig, self).validate()
@@ -182,26 +218,18 @@ class SiteConfig(validation.ValidatedConfig):
         self._validate_spec()
         self._populate_db()
 
-    def _get_db_session(self):
-        if self._db_session_factory is None:
-            self.validate()
-        return self._db_session_factory()
-
     def query_mirrors(self, *args, **kwds):
         """Returns an SQLAlchemy query result. See site_sql.query_mirrors"""
         db_session = self._get_db_session()
         return site_sql.query_mirrors(db_session, *args, **kwds)
 
-    def convert_mirror(self, mirror):
-        repo_data = mirror_config.make_repo(mirror)
-        return repo_config.RepoConfig.ensure_validated(repo_data)
-
-    def make_repo_configs(self, *args, **kwds):
+    def query_repos(self, *args, **kwds):
+        """Returns an SQLAlchemy query result. See site_sql.query_repos"""
         db_session = self._get_db_session()
-        # Query populated DB
-        mirrors = self.query_mirrors(*args, **kwds)
-        repo_configs = [self.convert_mirror(m) for m in mirrors]
-        repo_configs.extend(self.config["RAW_TREES"])
-        return repo_configs
+        return site_sql.query_repos(db_session, *args, **kwds)
+
+    def get_repo_configs(self, *args, **kwds):
+        repos = self.query_repos(*args, **kwds)
+        return [repo.config for repo in repos]
 
 

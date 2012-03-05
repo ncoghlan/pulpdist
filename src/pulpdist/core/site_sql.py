@@ -182,13 +182,20 @@ class LocalMirror(Base, FieldsMixin):
 
 class PulpRepository(Base, FieldsMixin):
     __tablename__ = "pulp_repositories"
-    _FIELDS = """repo_id""".split()
+    __table_args__ = (
+        sqla.ForeignKeyConstraint("mirror_id site_id".split(),
+                                 (LocalMirror.mirror_id, LocalMirror.site_id)),
+    )
+    _FIELDS = """repo_id mirror_id site_id tree_id source_id
+                 server_id sync_hours config""".split()
     repo_id = sqla.Column(sqla.String, primary_key=True)
-    sync_hours = sqla.Column(sqla.Integer)
-    site_id = sqla.Column(sqla.String, sqla.ForeignKey("site_settings.site_id"))
+    mirror_id = sqla.Column(sqla.String)
+    site_id = sqla.Column(sqla.String)
     tree_id = sqla.Column(sqla.String, sqla.ForeignKey("remote_trees.tree_id"))
     source_id = sqla.Column(sqla.String, sqla.ForeignKey("remote_sources.source_id"))
     server_id = sqla.Column(sqla.String, sqla.ForeignKey("remote_servers.server_id"))
+    sync_hours = sqla.Column(sqla.Integer)
+    config = sqla.Column(sqla.PickleType)
 
 
 def query_mirrors(session, mirrors=(), sources=(), servers=(), sites=()):
@@ -210,6 +217,31 @@ def query_mirrors(session, mirrors=(), sources=(), servers=(), sites=()):
             query = query.join(RemoteServer)
             for server in servers:
                 filters.append(RemoteServer.server_id == server)
+    if filters:
+        if len(filters) == 1:
+            qfilter = filters[0]
+        else:
+            qfilter = sqla.or_(*filters)
+        query = query.filter(qfilter)
+    return query
+
+
+def query_repos(session, repos=(), mirrors=(), sources=(), servers=(), sites=()):
+    """Build an SQLA query that filters for mirrors that match any of the
+       supplied settings.
+    """
+    query = session.query(PulpRepository)
+    filters = []
+    for repo in repos:
+        filters.append(PulpRepository.repo_id == repo)
+    for mirror in mirrors:
+        filters.append(PulpRepository.mirror_id == mirror)
+    for site in sites:
+        filters.append(PulpRepository.site_id == site)
+    for source in sources:
+        filters.append(PulpRepository.source_id == source)
+    for server in servers:
+        filters.append(PulpRepository.server_id == server)
     if filters:
         if len(filters) == 1:
             qfilter = filters[0]

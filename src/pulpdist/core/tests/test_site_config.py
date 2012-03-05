@@ -206,8 +206,11 @@ class TestSiteConfig(unittest.TestCase):
 
     def test_mirror_repo_id_conflict(self):
         example = json.loads(TEST_CONFIG)
-        repo_id = example["RAW_TREES"][0]["repo_id"]
-        example["LOCAL_MIRRORS"][0]["mirror_id"] = repo_id
+        mirror_config = example["LOCAL_MIRRORS"][0]
+        mirror_id = mirror_config["mirror_id"]
+        site_id = mirror_config.get("site_id", "default")
+        repo_id = "{0}__{1}".format(mirror_id, site_id)
+        example["RAW_TREES"][0]["repo_id"] = repo_id
         site = site_config.SiteConfig(example)
         self.assertSpecValid(site)
         self.assertInvalid(site)
@@ -251,15 +254,25 @@ class TestConversion(unittest.TestCase):
     def setUp(self):
         self.config = config = json.loads(TEST_CONFIG)
         self.site = site = site_config.SiteConfig(config)
-        self.expected = json.loads(EXPECTED_REPO_CONFIGS)
+        expected_seq = json.loads(EXPECTED_REPO_CONFIGS)
+        expected = {}
+        for repo in expected_seq:
+            repo_id = repo["repo_id"]
+            expected[repo_id] = repo
+        self.expected = expected
 
     # Ideally this would be broken up into finer grained unit tests
     # but at least this will pick up if anything major goes wrong in
     # the converter, even if it doesn't make it all that easy to debug
     # the fault
-    def test_make_repo_configs(self):
-        repo_configs = self.site.make_repo_configs()
-        self.assertEqual(repo_configs, self.expected)
+    def test_get_repo_configs(self):
+        repo_configs = self.site.get_repo_configs()
+        expected = self.expected
+        self.assertEqual(len(repo_configs), len(expected))
+        self.maxDiff = None
+        for repo in repo_configs:
+            repo_id = repo["repo_id"]
+            self.assertEqual(repo, expected[repo_id])
 
 class TestDataTransfer(test_sync_trees.BaseTestCase):
 
@@ -275,7 +288,7 @@ class TestDataTransfer(test_sync_trees.BaseTestCase):
         self.site = site_config.SiteConfig(config)
 
     def test_simple_tree(self):
-        repo = self.site.make_repo_configs(mirrors=["simple_sync"])[0]
+        repo = self.site.get_repo_configs(mirrors=["simple_sync"])[0]
         params = repo["importer_config"]
         local_path = params["local_path"]
         task = sync_trees.SyncTree(params)
@@ -457,12 +470,13 @@ TEST_CONFIG = """\
 EXPECTED_REPO_CONFIGS = """\
 [
   {
-    "repo_id": "simple_sync",
+    "repo_id": "simple_sync__default",
     "display_name": "Simple Sync Demo",
     "description": "Demonstration of the simple tree sync plugin",
     "notes": {
       "pulpdist": {
-        "source_id": "simple_sync",
+        "mirror_id": "simple_sync",
+        "source_id": "sync_demo",
         "server_id": "demo_server",
         "sync_hours": 0,
         "site_id": "default",
@@ -482,7 +496,7 @@ EXPECTED_REPO_CONFIGS = """\
       "remote_server": "localhost",
       "dry_run_only": false,
       "old_remote_daemon": false,
-      "tree_name": "simple_sync",
+      "tree_name": "simple_sync__default",
       "excluded_files": [
         "*skip*",
         "*dull*"
@@ -492,12 +506,13 @@ EXPECTED_REPO_CONFIGS = """\
     }
   },
   {
-    "repo_id": "versioned_sync",
+    "repo_id": "versioned_sync__other",
     "display_name": "Versioned Sync Demo",
     "description": "Demonstration of the versioned tree sync plugin",
     "notes": {
       "pulpdist": {
-        "source_id": "versioned_sync",
+        "mirror_id": "versioned_sync",
+        "source_id": "sync_demo_other",
         "server_id": "other_demo_server",
         "sync_hours": 12,
         "site_id": "other",
@@ -518,7 +533,7 @@ EXPECTED_REPO_CONFIGS = """\
       "remote_path": "/test_data/versioned/",
       "excluded_versions": [],
       "old_remote_daemon": false,
-      "tree_name": "versioned_sync",
+      "tree_name": "versioned_sync__other",
       "excluded_files": [
         "*skip*",
         "*dull*"
@@ -531,12 +546,13 @@ EXPECTED_REPO_CONFIGS = """\
     }
   },
   {
-    "repo_id": "snapshot_sync",
+    "repo_id": "snapshot_sync__default",
     "display_name": "Snapshot Sync Demo",
     "description": "Demonstration of the snapshot tree sync plugin",
     "notes": {
       "pulpdist": {
-        "source_id": "snapshot_sync",
+        "mirror_id": "snapshot_sync",
+        "source_id": "sync_demo",
         "server_id": "demo_server",
         "sync_hours": 1,
         "site_id": "default",
@@ -558,7 +574,7 @@ EXPECTED_REPO_CONFIGS = """\
       "excluded_versions": [],
       "latest_link_name": "latest-relev",
       "old_remote_daemon": false,
-      "tree_name": "snapshot_sync",
+      "tree_name": "snapshot_sync__default",
       "excluded_files": [
         "*skip*",
         "*dull*"

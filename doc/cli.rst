@@ -62,9 +62,11 @@ Limiting commands to selected repositories
 
 The ``--repo`` option accepts repository identifiers and allows a command
 to run against the named repository. It may be supplied multiple times to
-run a command against multiple repositories. This option is used for both
-raw trees and local mirrors (for the latter, the repository identifier is
-the same as the mirror identifier in the site configuration).
+run a command against multiple repositories.
+
+The ``--mirror`` option accepts local mirror identifiers and allows a command
+to run against the named local mirror. It may be supplied multiple times to
+run a command against multiple repositories.
 
 The ``--tree`` option accepts remote tree identifiers and allows a
 command to run against repositories that were configured from a site
@@ -96,8 +98,8 @@ configuration file, every repository named in the file.
 
 .. note::
 
-   ``--site``, ``--tree``, ``--source`` and ``--server`` are not yet
-   implemented.
+   ``--site``, ``--mirror``, ``--tree``, ``--source`` and ``--server`` are not
+   yet implemented.
 
 Scheduling sync operations
 --------------------------
@@ -454,9 +456,10 @@ additional metadata is stored in the format:
 
   * ``sync_hours``: The remote tree ``sync_hours`` setting (if any)
   * ``site_id``: The site settings used to configure this repo
+  * ``mirror_id``: The local mirror name for this repo
   * ``tree_id``: The remote tree mirrored by this repo
   * ``source_id``: The remote source for this tree
   * ``server_id``: The remote server for this tree
 
-The ``mirror_id`` of the mirror definition is used as the ``repo_id`` of the
-associated Pulp repository.
+The ``repo_id`` of the associated Pulp repository is built from the
+``mirror_id`` and ``site_id`` of the local mirror definition.

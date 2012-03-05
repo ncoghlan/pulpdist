@@ -21,9 +21,9 @@ class MirrorConverter(object):
     def __init__(self, mirror):
         self.mirror = mirror
         self.config = {
-            "repo_id": mirror.mirror_id,
-            "display_name": mirror.name or mirror.tree.name,
-            "description": mirror.description or mirror.tree.description
+            u"repo_id": u"{0}__{1}".format(mirror.mirror_id, mirror.site_id),
+            u"display_name": mirror.name or mirror.tree.name,
+            u"description": mirror.description or mirror.tree.description
         }
         self.build_notes()
         self.build_importer_config()
@@ -31,23 +31,24 @@ class MirrorConverter(object):
     def build_notes(self):
         mirror = self.mirror
         pulpdist = {
-            "sync_hours": mirror.tree.sync_hours,
-            "site_id": mirror.site_id,
-            "tree_id": mirror.tree_id,
-            "source_id": mirror.tree.tree_id,
-            "server_id": mirror.tree.source.server_id
+            u"sync_hours": mirror.tree.sync_hours,
+            u"mirror_id": mirror.mirror_id,
+            u"site_id": mirror.site_id,
+            u"tree_id": mirror.tree_id,
+            u"source_id": mirror.tree.source_id,
+            u"server_id": mirror.tree.source.server_id
         }
-        notes = {"pulpdist": pulpdist}
+        notes = {u"pulpdist": pulpdist}
         notes.update(mirror.notes)
-        self.config["notes"] = notes
+        self.config[u"notes"] = notes
 
     def build_importer_config(self):
         mirror = self.mirror
         sync_type = mirror.tree.sync_type
-        tree_type = sync_type + "_tree"
-        config_builder = getattr(self, "_build_{}_config".format(sync_type))
-        self.config["importer_type_id"] = tree_type
-        self.config["importer_config"] = config_builder()
+        tree_type = sync_type + u"_tree"
+        config_builder = getattr(self, u"_build_{}_config".format(sync_type))
+        self.config[u"importer_type_id"] = tree_type
+        self.config[u"importer_config"] = config_builder()
 
     def _build_simple_config(self):
         mirror = self.mirror
@@ -57,41 +58,41 @@ class MirrorConverter(object):
         site = mirror.site
         default_site = mirror.default_site
         config = {
-            "tree_name": self.config["repo_id"],
-            "remote_server": server.dns,
-            "old_remote_daemon": server.old_daemon,
-            "enabled": mirror.enabled,
-            "dry_run_only": mirror.dry_run_only,
+            u"tree_name": self.config["repo_id"],
+            u"remote_server": server.dns,
+            u"old_remote_daemon": server.old_daemon,
+            u"enabled": mirror.enabled,
+            u"dry_run_only": mirror.dry_run_only,
         }
         sync_filters = mirror.sync_filters + tree.sync_filters
-        config["sync_filters"] = sync_filters
+        config[u"sync_filters"] = sync_filters
         excluded_files = list(set(mirror.excluded_files
                         + tree.excluded_files
                         + site.default_excluded_files
                         + default_site.default_excluded_files))
-        config["excluded_files"] = excluded_files
+        config[u"excluded_files"] = excluded_files
         mirror_path = mirror.mirror_path
         if mirror_path is None:
             mirror_path = tree.tree_path
         server_prefixes = site.server_prefixes
         server_prefixes.update(default_site.server_prefixes)
-        server_prefix = server_prefixes.get(server.server_id, "")
+        server_prefix = server_prefixes.get(server.server_id, u"")
         source_prefixes = site.source_prefixes
         source_prefixes.update(default_site.source_prefixes)
-        source_prefix = source_prefixes.get(source.source_id, "")
-        config["local_path"] = os.path.join("/",
+        source_prefix = source_prefixes.get(source.source_id, u"")
+        config[u"local_path"] = os.path.join(u"/",
                                             site.storage_prefix,
                                             server_prefix,
                                             source_prefix,
                                             mirror_path,
-                                            "")
-        config["remote_path"] = os.path.join("/",
+                                            u"")
+        config[u"remote_path"] = os.path.join(u"/",
                                              source.remote_path,
                                              tree.tree_path,
-                                             "")
+                                             u"")
         rsync_port = server.rsync_port
         if rsync_port is not None:
-            config["rsync_port"] = rsync_port
+            config[u"rsync_port"] = rsync_port
         return config
 
     def _build_versioned_config(self):
@@ -100,11 +101,11 @@ class MirrorConverter(object):
         site = mirror.site
         default_site = mirror.default_site
         config = self._build_simple_config()
-        config["delete_old_dirs"] = mirror.delete_old_dirs
+        config[u"delete_old_dirs"] = mirror.delete_old_dirs
         version_pattern = tree.version_pattern
         if version_pattern is None:
             version_pattern = tree.version_prefix + site.version_suffix
-        config["version_pattern"] = version_pattern
+        config[u"version_pattern"] = version_pattern
         def _not_this(other_pattern):
             return fnmatch(version_pattern, other_pattern)
         excluded_versions = list(set(mirror.excluded_versions
@@ -112,14 +113,14 @@ class MirrorConverter(object):
                            + site.default_excluded_versions
                            + default_site.default_excluded_versions))
         excluded_versions = [v for v in excluded_versions if _not_this(v)]
-        config["excluded_versions"] = excluded_versions
+        config[u"excluded_versions"] = excluded_versions
         version_filters = mirror.version_filters + tree.version_filters
-        config["subdir_filters"] = version_filters
+        config[u"subdir_filters"] = version_filters
         return config
 
     def _build_snapshot_config(self):
         version_prefix = self.mirror.tree.version_prefix
         config = self._build_versioned_config()
         if version_prefix is not None:
-            config["latest_link_name"] = "latest-" + version_prefix
+            config[u"latest_link_name"] = u"latest-" + version_prefix
         return config
