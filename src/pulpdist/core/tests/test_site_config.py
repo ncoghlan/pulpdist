@@ -148,6 +148,39 @@ class TestSiteConfig(unittest.TestCase):
         site = site_config.SiteConfig(example)
         self.assertSpecInvalid(site)
 
+    def _check_duplicate_id(self, kind):
+        example = json.loads(TEST_CONFIG)
+        example[kind].append(example[kind][0])
+        site = site_config.SiteConfig(example)
+        self.assertSpecValid(site)
+        self.assertInvalid(site)
+
+    def test_duplicate_site_id(self):
+        self._check_duplicate_id("SITE_SETTINGS")
+
+    def test_duplicate_server_id(self):
+        self._check_duplicate_id("REMOTE_SERVERS")
+
+    def test_duplicate_source_id(self):
+        self._check_duplicate_id("REMOTE_SOURCES")
+
+    def test_duplicate_tree_id(self):
+        self._check_duplicate_id("REMOTE_TREES")
+
+    def test_duplicate_mirror_id(self):
+        self._check_duplicate_id("LOCAL_MIRRORS")
+
+    def test_duplicate_repo_id(self):
+        self._check_duplicate_id("RAW_TREES")
+
+    def test_mirror_repo_id_conflict(self):
+        example = json.loads(TEST_CONFIG)
+        repo_id = example["RAW_TREES"][0]["repo_id"]
+        example["LOCAL_MIRRORS"][0]["mirror_id"] = repo_id
+        site = site_config.SiteConfig(example)
+        self.assertSpecValid(site)
+        self.assertInvalid(site)
+
 
 class TestQueryMirrors(unittest.TestCase):
 

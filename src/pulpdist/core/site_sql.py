@@ -179,6 +179,17 @@ class LocalMirror(Base, FieldsMixin):
     default_site = relation(SiteSettings, viewonly = True,
                             primaryjoin = SiteSettings.site_id == default_site_id)
 
+class PulpRepository(Base, FieldsMixin):
+    __tablename__ = "pulp_repositories"
+    _FIELDS = """repo_id""".split()
+    repo_id = sqla.Column(sqla.String, primary_key=True)
+    sync_hours = sqla.Column(sqla.Integer)
+    site_id = sqla.Column(sqla.String, sqla.ForeignKey("site_settings.site_id"))
+    tree_id = sqla.Column(sqla.String, sqla.ForeignKey("remote_trees.tree_id"))
+    source_id = sqla.Column(sqla.String, sqla.ForeignKey("remote_sources.source_id"))
+    server_id = sqla.Column(sqla.String, sqla.ForeignKey("remote_servers.server_id"))
+
+
 def query_mirrors(session, mirrors=(), sources=(), servers=(), sites=()):
     """Build an SQLA query that filters for mirrors that match any of the
        supplied settings.

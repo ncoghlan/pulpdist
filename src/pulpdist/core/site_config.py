@@ -143,6 +143,7 @@ class SiteConfig(validation.ValidatedConfig):
         (u"REMOTE_TREES", site_sql.RemoteTree),
         (u"SITE_SETTINGS", site_sql.SiteSettings),
         (u"LOCAL_MIRRORS", site_sql.LocalMirror),
+        (u"RAW_TREES", site_sql.PulpRepository),
     )
 
     def __init__(self, *args, **kwds):
