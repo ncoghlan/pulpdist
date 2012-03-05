@@ -92,6 +92,12 @@ class TestSiteConfig(unittest.TestCase):
         self.assertSpecValid(site)
         self.assertInvalid(site)
 
+    def test_server_prefix_null_server(self):
+        example = json.loads(TEST_CONFIG)
+        example["SITE_SETTINGS"][0]["server_prefixes"][None] = "path"
+        site = site_config.SiteConfig(example)
+        self.assertSpecInvalid(site)
+
     def test_source_prefix_bad_path(self):
         example = json.loads(TEST_CONFIG)
         example["SITE_SETTINGS"][0]["source_prefixes"]["demo_server"] = "*"
@@ -105,6 +111,12 @@ class TestSiteConfig(unittest.TestCase):
         site = site_config.SiteConfig(example)
         self.assertSpecValid(site)
         self.assertInvalid(site)
+
+    def test_source_prefix_null_source(self):
+        example = json.loads(TEST_CONFIG)
+        example["SITE_SETTINGS"][0]["source_prefixes"][None] = "path"
+        site = site_config.SiteConfig(example)
+        self.assertSpecInvalid(site)
 
     def test_local_mirror_missing_site(self):
         example = json.loads(TEST_CONFIG)

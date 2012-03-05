@@ -121,10 +121,14 @@ def check_sequence(item_validator, allow_none=False):
             item_validator(item, item_setting)
     return validator
 
-def check_mapping_values(item_validator, allow_none=False):
-    seq_validator = check_sequence(item_validator, allow_none)
+def check_mapping_items(key_validator, value_validator, allow_none=False):
     def validator(value, setting='setting'):
-        seq_validator(value.values(), setting)
+        if allow_none and value is None:
+            return
+        for k, v in value.items():
+            field = setting + "[{0!r}]".format(k)
+            key_validator(k, field)
+            value_validator(v, field)
     return validator
 
 def check_mapping(spec, allow_none=False):

@@ -13,7 +13,9 @@
 from . import validation, site_sql, repo_config, sync_config, mirror_config
 
 def check_path_mapping():
-    return validation.check_mapping_values(validation.check_path(), allow_none=True)
+    return validation.check_mapping_items(validation.check_simple_id(),
+                                          validation.check_path(allow_none=True),
+                                          allow_none=True)
 
 class RemoteServerConfig(validation.ValidatedConfig):
     _SPEC =  {
