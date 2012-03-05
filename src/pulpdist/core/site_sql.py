@@ -158,7 +158,8 @@ class LocalMirror(Base, FieldsMixin):
     mirror_id = sqla.Column(sqla.String, primary_key=True)
     tree_id = sqla.Column(sqla.String, sqla.ForeignKey("remote_trees.tree_id"))
     tree = relation(RemoteTree, backref=backref("mirrors", order_by=mirror_id))
-    site_id = sqla.Column(sqla.String, sqla.ForeignKey("site_settings.site_id"))
+    site_id = sqla.Column(sqla.String, sqla.ForeignKey("site_settings.site_id"),
+                          primary_key=True)
     site = relation(SiteSettings, backref=backref("mirrors", order_by=mirror_id),
                     primaryjoin = SiteSettings.site_id == site_id)
     name = sqla.Column(sqla.String)

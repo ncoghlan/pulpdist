@@ -170,6 +170,16 @@ class TestSiteConfig(unittest.TestCase):
     def test_duplicate_mirror_id(self):
         self._check_duplicate_id("LOCAL_MIRRORS")
 
+    def test_duplicate_mirror_id_distinct_sites(self):
+        example = json.loads(TEST_CONFIG)
+        mirrors = example["LOCAL_MIRRORS"]
+        new_mirror = mirrors[0].copy()
+        new_mirror["site_id"] = "other"
+        mirrors.append(new_mirror)
+        site = site_config.SiteConfig(example)
+        self.assertSpecValid(site)
+        self.assertValid(site)
+
     def test_duplicate_repo_id(self):
         self._check_duplicate_id("RAW_TREES")
 
