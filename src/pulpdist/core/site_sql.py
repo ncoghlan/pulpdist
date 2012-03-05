@@ -211,4 +211,9 @@ def in_memory_db():
     engine = sqla.create_engine("sqlite:///:memory:")
     site_db = Base.metadata
     site_db.create_all(engine)
-    return sessionmaker(engine)
+    Session = sessionmaker(engine)
+    def _get_session():
+        db_session = Session()
+        db_session.execute('pragma foreign_keys=on')
+        return db_session
+    return _get_session

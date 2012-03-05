@@ -182,9 +182,7 @@ class SiteConfig(validation.ValidatedConfig):
     def _get_db_session(self):
         if self._db_session_factory is None:
             self.validate()
-        db_session = self._db_session_factory()
-        db_session.execute('pragma foreign_keys=on')
-        return db_session
+        return self._db_session_factory()
 
     def query_mirrors(self, *args, **kwds):
         """Returns an SQLAlchemy query result. See site_sql.query_mirrors"""
