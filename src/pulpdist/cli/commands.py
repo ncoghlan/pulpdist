@@ -357,6 +357,22 @@ def _add_force(cmd_parser):
     cmd_parser.add_argument("--force", action='store_true',
                             help="Automatically answer yes to all prompts")
 
+_REPO_FILTERS = (
+    ("--repo",   "REPO_ID",   "repo_list", "this repo"),
+    ("--site",   "SITE_ID",   "site_list", "mirrors at this site"),
+    ("--tree",   "TREE_ID",   "tree_list", "mirrors of this tree"),
+    ("--source", "SOURCE_ID", "source_list", "mirrors of trees from this source"),
+    ("--server", "SERVER_ID", "server_list", "mirrors of trees from this server"),
+)
+
+def _add_repo_filters(cmd_parser):
+    for flag, metavar, target, description in _REPO_FILTERS:
+        help_msg = ("Apply operation to {} "
+                    "(may be passed more than once)").format(description)
+        cmd_parser.add_argument(flag, metavar=metavar, dest=target,
+                                action='append', help=help_msg)
+
+
 _INFO_COMMANDS = (
     ("list", _list_repo_summaries, "List repository names", ()),
     ("info", _list_repo_details, "Display repository details", ()),
@@ -395,6 +411,7 @@ def add_parser_subcommands(parser):
         for name, func, cmd_help, extra_args in subcommands:
             cmd_parser = subparsers.add_parser(name, help=cmd_help)
             cmd_parser.set_defaults(command_func=func)
+            _add_repo_filters(cmd_parser)
             for add_arg in extra_args:
                 add_arg(cmd_parser)
     # Ensure config_fname is always set, even for commands that don't need it

@@ -62,20 +62,22 @@ Limiting commands to selected repositories
 
 The ``--repo`` option accepts repository identifiers and allows a command
 to run against the named repository. It may be supplied multiple times to
-run a command against multiple repositories.
+run a command against multiple repositories. This option is used for both
+raw trees and local mirrors (for the latter, the repository identifier is
+the same as the mirror identifier in the site configuration).
 
-The ``--remote-tree`` option accepts remote tree identifiers and allows a
+The ``--tree`` option accepts remote tree identifiers and allows a
 command to run against repositories that were configured from a site
 configuration file to sync with a particular remote tree. It may be
 supplied multiple times to run a command against mirrors of multiple trees.
 
-The ``--remote-source`` option accepts remote source identifiers and allows a
+The ``--source`` option accepts remote source identifiers and allows a
 command to run against repositories that were configured from a site
 configuration file to sync with a tree from that remote source. It may be
 supplied multiple times to run a command against repositories from multiple
 sources.
 
-The ``--remote-server`` option accepts remote server identifiers and allows a
+The ``--server`` option accepts remote server identifiers and allows a
 command to run against repositories that were configured from a site
 configuration file to sync with a tree from that remote server. It may be
 supplied multiple times to run a command against repositories from multiple
@@ -94,8 +96,8 @@ configuration file, every repository named in the file.
 
 .. note::
 
-   ``--site``, ``--remote-tree``, ``--remote-source`` and ``--remote-server``
-   are not yet implemented
+   ``--site``, ``--tree``, ``--source`` and ``--server`` are not yet
+   implemented.
 
 Scheduling sync operations
 --------------------------

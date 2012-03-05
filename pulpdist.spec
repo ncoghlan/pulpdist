@@ -5,7 +5,7 @@
 # -- headers - pulpdist Python package  --------------------------------------
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
-Version:        0.0.6
+Version:        0.0.7
 Release:        1%{?dist}
 Group:          Development/Tools
 License:        GPLv2
@@ -267,8 +267,16 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
-* ??? Feb ?? 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.7-1
-- Added new higher level site configuration format
+* ??? Mar ?? 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.7-1
+- manage_repos now supports a new site configuration format
+- site configuration data is saved to the server as the "pulpdist-meta" repo
+- if no configuration file is provided, the manage_repos init and validate
+  commands will use the data in the "puldist-meta" repo if it is available (NYI)
+- the --repo filtering option is now applied at the individual subcommand level
+  rather than at the manage_repos invocation level
+- when the site configuration data is available, manage_repos now supports
+  filtering by the local site and the remote tree, source and server, in
+  addition to filtering directly by repository identifier (NYI)
 
 * Fri Feb 17 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.6-1
 - Created pulpdist.cli subpackage for Management CLI support code
@@ -289,7 +297,6 @@ fi
 - fixed NameError in importer plugin error handling
 - fixed rsync stat collection for large trees
 - fixed rsync stat collection for old remote daemons
-
 
 * Wed Feb 15 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.5-1
 - Fix Pulp Server form in Django admin interface

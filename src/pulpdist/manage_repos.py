@@ -33,10 +33,6 @@ def make_parser():
     parser = argparse.ArgumentParser(prog=prog,
                                      description=description,
                                      epilog=epilog)
-    parser.add_argument("--repo", metavar="REPO_ID",
-                        dest="repo_list", action='append',
-                        help="Apply requested operation to this repo "
-                             "(may be specified multiple times)")
     parser.add_argument("--host", metavar="HOST",
                         dest="pulp_host", default=_default_host(),
                         help="The Pulp server to be managed (Default: %(default)s)")
