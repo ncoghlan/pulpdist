@@ -86,7 +86,13 @@ class TestSyncTree(BaseTestCase):
         link_path = _path(local_path, link_name)
         params["latest_link_name"] = link_name
         __, expect_sync, __ = self.setup_snapshot_layout(local_path)
-        task = sync_trees.SyncSnapshotTree(params)
+        import sys
+        task = sync_trees.SyncSnapshotTree(params, sys.__stdout__)
+        task.run_sync()
+        # Symlink should exist and point to the last sync'ed tree
+        self.assertTrue(os.path.islink(link_path))
+        self.assertEqual(os.readlink(link_path), expect_sync[-1])
+        # Ensure the case where the link already exists is handled correctly
         task.run_sync()
         # Symlink should exist and point to the last sync'ed tree
         self.assertTrue(os.path.islink(link_path))

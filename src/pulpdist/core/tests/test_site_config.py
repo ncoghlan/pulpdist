@@ -301,12 +301,21 @@ class TestDataTransfer(test_sync_trees.BaseTestCase):
             server["rsync_port"] = self.rsyncd.port
         for mirror in config["LOCAL_MIRRORS"]:
             mirror["enabled"] = True
+        for repo in config["RAW_TREES"]:
+            sync_config = repo["importer_config"]
+            sync_config["rsync_port"] = self.rsyncd.port
+            sync_config["enabled"] = True
         self.site = site_config.SiteConfig(config)
 
+    def _get_sync_config(self, **kwds):
+        repo = self.site.get_repo_configs(**kwds)[0]
+        params = repo["importer_config"].copy()
+        local_path = self.local_path
+        params["local_path"] = local_path
+        return local_path, params
+
     def test_simple_tree(self):
-        repo = self.site.get_repo_configs(mirrors=["simple_sync"])[0]
-        params = repo["importer_config"]
-        local_path = params["local_path"]
+        local_path, params = self._get_sync_config(mirrors=["simple_sync"])
         task = sync_trees.SyncTree(params)
         stats = dict(self.EXPECTED_TREE_STATS)
         self.check_sync_details(task.run_sync(), "SYNC_COMPLETED", stats)
@@ -316,13 +325,37 @@ class TestDataTransfer(test_sync_trees.BaseTestCase):
         self.check_tree_layout(local_path)
 
     def test_versioned_tree(self):
-        raise NotImplementedError
+        local_path, params = self._get_sync_config(mirrors=["versioned_sync"])
+        task = sync_trees.SyncVersionedTree(params)
+        stats = dict(self.EXPECTED_VERSIONED_STATS)
+        self.check_sync_details(task.run_sync(), "SYNC_COMPLETED", stats)
+        self.check_versioned_layout(local_path)
+        stats.update(self.EXPECTED_REPEAT_STATS)
+        self.check_sync_details(task.run_sync(), "SYNC_UP_TO_DATE", stats)
+        self.check_versioned_layout(local_path)
 
     def test_snapshot_tree(self):
-        raise NotImplementedError
+        local_path, params = self._get_sync_config(mirrors=["snapshot_sync"])
+        details = self.setup_snapshot_layout(local_path)
+        task = sync_trees.SyncSnapshotTree(params)
+        stats = dict(self.EXPECTED_SNAPSHOT_STATS)
+        self.check_sync_details(task.run_sync(), "SYNC_COMPLETED", stats)
+        self.check_snapshot_layout(local_path, *details)
+        # For an up-to-date tree, we transfer *nothing*
+        for k in stats:
+            stats[k] = 0
+        self.check_sync_details(task.run_sync(), "SYNC_UP_TO_DATE", stats)
+        self.check_snapshot_layout(local_path, *details)
 
     def test_raw_tree(self):
-        raise NotImplementedError
+        local_path, params = self._get_sync_config(repos=["raw_sync"])
+        task = sync_trees.SyncTree(params)
+        stats = dict(self.EXPECTED_TREE_STATS)
+        self.check_sync_details(task.run_sync(), "SYNC_COMPLETED", stats)
+        self.check_tree_layout(local_path)
+        stats.update(self.EXPECTED_REPEAT_STATS)
+        self.check_sync_details(task.run_sync(), "SYNC_UP_TO_DATE", stats)
+        self.check_tree_layout(local_path)
 
 
 DEFAULT_SITE = "default"
@@ -376,6 +409,7 @@ TEST_CONFIG = """\
       "mirror_id": "versioned_sync",
       "tree_id": "versioned_sync",
       "site_id": "other",
+      "excluded_files": ["*skip*"],
       "sync_filters": ["exclude_dull/"],
       "excluded_versions": ["relevant-but*"],
       "notes": {
@@ -473,7 +507,7 @@ TEST_CONFIG = """\
       "importer_config": {
         "tree_name": "Raw Simple Tree",
         "remote_server": "localhost",
-        "remote_path": "/demo/simple/",
+        "remote_path": "/test_data/simple/",
         "local_path": "/var/www/pub/sync_demo_raw/",
         "excluded_files": ["*skip*"],
         "sync_filters": ["exclude_irrelevant/", "exclude_dull/"]
@@ -547,7 +581,7 @@ EXPECTED_REPO_CONFIGS = """\
       "dry_run_only": false,
       "subdir_filters": [],
       "remote_path": "/test_data/versioned/",
-      "excluded_versions": [],
+      "excluded_versions": ["relevant-but*"],
       "old_remote_daemon": false,
       "tree_name": "versioned_sync__other",
       "excluded_files": [
@@ -587,7 +621,7 @@ EXPECTED_REPO_CONFIGS = """\
       "dry_run_only": false,
       "subdir_filters": [],
       "remote_path": "/test_data/snapshot/",
-      "excluded_versions": [],
+      "excluded_versions": ["relevant-but*"],
       "latest_link_name": "latest-relev",
       "old_remote_daemon": false,
       "tree_name": "snapshot_sync__default",
@@ -621,7 +655,7 @@ EXPECTED_REPO_CONFIGS = """\
         "exclude_dull/"
       ],
       "remote_server": "localhost",
-      "remote_path": "/demo/simple/",
+      "remote_path": "/test_data/simple/",
       "local_path": "/var/www/pub/sync_demo_raw/",
       "tree_name": "Raw Simple Tree",
       "excluded_files": [

@@ -107,7 +107,7 @@ class MirrorConverter(object):
             version_pattern = tree.version_prefix + site.version_suffix
         config[u"version_pattern"] = version_pattern
         def _not_this(other_pattern):
-            return fnmatch(version_pattern, other_pattern)
+            return fnmatch(other_pattern, version_pattern)
         excluded_versions = list(set(mirror.excluded_versions
                            + tree.excluded_versions
                            + site.default_excluded_versions

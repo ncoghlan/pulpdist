@@ -617,6 +617,10 @@ class SyncSnapshotTree(SyncVersionedTree):
                 f.write("FINISHED\n")
         return result
 
+    def _consolidate_tree(self):
+        msg = "Skipping consolidation of {0!r} in order to preserve directory mtimes"
+        self._update_run_log(msg, self.local_path)
+
     def _link_to_latest(self):
         link_name = self.latest_link_name
         if link_name is None:
@@ -628,15 +632,24 @@ class SyncSnapshotTree(SyncVersionedTree):
             if self.dry_run_only:
                 self._update_run_log("Skipping creation of {0!r} for test run", link_path)
                 return
-            try:
-                target_path = max(self._iter_local_versions(), key=os.path.getmtime)
-            except ValueError:
+            def _sort_key(d):
+                return os.path.getmtime(d), d
+            candidates = sorted(self._iter_local_versions(), key=_sort_key)
+            if not candidates:
                 self._update_run_log("No valid target versions in {0!r}, skipping", local_path)
                 return
-            if os.path.isdir(link_path) and not os.path.islink(link_path):
-                self._update_run_log("Existing latest directory, {0}, is not a symbolic link, deleting it", link_path)
-                shutil.rmtree(link_path)
+            self._update_run_log("Candidates: {0!r}", map(_sort_key, candidates))
+            target_path = candidates[-1]
             relative_target = os.path.relpath(target_path, os.path.dirname(link_path))
+            if os.path.isdir(link_path):
+                if os.path.islink(link_path):
+                    if os.readlink(link_path) == relative_target:
+                        self._update_run_log("Link {0!r} -> {1!r} already exists", link_path, relative_target)
+                        return
+                    os.unlink(link_path)
+                else:
+                    self._update_run_log("Existing latest directory, {0!r}, is not a symbolic link, deleting it", link_path)
+                    shutil.rmtree(link_path)
             os.symlink(relative_target, link_path)
             self._update_run_log("Linked {0!r} -> {1!r}", link_path, relative_target)
 
@@ -644,7 +657,6 @@ class SyncSnapshotTree(SyncVersionedTree):
         result, sync_stats = super(SyncSnapshotTree, self)._do_transfer()
         self._link_to_latest()
         return result, sync_stats
-
 
 
 class SyncSnapshotDelta(BaseSyncCommand):
