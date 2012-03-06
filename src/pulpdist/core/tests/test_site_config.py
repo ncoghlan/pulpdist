@@ -59,10 +59,22 @@ class TestSiteConfig(unittest.TestCase):
         # Checks that either document or cross reference validation fails
         self.assertRaises(validation.ValidationError, config.validate)
 
+    def test_empty_config(self):
+        config = site_config.SiteConfig()
+        self.assertSpecValid(config)
+        self.assertValid(config)
+
     def test_read_config(self):
         # This checks that the initial validation of the config file works
         example = json.loads(TEST_CONFIG)
         self.assertSpecValid(site_config.SiteConfig(example))
+
+    def test_raw_trees_only(self):
+        example = json.loads(TEST_CONFIG)
+        raw_trees = {u"RAW_TREES": example["RAW_TREES"]}
+        config = site_config.SiteConfig()
+        self.assertSpecValid(config)
+        self.assertValid(config)
 
     def test_validate_config(self):
         # And this checks the cross-references validate
@@ -71,12 +83,16 @@ class TestSiteConfig(unittest.TestCase):
 
     def test_missing_top_level_entries(self):
         base_config = json.loads(TEST_CONFIG)
+        _missing_ok = "LOCAL_MIRRORS RAW_TREES".split()
         for entry in base_config.keys():
             example = base_config.copy()
             example.pop(entry)
             site = site_config.SiteConfig(example)
-            self.assertSpecInvalid(site)
-            self.assertInvalid(site)
+            self.assertSpecValid(site)
+            if entry in _missing_ok:
+                self.assertValid(site)
+            else:
+                self.assertInvalid(site)
 
     def test_server_prefix_bad_path(self):
         example = json.loads(TEST_CONFIG)

@@ -138,6 +138,14 @@ class SiteConfig(validation.ValidatedConfig):
         u"REMOTE_SERVERS": [RemoteServerConfig],
         u"RAW_TREES": [repo_config.RepoConfig],
     }
+    _DEFAULTS = {
+        u"SITE_SETTINGS": [],
+        u"LOCAL_MIRRORS": [],
+        u"REMOTE_TREES": [],
+        u"REMOTE_SOURCES": [],
+        u"REMOTE_SERVERS": [],
+        u"RAW_TREES": [],
+    }
 
     _SQL_LOAD_ORDER = (
         (u"REMOTE_SERVERS", site_sql.RemoteServer),
