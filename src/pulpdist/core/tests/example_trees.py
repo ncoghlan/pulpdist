@@ -230,13 +230,15 @@ class TreeTestCase(unittest.TestCase):
         return finished_path, expect_sync, not_ready_path
 
 
-    def check_snapshot_layout(self, snapshot_path, finished_path,
-                                    expected_paths, not_ready_path):
+    def check_snapshot_layout(self, snapshot_path, finished_path=None,
+                                    expected_paths=(), not_ready_path=None):
         # The tree locally marked as complete should not get updated
-        self.assertExists(finished_path)
-        self.assertEqual(os.listdir(finished_path), ["STATUS"])
+        if finished_path is not None:
+            self.assertExists(finished_path)
+            self.assertEqual(os.listdir(finished_path), ["STATUS"])
         # The tree not remotely marked as complete should not get updated
-        self.assertNotExists(not_ready_path)
+        if not_ready_path is not None:
+            self.assertNotExists(not_ready_path)
         # The other trees should all get synchronised
         previous_tree_path = None
         for tree in expected_paths:

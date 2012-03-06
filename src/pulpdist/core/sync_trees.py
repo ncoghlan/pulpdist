@@ -496,9 +496,15 @@ class SyncVersionedTree(BaseSyncCommand):
 
     def _delete_old_dirs(self, remote_dir_entries):
         self._update_run_log("Checking for removal of directories on remote server")
+        dirs_to_delete = self._get_old_dirs(remote_dir_entries)
+        return self._delete_local_dirs(dirs_to_delete)
+
+    def _get_old_dirs(self, remote_dir_entries):
         local_dirs = set(os.path.basename(d) for d in self._iter_local_versions())
         remote_dirs = set(d for mtime, d in remote_dir_entries)
-        dirs_to_delete = sorted(local_dirs - remote_dirs)
+        return sorted(local_dirs - remote_dirs)
+
+    def _delete_local_dirs(self, dirs_to_delete):
         local_path = self.local_path
         deleted = 0
         with self._indent_run_log():
@@ -621,6 +627,29 @@ class SyncSnapshotTree(SyncVersionedTree):
         msg = "Skipping consolidation of {0!r} in order to preserve directory mtimes"
         self._update_run_log(msg, self.local_path)
 
+    def _get_latest_dir(self):
+        def _sort_key(d):
+            return os.path.getmtime(d), d
+        candidates = self._iter_local_versions()
+        try:
+            return max(candidates, key=_sort_key)
+        except ValueError:
+            pass
+        return None
+
+    def _get_old_dirs(self, remote_dir_entries):
+        dirs_to_delete = (super(SyncSnapshotTree, self).
+                                _get_old_dirs(remote_dir_entries))
+        # Never delete latest entry, even if it's gone from the remote server
+        latest_dir = self._get_latest_dir()
+        if latest_dir is not None:
+            dirname = os.path.basename(latest_dir)
+            try:
+                dirs_to_delete.remove(dirname)
+            except ValueError:
+                pass
+        return dirs_to_delete
+
     def _link_to_latest(self):
         link_name = self.latest_link_name
         if link_name is None:
@@ -632,14 +661,10 @@ class SyncSnapshotTree(SyncVersionedTree):
             if self.dry_run_only:
                 self._update_run_log("Skipping creation of {0!r} for test run", link_path)
                 return
-            def _sort_key(d):
-                return os.path.getmtime(d), d
-            candidates = sorted(self._iter_local_versions(), key=_sort_key)
-            if not candidates:
+            target_path = self._get_latest_dir()
+            if target_path is None:
                 self._update_run_log("No valid target versions in {0!r}, skipping", local_path)
                 return
-            self._update_run_log("Candidates: {0!r}", map(_sort_key, candidates))
-            target_path = candidates[-1]
             relative_target = os.path.relpath(target_path, os.path.dirname(link_path))
             if os.path.isdir(link_path):
                 if os.path.islink(link_path):

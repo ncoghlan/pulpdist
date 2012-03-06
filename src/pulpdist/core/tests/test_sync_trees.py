@@ -86,15 +86,14 @@ class TestSyncTree(BaseTestCase):
         link_path = _path(local_path, link_name)
         params["latest_link_name"] = link_name
         __, expect_sync, __ = self.setup_snapshot_layout(local_path)
-        import sys
-        task = sync_trees.SyncSnapshotTree(params, sys.__stdout__)
+        task = sync_trees.SyncSnapshotTree(params)
         task.run_sync()
-        # Symlink should exist and point to the last sync'ed tree
+        # Symlink should exist and point to the last synced tree
         self.assertTrue(os.path.islink(link_path))
         self.assertEqual(os.readlink(link_path), expect_sync[-1])
         # Ensure the case where the link already exists is handled correctly
         task.run_sync()
-        # Symlink should exist and point to the last sync'ed tree
+        # Symlink should exist and point to the last synced tree
         self.assertTrue(os.path.islink(link_path))
         self.assertEqual(os.readlink(link_path), expect_sync[-1])
 
@@ -209,8 +208,43 @@ class TestSyncTree(BaseTestCase):
         self.check_sync_details(task.run_sync(), "SYNC_COMPLETED", stats)
         self.check_versioned_layout(local_path, ["relevant-2", "relevant-4"])
 
+    def test_latest_link_preservation(self):
+        # Ensure BZ#799211 has been addressed
+        local_path = self.local_path
+        params = self.params
+        params.update(self.CONFIG_SNAPSHOT_SYNC)
+        link_name = u"latest-relevant"
+        link_path = _path(local_path, link_name)
+        params["latest_link_name"] = link_name
+        params["delete_old_dirs"] = True
+        details = self.setup_snapshot_layout(local_path)
+        latest_dir = details[1][-1]
+        task = sync_trees.SyncSnapshotTree(params)
+        result, __, __, __ = task.run_sync()
+        self.assertEqual(result, "SYNC_COMPLETED")
+        self.assertTrue(os.path.islink(link_path))
+        self.assertEqual(os.readlink(link_path), latest_dir)
+        self.check_snapshot_layout(local_path, *details)
+        # Now we remove the relevant remote trees
+        remote_dir = os.path.join(self.rsyncd.data_dir, "snapshot")
+        shutil.rmtree(remote_dir)
+        # And resync
+        result, __, __, __ = task.run_sync()
+        self.assertEqual(result, "SYNC_FAILED")
+        # On an error, everything is preserved
+        self.assertTrue(os.path.islink(link_path))
+        self.assertEqual(os.readlink(link_path), latest_dir)
+        self.check_snapshot_layout(local_path, *details)
+        # Now set up a valid listing, but nothing to transfer
+        os.makedirs(os.path.join(remote_dir, "relevant-new"))
+        # And resync
+        result, __, __, __ = task.run_sync()
+        self.assertEqual(result, "SYNC_COMPLETED")
+        # Now just the latest dir should be preserved
+        self.assertTrue(os.path.islink(link_path))
+        self.assertEqual(os.readlink(link_path), latest_dir)
+        self.check_snapshot_layout(local_path, expected_paths=[latest_dir])
 
-    # TODO: Verify copying of other symlinks
 
 class TestSyncTreeDisabled(BaseTestCase):
     EXPECTED_NULL_STATS = sync_trees._null_sync_stats._asdict()
