@@ -17,7 +17,7 @@ import json
 
 from . import test_sync_trees
 from .compat import unittest
-from .. import site_config, site_sql, validation, sync_trees
+from .. import site_config, site_sql, validation, sync_trees, mirror_config
 
 # The tests in this file revolve around the carefully crafted TEST_CONFIG
 # definition. It's designed to exercise most of the interest flows through
@@ -245,7 +245,11 @@ class TestQueryMirrors(unittest.TestCase):
         self.assertEqual(self._get_mirrors(), ALL_MIRRORS)
 
     def test_query_by_mirror_id(self):
-        mirrors = self._get_mirrors(DEFAULT_MIRRORS)
+        mirrors = self._get_mirrors(mirrors=DEFAULT_MIRRORS)
+        self.assertEqual(mirrors, DEFAULT_MIRRORS)
+
+    def test_query_by_tree_id(self):
+        mirrors = self._get_mirrors(trees=DEFAULT_TREES)
         self.assertEqual(mirrors, DEFAULT_MIRRORS)
 
     def test_query_by_source_id(self):
@@ -261,8 +265,23 @@ class TestQueryMirrors(unittest.TestCase):
         self.assertEqual(mirrors, DEFAULT_MIRRORS)
 
     def test_query_combined(self):
-        mirrors = self._get_mirrors(OTHER_MIRRORS, sites=[DEFAULT_SITE])
+        mirrors = self._get_mirrors(mirrors=OTHER_MIRRORS, sites=[DEFAULT_SITE])
         self.assertEqual(mirrors, ALL_MIRRORS)
+
+
+class TestQueryRepos(TestQueryMirrors):
+    def _get_mirrors(self, *args, **kwds):
+        return sorted(r.mirror_id for r in self.site.query_repos(*args, **kwds))
+
+    def _get_repos(self, *args, **kwds):
+        return sorted(r.repo_id for r in self.site.query_repos(*args, **kwds))
+
+    def test_simple_query(self):
+        self.assertEqual(self._get_repos(), ALL_REPOS)
+
+    def test_query_by_repo_id(self):
+        repos = self._get_repos(repos=DEFAULT_REPOS)
+        self.assertEqual(repos, DEFAULT_REPOS)
 
 
 class TestConversion(unittest.TestCase):
@@ -361,11 +380,17 @@ class TestDataTransfer(test_sync_trees.BaseTestCase):
 DEFAULT_SITE = "default"
 DEFAULT_SERVER = "demo_server"
 DEFAULT_SOURCE = "sync_demo"
+DEFAULT_TREES = ["simple_sync", "snapshot_sync"]
 
-DEFAULT_MIRRORS = ["simple_sync", "snapshot_sync"]
+DEFAULT_MIRRORS = DEFAULT_TREES[:]
 OTHER_MIRRORS = ["versioned_sync"]
 
 ALL_MIRRORS = sorted(DEFAULT_MIRRORS + OTHER_MIRRORS)
+
+DEFAULT_REPOS = ["simple_sync__default", "snapshot_sync__default"]
+OTHER_REPOS = ["versioned_sync__other", "raw_sync"]
+
+ALL_REPOS = sorted(DEFAULT_REPOS + OTHER_REPOS)
 
 
 TEST_CONFIG = """\

@@ -198,7 +198,7 @@ class PulpRepository(Base, FieldsMixin):
     config = sqla.Column(sqla.PickleType)
 
 
-def query_mirrors(session, mirrors=(), sources=(), servers=(), sites=()):
+def query_mirrors(session, mirrors=(), trees=(), sources=(), servers=(), sites=()):
     """Build an SQLA query that filters for mirrors that match any of the
        supplied settings.
     """
@@ -206,6 +206,8 @@ def query_mirrors(session, mirrors=(), sources=(), servers=(), sites=()):
     filters = []
     for mirror in mirrors:
         filters.append(LocalMirror.mirror_id == mirror)
+    for tree in trees:
+        filters.append(LocalMirror.tree_id == tree)
     for site in sites:
         filters.append(LocalMirror.site_id == site)
     if sources or servers:
@@ -226,7 +228,7 @@ def query_mirrors(session, mirrors=(), sources=(), servers=(), sites=()):
     return query
 
 
-def query_repos(session, repos=(), mirrors=(), sources=(), servers=(), sites=()):
+def query_repos(session, repos=(), mirrors=(), trees=(), sources=(), servers=(), sites=()):
     """Build an SQLA query that filters for mirrors that match any of the
        supplied settings.
     """
@@ -236,6 +238,8 @@ def query_repos(session, repos=(), mirrors=(), sources=(), servers=(), sites=())
         filters.append(PulpRepository.repo_id == repo)
     for mirror in mirrors:
         filters.append(PulpRepository.mirror_id == mirror)
+    for tree in trees:
+        filters.append(PulpRepository.tree_id == tree)
     for site in sites:
         filters.append(PulpRepository.site_id == site)
     for source in sources:
