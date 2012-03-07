@@ -17,11 +17,15 @@ import os.path
 def make_repo(mirror):
     return MirrorConverter(mirror).config
 
+def make_repo_id(mirror_id, site_id):
+    """Derive a Pulp repo ID from a mirror ID and a site ID"""
+    return u"{0}__{1}".format(mirror_id, site_id)
+
 class MirrorConverter(object):
     def __init__(self, mirror):
         self.mirror = mirror
         self.config = {
-            u"repo_id": u"{0}__{1}".format(mirror.mirror_id, mirror.site_id),
+            u"repo_id": make_repo_id(mirror.mirror_id, mirror.site_id),
             u"display_name": mirror.name or mirror.tree.name,
             u"description": mirror.description or mirror.tree.description
         }

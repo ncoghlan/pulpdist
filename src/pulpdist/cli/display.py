@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-"""Request synchronisation of repos based on a JSON config"""
 #
 # Copyright (C) 2011 Red Hat, Inc.
 #
@@ -19,7 +18,10 @@ from operator import itemgetter
 
 from ..core.pulpapi import ServerRequestError
 
-_id_key = itemgetter("id")
+_id_key = itemgetter("repo_id")
+
+# TODO: Get rid of most of the leading underscores (which predate creation
+# of a separate display module)
 
 def _id_field_width(repos):
     return max(map(len, map(_id_key, repos))) + 3
@@ -28,9 +30,15 @@ def _print_repo_table(field_format, repos, header=None):
     id_width = _id_field_width(repos)
     if header is not None:
         print("{1:{0}.{0}}{2}".format(id_width, "Repo ID", header))
-    row_format = "{id:{0}.{0}}" + field_format
+    row_format = "{1:{0}.{0}}" + field_format
     for repo in sorted(repos, key=_id_key):
-        print(row_format.format(id_width, **repo))
+        notes = repo["notes"].get("pulpdist")
+        mirror_id = notes.get("mirror_id") if notes else None
+        if mirror_id is None:
+            repo_id = repo["repo_id"]
+        else:
+            repo_id = "{0}({1})".format(mirror_id, notes["site_id"])
+        print(row_format.format(id_width, repo_id, **repo))
 
 
 def _format_data(data, prefix=0, indent=2):
@@ -45,9 +53,25 @@ def _print_server_error(msg, ex):
     sys.stderr.flush()
 
 @contextlib.contextmanager
-def _catch_server_error(msg):
+def _catch_server_error(msg=None):
+    """Displays msg if a server error occurs.
+
+       Returns a list object on entry. If an exception occurs, it is
+       appended to the list, making it easy to take additional action in
+       the event of an error::
+
+           with _catch_server_error(msg) as ex:
+               # Access Pulp server
+           if ex:
+              details = ex[0]
+              # Additional processing in response to the exception
+
+    """
+    caught_expection = []
     try:
-        yield
+        yield caught_expection
     except ServerRequestError, ex:
-        _print_server_error(msg, ex)
+        caught_expection.append(ex)
+        if msg is not None:
+            _print_server_error(msg, ex)
 

@@ -50,9 +50,9 @@ def parse_args(argv):
 
 def main(argv):
     args = parse_args(argv)
-    args.command_func(args)
+    return args.command_func(args)
 
 
 if __name__ == "__main__":
     import sys
-    main(sys.argv[1:])
+    sys.exit(main(sys.argv[1:]))

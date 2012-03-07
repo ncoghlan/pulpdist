@@ -106,6 +106,8 @@ class GenericContentDistributors(_PulpCollection):
     collection_path = "/plugins/distributors/"
 
 class PulpServerClient(pulp.client.api.server.PulpServer):
+    SITE_META_ID = "pulpdist-meta"
+
     # Add some convenience methods around the standard
     # pulp-admin client API. Can pass username and password
     # to use Basic Auth, otherwise relies on the certfile
@@ -137,6 +139,23 @@ class PulpServerClient(pulp.client.api.server.PulpServer):
 
     def get_repo(self, repo_id):
         return PulpRepositories(self).get_entry(repo_id)
+
+    def get_site_config(self):
+        try:
+            repo_config = PulpRepositories(self).get_entry(self.SITE_META_ID)
+        except ServerRequestError, ex:
+            if ex.args[0] == 404:
+                # Only convert "repo not found" errors to a None result
+                raise
+            return None
+        return repo_config[u'notes']
+
+    def save_site_config(self, config):
+        self.create_or_save_repo(
+            self.SITE_META_ID,
+            "PulpDist Site Configuration",
+            "Metadata used to generate PulpDist repository configurations",
+            config)
 
     def _repo_settings(self, display_name, description, notes):
         result = {}

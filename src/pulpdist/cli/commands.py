@@ -20,6 +20,10 @@ from ..core.repo_config import RepoConfig
 from ..core.site_config import SiteConfig
 from .display import _format_data, _catch_server_error, _print_repo_table, _print_server_error
 
+# TODO: Convert all the functions that accept an "args" parameter into methods
+# of a PulpDistClient class.
+# Include a "display()" helper method that combines print with format
+
 def _confirm_operation(action, repo_id, args):
     if args.force:
         return True
@@ -27,57 +31,72 @@ def _confirm_operation(action, repo_id, args):
     response = raw_input(prompt)
     return response.lower() in ('y', 'yes')
 
+def _load_site_config(args):
+    verbose = args.verbose
+    config_fname = args.config_fname
+    should_update_meta = False
+    if config_fname is None:
+        server = args.server
+        if verbose:
+            print("Loading configuration from host {0!r}".format(server.host))
+        with _catch_server_error() as ex:
+            config_data = server.get_site_config()
+        if ex:
+            config_data = server.get_repos()
+    else:
+        if verbose:
+            print("Loading configuration from file {0!r}".format(config_fname))
+        with open(config_fname) as config_file:
+            config_data = json.load(config_file)
+        should_update_meta = not isinstance(config_data, list)
+    if isinstance(config_data, list):
+        if verbose:
+            print("Converting raw config format to site config format")
+        config_data = {"RAW_TREES": config_data}
+    args.site_config = SiteConfig(config_data)
+    return should_update_meta
+
+def _get_site_config(args):
+    if args.site_config is not None:
+        return args.site_config
+    _load_site_config(args)
+    return args.site_config
+
+def _get_repo_configs(args):
+    site_config = _get_site_config(args)
+    return sorted(site_config.get_repo_configs(repos   = args.repo_list,
+                                               mirrors = args.mirror_list,
+                                               trees   = args.tree_list,
+                                               sources = args.source_list,
+                                               servers = args.server_list,
+                                               sites   = args.site_list))
+
 def _validate_repos(args):
     verbose = args.verbose
-    with open(args.repo_fname) as repo_file:
-        repo_configs = json.load(repo_file)
-    for repo_config in repo_configs:
-        repo_id = repo_config["repo_id"]
-        if verbose:
-            print("Validating config for {0}".format(repo_id))
-        repo_config = RepoConfig.ensure_validated(repo_config)
-        if verbose:
-            print("  Config for {0} is valid".format(repo_id))
+    if not verbose:
+        _get_site_config(args)
+        return
+    # Display a list of all the validated repos
+    for repo_config in _get_repo_configs(args):
+        print("Config for {0} is valid".format(repo_config["repo_id"]))
 
 def _init_repos(args):
     verbose = args.verbose
     server = args.server
-    repo_list = args.repo_list
-    if repo_list is not None:
-        relevant = set(repo_list)
-        def _is_relevant(repo_id):
-            return repo_id in relevant
-    else:
-        def _is_relevant(repo_id):
-            return True
-    with open(args.config_fname) as repo_file:
-        config = json.load(repo_file)
-    if isinstance(config, dict):
-        site_config = SiteConfig(config)
-        repo_configs = site_config.make_repo_configs()
+    update_meta = _load_site_config(args)
+    if update_meta:
         if not _confirm_operation("Initialise PulpDist site", "metadata", args):
             raise RuntimeError("Cannot configure from site definition without "
-                               "update site metadata first")
+                               "updating site metadata first")
         if verbose:
             print("Initialising site metadata")
         err_msg = "Failed to save PulpDist site config metadata to server"
-        with _catch_server_error(err_msg):
-            server.create_or_save_repo(
-                "pulpdist-meta",
-                "PulpDist Site Configuration",
-                "Metadata used to generate PulpDist repository configurations",
-                site_config.config)
-    elif isinstance(config, list):
-        repo_configs = config
-    else:
-        raise ValueError("Expected a site config or a list of repo configs")
-    for repo_config in repo_configs:
-        repo_config = RepoConfig.ensure_validated(repo_config)
+        with _catch_server_error(err_msg) as ex:
+            server.save_site_config(args.site_config.config)
+        if ex: # Failed to save metadata, abort
+            return -1
+    for repo_config in _get_repo_configs(args):
         repo_id = repo_config["repo_id"]
-        if not _is_relevant(repo_id):
-            if verbose > 1:
-                print("Skipping {0}".format(repo_id))
-            continue
         if not _confirm_operation("Initialise", repo_id, args):
             if verbose:
                 print("Not initialising {0}".format(repo_id))
@@ -117,17 +136,9 @@ def _init_repos(args):
                 print(_format_data(data))
 
 
-def _all_repo_details(server, repo_ids):
-    repos = []
-    for repo_id in repo_ids:
-        with _catch_server_error("Failed to retrieve {0}".format(repo_id)):
-            repo = server.get_repo(repo_id)
-            repos.append(repo)
-    return repos
-
 def _list_repo_summaries(args):
     server = args.server
-    repos = _all_repo_details(server, args.repo_list)
+    repos = _get_repo_configs(args)
     if not repos:
         print("No repositories defined on {0}".format(server.host))
         return
@@ -359,6 +370,7 @@ def _add_force(cmd_parser):
 
 _REPO_FILTERS = (
     ("--repo",   "REPO_ID",   "repo_list", "this repo"),
+    ("--mirror",   "MIRROR_ID",   "mirror_list", "this local mirror"),
     ("--site",   "SITE_ID",   "site_list", "mirrors at this site"),
     ("--tree",   "TREE_ID",   "tree_list", "mirrors of this tree"),
     ("--source", "SOURCE_ID", "source_list", "mirrors of trees from this source"),
@@ -369,7 +381,7 @@ def _add_repo_filters(cmd_parser):
     for flag, metavar, target, description in _REPO_FILTERS:
         help_msg = ("Apply operation to {} "
                     "(may be passed more than once)").format(description)
-        cmd_parser.add_argument(flag, metavar=metavar, dest=target,
+        cmd_parser.add_argument(flag, metavar=metavar, dest=target, default=[],
                                 action='append', help=help_msg)
 
 
@@ -414,8 +426,8 @@ def add_parser_subcommands(parser):
             _add_repo_filters(cmd_parser)
             for add_arg in extra_args:
                 add_arg(cmd_parser)
-    # Ensure config_fname is always set, even for commands that don't need it
-    parser.set_defaults(config_fname=None)
+    # Ensure some attributes are always set
+    parser.set_defaults(config_fname=None, site_config=None)
 
 def postprocess_args(parser, args):
     # Must have already saved credentials with "pulp-admin auth login"
