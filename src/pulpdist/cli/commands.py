@@ -21,17 +21,23 @@ from ..core.site_config import SiteConfig
 from .display import _format_data, _catch_server_error, _print_repo_table, _print_server_error
 
 # TODO: Convert all the functions that accept an "args" parameter into methods
-# of a PulpDistClient class.
+# of a PulpDistCommand class, with appropriate subclasses for each command.
 # Include a "display()" helper method that combines print with format
 
-def _confirm_operation(action, repo_id, args):
+def _confirm_operation(action, display_id, args):
+    """Prompt the user for confirmation of action (assume OK if --force used)"""
     if args.force:
         return True
-    prompt = "{0} {1}? (y/n):".format(action, repo_id)
+    prompt = "{0} {1}? (y/n):".format(action, display_id)
     response = raw_input(prompt)
     return response.lower() in ('y', 'yes')
 
 def _load_site_config(args):
+    """Read site config from file or server. Return value indicates if we
+       read a new site config from file or not.
+    """
+    # TODO: This API is pretty clumsy. Will revisit when the "add" subcommand
+    #       is introduced and/or everything becomes based on PulpDistCommand
     verbose = args.verbose
     config_fname = args.config_fname
     should_update_meta = False
@@ -57,99 +63,60 @@ def _load_site_config(args):
     return should_update_meta
 
 def _get_site_config(args):
+    """Read the locally cached site config (loading it if not yet cached)"""
     if args.site_config is not None:
         return args.site_config
     _load_site_config(args)
     return args.site_config
 
-def _get_repo_configs(args):
+def _report_empty(args):
+    if args.verbose:
+        print("No relevant repositories identified")
+
+def _display_id(repo):
+    """Gets a nicely formatted Repo ID from a repo configuration"""
+    notes = repo["notes"].get("pulpdist")
+    mirror_id = notes.get("mirror_id") if notes else None
+    if mirror_id is not None:
+        return "{0}({1})".format(mirror_id, notes["site_id"])
+    return repo["repo_id"]
+
+def _get_repos(args, onempty=_report_empty):
+    """Get the repo configs as a list of (repo_id, display_id, repo_info) tuples
+
+       The display_id is just a more nicely formatted alternative to the
+       combined repo_id used for local mirror definitions. For raw trees, it
+       is the same as repo_id.
+
+       Optionally invokes a callback if no relevant repos are found.
+       Default callback displays a message on stdout if args.verbose is set
+    """
     site_config = _get_site_config(args)
-    return sorted(site_config.get_repo_configs(repos   = args.repo_list,
-                                               mirrors = args.mirror_list,
-                                               trees   = args.tree_list,
-                                               sources = args.source_list,
-                                               servers = args.server_list,
-                                               sites   = args.site_list))
+    repo_configs = site_config.get_repo_configs(
+        repos = args.repo_list,
+        mirrors = args.mirror_list,
+        trees = args.tree_list,
+        sources = args.source_list,
+        servers = args.server_list,
+        sites = args.site_list
+    )
+    if not repo_configs and onempty is not None:
+        onempty(args)
+        return ()
+    repos = [(r["repo_id"], _display_id(r), r) for r in repo_configs]
+    repos.sort()
+    return repos
 
-def _validate_repos(args):
-    verbose = args.verbose
-    if not verbose:
-        _get_site_config(args)
-        return
-    # Display a list of all the validated repos
-    for repo_config in _get_repo_configs(args):
-        print("Config for {0} is valid".format(repo_config["repo_id"]))
+def _get_sync_history(args, onempty=None):
+    """Get the repo configs as a list of (repo_id, display_id, repo_info) tuples
 
-def _init_repos(args):
-    verbose = args.verbose
+       Like _get_repos, but also queries the server for the sync history of
+       each repo returned.
+    """
     server = args.server
-    update_meta = _load_site_config(args)
-    if update_meta:
-        if not _confirm_operation("Initialise PulpDist site", "metadata", args):
-            raise RuntimeError("Cannot configure from site definition without "
-                               "updating site metadata first")
-        if verbose:
-            print("Initialising site metadata")
-        err_msg = "Failed to save PulpDist site config metadata to server"
-        with _catch_server_error(err_msg) as ex:
-            server.save_site_config(args.site_config.config)
-        if ex: # Failed to save metadata, abort
-            return -1
-    for repo_config in _get_repo_configs(args):
-        repo_id = repo_config["repo_id"]
-        if not _confirm_operation("Initialise", repo_id, args):
-            if verbose:
-                print("Not initialising {0}".format(repo_id))
-            continue
-        if verbose:
-            print("Creating or updating {0}".format(repo_id))
-        if verbose > 1:
-            print("Configuration:")
-            print(_format_data(repo_config))
-        try:
-            server.create_or_save_repo(
-                repo_id,
-                repo_config.get("display_name", None),
-                repo_config.get("description", None),
-                repo_config.get("notes", None))
-        except ServerRequestError, ex:
-            msg = "Failed to create or update {0}".format(repo_id)
-            _print_server_error(msg, ex)
-            continue
-        if verbose:
-            print("Created or updated {0}".format(repo_id))
-        importer_id = repo_config.get("importer_type_id", None)
-        if importer_id is not None:
-            if verbose:
-                print("Adding {0} importer to {1}".format(importer_id, repo_id))
-            err_msg = "Failed to add {0} importer to {1}"
-            with _catch_server_error(err_msg.format(importer_id, repo_id)):
-                server.add_importer(repo_id,
-                                    importer_id,
-                                    repo_config.get("importer_config", None))
-            if verbose:
-                print("Added {0} importer to {1}".format(importer_id, repo_id))
-        if verbose > 1:
-            print("Checking repository details for {0}".format(repo_id))
-            with _catch_server_error("Failed to retrieve {0}".format(repo_id)):
-                data = server.get_repo(repo_id)
-                print(_format_data(data))
-
-
-def _list_repo_summaries(args):
-    server = args.server
-    repos = _get_repo_configs(args)
-    if not repos:
-        print("No repositories defined on {0}".format(server.host))
-        return
-    print("Repositories defined on {0}:".format(server.host))
-    _print_repo_table("{display_name}", repos)
-
-def _all_sync_history(server, repo_ids):
-    repos = _all_repo_details(server, repo_ids)
-    for repo in repos:
-        repo_id = repo["id"]
-        history_error = "Failed to retrieve sync history for {0}".format(repo_id)
+    repos = _get_repos(args)
+    for repo_id, display_id, repo in repos:
+        history_error = "Failed to retrieve sync history for {0}".format(display_id)
         repo["sync_history"] = None
         repo["last_attempt"] = None
         repo["last_success"] = None
@@ -168,16 +135,86 @@ def _all_sync_history(server, repo_ids):
                     break
     return repos
 
+def _validate_repos(args):
+    verbose = args.verbose
+    if not verbose:
+        _get_site_config(args)
+        return
+    # Display a list of all the validated repos
+    for repo_id, display_id, repo in _get_repos(args):
+        print("Config for {0} is valid".format(display_id))
+
+def _init_repos(args):
+    verbose = args.verbose
+    server = args.server
+    update_meta = _load_site_config(args)
+    if update_meta:
+        if not _confirm_operation("Initialise PulpDist site", "metadata", args):
+            raise RuntimeError("Cannot configure from site definition without "
+                               "updating site metadata first")
+        if verbose:
+            print("Initialising site metadata")
+        err_msg = "Failed to save PulpDist site config metadata to server"
+        with _catch_server_error(err_msg) as ex:
+            server.save_site_config(args.site_config.config)
+        if ex: # Failed to save metadata, abort
+            return -1
+    for repo_id, display_id, repo in _get_repos(args):
+        if not _confirm_operation("Initialise", display_id, args):
+            if verbose:
+                print("Not initialising {0}".format(display_id))
+            continue
+        if verbose:
+            print("Creating or updating {0}".format(display_id))
+        if verbose > 1:
+            print("Configuration:")
+            print(_format_data(repo))
+        try:
+            server.create_or_save_repo(
+                repo_id,
+                repo.get("display_name", None),
+                repo.get("description", None),
+                repo.get("notes", None))
+        except ServerRequestError, ex:
+            msg = "Failed to create or update {0}".format(display_id)
+            _print_server_error(msg, ex)
+            continue
+        if verbose:
+            print("Created or updated {0}".format(display_id))
+        importer_id = repo.get("importer_type_id", None)
+        if importer_id is not None:
+            if verbose:
+                print("Adding {0} importer to {1}".format(importer_id, display_id))
+            err_msg = "Failed to add {0} importer to {1}"
+            with _catch_server_error(err_msg.format(importer_id, display_id)):
+                server.add_importer(repo_id,
+                                    importer_id,
+                                    repo.get("importer_config", None))
+            if verbose:
+                print("Added {0} importer to {1}".format(importer_id, display_id))
+        if verbose > 1:
+            print("Checking repository details for {0}".format(display_id))
+            with _catch_server_error("Failed to retrieve {0}".format(display_id)):
+                data = server.get_repo(repo_id)
+                print(_format_data(data))
+
+
+def _list_repo_summaries(args):
+    server = args.server
+    repos = _get_repos(args)
+    if not repos:
+        return
+    print("Repositories defined on {0}:".format(server.host))
+    _print_repo_table("{display_name}", repos)
+
 def _list_repo_status(args):
     server = args.server
-    repos = _all_sync_history(server, args.repo_list)
+    repos = _get_sync_history(args)
     if not repos:
-        print("No repositories defined on {0}".format(server.host))
         return
     field_format = "{0:30}{1:30}{2}"
     headings = field_format.format("Last Sync", "Last Attempt", "Last Result")
-    for repo in repos:
-        repo_id = repo["id"]
+    for repo_id, display_id, repo in repos:
         history = repo["sync_history"]
         if history is None:
             repo["sync_summary"] = "Failed to retrieve sync history"
@@ -203,15 +240,10 @@ def _list_repo_status(args):
 
 def _show_sync_history(args):
     server = args.server
-    repos = _all_sync_history(server, args.repo_list)
-    if not repos:
-        print("No repositories defined on {0}".format(server.host))
-        return
-    for repo in repos:
-        repo_id = repo["id"]
+    for repo_id, display_id, repo in _get_sync_history(args):
         history = repo["sync_history"]
         if not history:
-            print("No sync history for {0}".format(repo_id))
+            print("No sync history for {0}".format(display_id))
             continue
         num_entries = args.num_entries
         if num_entries is not None:
@@ -223,28 +255,22 @@ def _show_sync_history(args):
             print(_format_data(sync_job))
 
 def _show_sync_log(args):
-    server = args.server
-    repos = _all_sync_history(server, args.repo_list)
-    if not repos:
-        print("No repositories defined on {0}".format(server.host))
-        return
     display_success = args.success
     sync_version = "last_success" if display_success else "last_attempt"
-    for repo in repos:
-        repo_id = repo["id"]
+    for repo_id, display_id, repo in _get_sync_history(args):
         sync_job = repo[sync_version]
         if sync_job is None:
             if display_success:
                 err_msg = "No successful sync entry for {0}"
             else:
                 err_msg = "No sync attempts for {0}"
-            print(err_msg.format(repo_id))
+            print(err_msg.format(display_id))
             continue
         details = sync_job["details"]
         if details is None:
-            print("No sync details for {0}".format(repo_id))
+            print("No sync details for {0}".format(display_id))
             continue
-        msg = "Most recent sync log for {0}".format(repo_id)
+        msg = "Most recent sync log for {0}".format(display_id)
         header = "="*len(msg)
         print(header)
         print(msg)
@@ -253,28 +279,22 @@ def _show_sync_log(args):
 
 def _show_sync_stats(args):
     # TODO: Eliminate the duplicated code between this and _show_sync_log
-    server = args.server
-    repos = _all_sync_history(server, args.repo_list)
-    if not repos:
-        print("No repositories defined on {0}".format(server.host))
-        return
     display_success = args.success
     sync_version = "last_success" if display_success else "last_attempt"
-    for repo in repos:
-        repo_id = repo["id"]
+    for repo_id, display_id, repo in _get_sync_history(args):
         sync_job = repo[sync_version]
         if sync_job is None:
             if display_success:
                 err_msg = "No successful sync entry for {0}"
             else:
                 err_msg = "No sync attempts for {0}"
-            print(err_msg.format(repo_id))
+            print(err_msg.format(display_id))
             continue
         summary = sync_job["summary"]
         if summary is None:
-            print("No sync details for {0}".format(repo_id))
+            print("No sync details for {0}".format(display_id))
             continue
-        msg = "Most recent sync statistics for {0}".format(repo_id)
+        msg = "Most recent sync statistics for {0}".format(display_id)
         header = "="*len(msg)
         print(header)
         print(msg)
@@ -283,46 +303,61 @@ def _show_sync_stats(args):
 
 def _list_repo_details(args):
     server = args.server
-    for repo_id in args.repo_list:
-        print("Repository details for {0}".format(repo_id))
-        with _catch_server_error("Failed to retrieve {0}".format(repo_id)):
+    for repo_id, display_id, repo in _get_repos(args):
+        print("Repository details for {0}".format(display_id))
+        with _catch_server_error("Failed to retrieve {0}".format(display_id)):
             data = server.get_repo(repo_id)
             print(_format_data(data))
+
+
+# TODO: Very repetitive pattern to all these "do something to a repo" commands
+# There should be some way to combine them...
+# See above idea regarding a PulpDistCommand base class. That could be
+# extended further here...
 
 def _sync_repos(args):
     verbose = args.verbose
     server = args.server
-    for repo_id in args.repo_list:
-        if not _confirm_operation("Sync", repo_id, args):
+    for repo_id, display_id, repo in _get_repos(args):
+        if not _confirm_operation("Sync", display_id, args):
             if verbose:
-                print("Not syncing {0}".format(repo_id))
+                print("Not syncing {0}".format(display_id))
             continue
         if verbose:
-            print("Syncing {0}".format(repo_id))
-        with _catch_server_error("Failed to sync {0}".format(repo_id)):
+            print("Syncing {0}".format(display_id))
+        with _catch_server_error("Failed to sync {0}".format(display_id)):
             server.sync_repo(repo_id)
 
 def _enable_repos(args):
     verbose = args.verbose
     server = args.server
-    for repo_id in args.repo_list:
-        if not _confirm_operation("Enable sync for", repo_id, args):
+    for repo_id, display_id, repo in _get_repos(args):
+        if not _confirm_operation("Enable sync for", display_id, args):
             if verbose:
-                print("Not enabling sync on {0}".format(repo_id))
+                print("Not enabling sync on {0}".format(display_id))
             continue
         if verbose:
-            print("Enabling sync on {0}".format(repo_id))
-        with _catch_server_error("Failed to enable sync on {0}".format(repo_id)):
+            print("Enabling sync on {0}".format(display_id))
+        with _catch_server_error("Failed to enable sync on {0}".format(display_id)):
             server.enable_sync(repo_id, args.dryrun)
+    # TODO: Also update site metadata in the pulpdist-meta repo
 
 def _disable_repos(args):
     verbose = args.verbose
     server = args.server
-    for repo_id in args.repo_list:
+    repos = _get_repos(args)
+    if not repos:
+        return
+    for repo_id, display_id, repo in _get_repos(args):
+        if not _confirm_operation("Disable sync for", display_id, args):
+            if verbose:
+                print("Not disabling sync on {0}".format(display_id))
+            continue
         if verbose:
-            print("Disabling sync on {0}".format(repo_id))
-        with _catch_server_error("Failed to disable sync on {0}".format(repo_id)):
+            print("Disabling sync on {0}".format(display_id))
+        with _catch_server_error("Failed to disable sync on {0}".format(display_id)):
             server.disable_sync(repo_id)
+    # TODO: Also update site metadata in the pulpdist-meta repo
 
 def _cron_sync_repos(args):
     raise NotImplementedError
@@ -330,21 +365,26 @@ def _cron_sync_repos(args):
 def _delete_repos(args):
     verbose = args.verbose
     server = args.server
-    for repo_id in args.repo_list:
-        if not _confirm_operation("Delete", repo_id, args):
+    repos = _get_repos(args)
+    if not repos:
+        return
+    for repo_id, display_id, repo in _get_repos(args):
+        if not _confirm_operation("Delete", display_id, args):
             if verbose:
-                print("Not deleting {0}".format(repo_id))
+                print("Not deleting {0}".format(display_id))
             continue
         if verbose:
-            print("Deleting {0}".format(repo_id))
-        with _catch_server_error("Failed to delete {0}".format(repo_id)):
+            print("Deleting {0}".format(display_id))
+        with _catch_server_error("Failed to delete {0}".format(display_id)):
                 server.delete_repo(repo_id)
+    # TODO: Also update site metadata in the pulpdist-meta repo
 
 def _export_repos(args):
     raise NotImplementedError
 
 def _add_config(cmd_parser):
     cmd_parser.add_argument("config_fname", metavar="CONFIG",
+                            nargs="?", default=None,
                             help="A JSON file with repo config details")
 
 def _add_entries(cmd_parser):
@@ -432,12 +472,6 @@ def add_parser_subcommands(parser):
 def postprocess_args(parser, args):
     # Must have already saved credentials with "pulp-admin auth login"
     pulp_host = args.pulp_host
-    args.server = server = PulpServerClient(pulp_host)
-    # If the command doesn't accept a config file, and there's no repo
-    # list specified, apply the operation to every repo on the server
-    if args.config_fname is None and not args.repo_list:
-        if args.verbose > 1:
-            print("Retrieving repository list from {0}".format(pulp_host))
-        args.repo_list = [repo["id"] for repo in server.get_repos()]
+    args.server = PulpServerClient(pulp_host)
 
 
