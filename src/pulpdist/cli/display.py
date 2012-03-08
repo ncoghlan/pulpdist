@@ -14,40 +14,58 @@
 import json
 import sys
 import contextlib
-from operator import itemgetter
+import collections
 
 from ..core.pulpapi import ServerRequestError
 
-# TODO: Get rid of most of the leading underscores (which predate creation
-# of a separate display module)
+def print_msg(_fmt, *args, **kwds):
+    """Prints a formatted message to sys.stdout"""
+    print(_fmt.format(*args, **kwds))
 
-def _id_field_width(repos):
-    id_widths = (len(display_id) for repo_id, display_id, repo_config in repos)
-    return max(id_widths) + 3
+def print_header(_fmt, *args, **kwds):
+    """Prints a formatted message to sys.stdout as a prominent header"""
+    msg = _fmt.format(*args, **kwds)
+    header = "="*len(msg)
+    print(header)
+    print(msg)
+    print(header)
 
-def _print_repo_table(field_format, repos, header=None):
-    id_width = _id_field_width(repos)
-    if header is not None:
-        print("{1:{0}.{0}}{2}".format(id_width, "Repo ID", header))
-    row_format = "{1:{0}.{0}}" + field_format
-    for repo_id, display_id, repo in repos:
-        print(row_format.format(id_width, display_id, **repo))
-
-
-def _format_data(data, prefix=0, indent=2):
+def format_data(data, prefix=0, indent=2):
+    """Serialises data as JSON with an optional uniform leading indent"""
     out = json.dumps(data, indent=indent)
     if prefix:
         out = "\n".join(prefix * " " + line for line in out.splitlines())
     return out
 
-def _print_server_error(msg, ex):
+def print_data(*args, **kwds):
+    """Prints JSON formatted data to sys.stdout"""
+    print(format_data(*args, **kwds))
+
+def _id_field_width(repos):
+    id_widths = (len(repo.display_id) for repo in repos)
+    return max(id_widths) + 3
+
+def print_repo_table(field_format, repos, header=None):
+    """Displays info from site_config.PulpRepo entries as a table"""
+    id_width = _id_field_width(repos)
+    if header is not None:
+        print_msg("{1:{0}.{0}}{2}", id_width, "Repo ID", header)
+    row_format = "{1:{0}.{0}}" + field_format
+    for repo in repos:
+        print_msg(row_format, id_width, repo.display_id, **repo.config)
+
+
+def print_server_error(msg, ex):
+    """Write a Pulp server """
     details = "{0} ({1})\n".format(msg, ex)
     sys.stderr.write(details)
     sys.stderr.flush()
 
 @contextlib.contextmanager
-def _catch_server_error(msg=None):
-    """Displays msg if a server error occurs.
+def catch_server_error(_fmt=None, *args, **kwds):
+    """Catches and suppresses Pulp API server errors
+
+       Displays a formatted message if a Pulp server error occurs.
 
        Returns a list object on entry. If an exception occurs, it is
        appended to the list, making it easy to take additional action in
@@ -60,11 +78,12 @@ def _catch_server_error(msg=None):
               # Additional processing in response to the exception
 
     """
+    msg = _fmt.format(args, kwds) if _fmt is not None else None
     caught_expection = []
     try:
         yield caught_expection
     except ServerRequestError, ex:
         caught_expection.append(ex)
         if msg is not None:
-            _print_server_error(msg, ex)
+            print_server_error(msg, ex)
 

@@ -10,7 +10,22 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 """Config definitions and helpers for pulpdist site configuration"""
+import collections
+
 from . import validation, site_sql, repo_config, sync_config, mirror_config
+
+def _display_id(config):
+    """Gets a nicely formatted Repo ID from a repo configuration"""
+    notes = config["notes"].get("pulpdist")
+    mirror_id = notes.get("mirror_id") if notes else None
+    if mirror_id is not None:
+        return "{0}({1})".format(mirror_id, notes["site_id"])
+    return config["repo_id"]
+
+class PulpRepo(collections.namedtuple("PulpRepo", "id display_id config")):
+    @classmethod
+    def from_config(cls, config):
+        return cls(config["repo_id"], _display_id(config), config)
 
 def check_path_mapping():
     return validation.check_mapping_items(validation.check_simple_id(),

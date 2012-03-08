@@ -16,7 +16,7 @@ import argparse
 import json
 import socket
 
-from .cli.commands import add_parser_subcommands, postprocess_args
+from .cli.commands import add_parser_subcommands
 
 def _default_host():
     # For reasons I don't understand, getfqdn() returns rubbish on Fedora
@@ -45,12 +45,11 @@ def make_parser():
 def parse_args(argv):
     parser = make_parser()
     args = parser.parse_args(argv)
-    postprocess_args(parser, args)
     return args
 
 def main(argv):
     args = parse_args(argv)
-    return args.command_func(args)
+    return args.command_factory(args)()
 
 
 if __name__ == "__main__":
