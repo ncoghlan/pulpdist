@@ -143,8 +143,8 @@ class ShowRepoDetails(PulpCommand):
         display_id = repo.display_id
         print_msg("Repository details for {0}", display_id)
         with catch_server_error("Failed to retrieve {0}", display_id):
-            data = server.get_repo(repo.id)
-            print(_format_data(data))
+            data = self.server.get_repo(repo.id)
+            print_data(data)
 
 
 #================================================================
