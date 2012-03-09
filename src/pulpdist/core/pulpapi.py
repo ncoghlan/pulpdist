@@ -144,7 +144,7 @@ class PulpServerClient(pulp.client.api.server.PulpServer):
         try:
             repo_config = PulpRepositories(self).get_entry(self.SITE_META_ID)
         except ServerRequestError, ex:
-            if ex.args[0] == 404:
+            if ex.args[0] != 404:
                 # Only convert "repo not found" errors to a None result
                 raise
             return None
