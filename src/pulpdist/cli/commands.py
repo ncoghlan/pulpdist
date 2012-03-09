@@ -72,6 +72,8 @@ class PulpCommand(object):
                 tree["repo_id"] = tree.pop("id")
             config_data = {"RAW_TREES": config_data}
         self._site_config = site_config = SiteConfig(config_data)
+        if verbose > 2:
+            print_data(site_config.config, 2)
         if upload_meta:
             self.upload_metadata(site_config)
 
