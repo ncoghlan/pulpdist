@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-"""Request synchronisation of repos based on a JSON config"""
 #
 # Copyright (C) 2011 Red Hat, Inc.
 #
@@ -12,45 +11,7 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.\
 
-import argparse
-import json
-import socket
-
-from .cli.commands import add_parser_subcommands
-
-def _default_host():
-    # For reasons I don't understand, getfqdn() returns rubbish on Fedora
-    # but gethostname() returns the right answer
-    fqdn = socket.getfqdn()
-    if fqdn != "localhost.localdomain":
-        return fqdn
-    return socket.gethostname()
-
-def make_parser():
-    prog = "python -m {0}.manage_repos".format(__package__)
-    description = "Manage Pulp Repositories"
-    epilog = "Use '%(prog)s CMD --help' for subcommand help"
-    parser = argparse.ArgumentParser(prog=prog,
-                                     description=description,
-                                     epilog=epilog)
-    parser.add_argument("--host", metavar="HOST",
-                        dest="pulp_host", default=_default_host(),
-                        help="The Pulp server to be managed (Default: %(default)s)")
-    parser.add_argument("-v", "--verbose",
-                        dest="verbose", action='count',
-                        help="Increase level of debugging information displayed")
-    add_parser_subcommands(parser)
-    return parser
-
-def parse_args(argv):
-    parser = make_parser()
-    args = parser.parse_args(argv)
-    return args
-
-def main(argv):
-    args = parse_args(argv)
-    return args.command_factory(args)()
-
+from .cli.repo_cli import main
 
 if __name__ == "__main__":
     import sys
