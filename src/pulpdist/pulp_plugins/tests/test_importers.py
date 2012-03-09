@@ -20,20 +20,10 @@ from datetime import datetime, timedelta
 
 from parse import parse as parse_str
 
-from ...core import pulpapi, sync_trees
 from ...core.tests import example_trees
-from ...core.tests.compat import unittest
-
-# Required setup on local machine to run plugin tests
-#
-# - Pulp instance running on default port (i.e. 80)
-# - default admin/admin account still in place
-# - OAuth enabled with keys as seen below
-# - "pulp-admin auth login localhost --username admin --password admin"
-
-# TODO: Parts of the below should become pulpdist.core.tests.test_pulpapi
-#       (Although it's handy that the core tests don't need the server...)
-
+from ...core.tests.pulpapi_util import (PulpTestCase,
+                                        BasicAuthMixin,
+                                        LocalCertMixin)
 
 IMPORTERS = [u"simple_tree", u"versioned_tree", u"snapshot_tree",
              u"delta_tree", u"snapshot_delta"]
@@ -46,41 +36,6 @@ def _naive_utc(dt):
 def parse_iso_datetime(raw):
     dt = parse_str("{:ti}", raw).fixed[0]
     return _naive_utc(dt)
-
-class PulpTestCase(unittest.TestCase):
-    REPO_ID = u"test_repo"
-
-    def setUp(self):
-        self.server = self._local_test_server()
-
-    def _local_test_server(self):
-        localhost = socket.gethostname()
-        oauth_key = "example-oauth-key"
-        oauth_secret = "example-oauth-secret"
-        return pulpapi.PulpServer(localhost, oauth_key, oauth_secret)
-
-    def _local_test_repo(self):
-        try:
-            self.server.delete_repo(self.REPO_ID)
-        except pulpapi.ServerRequestError:
-            pass
-        else:
-            raise RuntimeError("Previous test run didn't destroy test repo!")
-        return self.server.create_repo(self.REPO_ID)
-
-class BasicAuthMixin(object):
-    def _local_test_server(self):
-        localhost = socket.gethostname()
-        username = "admin"
-        password = "admin"
-        return pulpapi.PulpServerClient(localhost,
-                                        username, password)
-
-class LocalCertMixin(object):
-    def _local_test_server(self):
-        localhost = socket.gethostname()
-        return pulpapi.PulpServerClient(localhost)
-
 
 class TestServerAccess(PulpTestCase):
     # Test basic access to the local Pulp server
@@ -96,7 +51,7 @@ class TestServerAccess(PulpTestCase):
            self.fail("Missing expected importers: {0}".format(list(expected)))
 
     def test_missing_repo(self):
-        with self.assertRaises(pulpapi.ServerRequestError) as details:
+        with self.assertServerRequestError() as details:
             self.server.get_repo(self.REPO_ID)
         exc = details.exception
         self.assertEqual(exc.args[0], 404)
@@ -111,7 +66,7 @@ class TestServerAccess(PulpTestCase):
         self.assertEqual(repo[u"display_name"], repo_name)
         self.assertEqual(repo[u"description"], description)
         # Ensure it is really gone
-        with self.assertRaises(pulpapi.ServerRequestError) as details:
+        with self.assertServerRequestError() as details:
             self.server.get_repo(self.REPO_ID)
         exc = details.exception
         self.assertEqual(exc.args[0], 404)
@@ -125,7 +80,7 @@ class TestConfiguration(PulpTestCase):
 
     def setUp(self):
         super(TestConfiguration, self).setUp()
-        self.repo = self._local_test_repo()
+        self.repo = self.local_test_repo()
 
     def tearDown(self):
         self.server.delete_repo(self.repo[u"id"])
@@ -180,8 +135,8 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
 
     def setUp(self):
         super(TestLocalSync, self).setUp()
-        self.server = self._local_test_server()
-        self.repo = self._local_test_repo()
+        self.server = self.local_test_server()
+        self.repo = self.local_test_repo()
         # Ensure Pulp server can write to our data dir
         os.chmod(self.local_path, 0o777)
 
