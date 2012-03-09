@@ -9,9 +9,10 @@
 # NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
-"""Config definitions and helpers for pulpdist importer plugins"""
+"""Simple validation for JSON compatible data structures"""
 import re
 import copy
+import json
 
 class ValidationError(Exception): pass
 
@@ -225,6 +226,9 @@ class ValidatedConfig(object):
         checked_config.validate()
         return checked_config.config
 
+    @classmethod
+    def from_json(cls, json_config):
+        return cls.ensure_validated(json.loads(json_config))
 
 
 

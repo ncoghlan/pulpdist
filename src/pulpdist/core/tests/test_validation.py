@@ -16,12 +16,13 @@
 import shutil
 import tempfile
 import os.path
+import json
 
 from .compat import unittest
 from .. import validation
 
 TEST_SPEC = {
-    "string": validation.check_type(str),
+    "string": validation.check_text(),
     "number": validation.check_type(int),
     "sequence": validation.check_sequence(validation.check_type(int)),
 }
@@ -186,7 +187,29 @@ class TestValidation(unittest.TestCase):
             validator(None)
 
 
-# TODO: Unit tests for ValidatedTest
+class ExampleConfig(validation.ValidatedConfig):
+    _SPEC = TEST_SPEC
+
+EXAMPLE_DATA = {
+    "string": "",
+    "number": 1,
+    "sequence": [2],
+}
+
+class TestValidatedConfig(unittest.TestCase):
+    # TODO: Make this more comprehensive
+
+    def test_ensure_validated(self):
+        data = EXAMPLE_DATA
+        config = ExampleConfig.ensure_validated(data)
+        self.assertEqual(config, data)
+        self.assertIsNot(config, data)
+
+    def test_from_json(self):
+        data = EXAMPLE_DATA
+        config = ExampleConfig.from_json(json.dumps(data))
+        self.assertEqual(config, data)
+
 
 if __name__ == '__main__':
     unittest.main()
