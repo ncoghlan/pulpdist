@@ -222,13 +222,17 @@ class ValidatedConfig(object):
 
     @classmethod
     def ensure_validated(cls, config):
+        """Returns a mapping that has been validated against the spec"""
         checked_config = cls(config)
         checked_config.validate()
         return checked_config.config
 
     @classmethod
     def from_json(cls, json_config):
-        return cls.ensure_validated(json.loads(json_config))
+        """Read the config from a JSON file and ensure it is valid"""
+        checked_config = cls(json.loads(json_config))
+        checked_config.validate()
+        return checked_config
 
 
 

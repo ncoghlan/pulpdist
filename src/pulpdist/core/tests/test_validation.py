@@ -207,8 +207,8 @@ class TestValidatedConfig(unittest.TestCase):
 
     def test_from_json(self):
         data = EXAMPLE_DATA
-        config = ExampleConfig.from_json(json.dumps(data))
-        self.assertEqual(config, data)
+        example = ExampleConfig.from_json(json.dumps(data))
+        self.assertEqual(example.config, data)
 
 
 if __name__ == '__main__':
