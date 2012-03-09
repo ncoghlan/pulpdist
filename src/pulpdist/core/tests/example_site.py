@@ -13,6 +13,10 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 """Site definition for use in testing"""
+from .. import site_config
+
+def get_site_config():
+    return site_config.SiteConfig.from_json(TEST_CONFIG)
 
 # Tests that require site detaisl revolve around the carefully crafted
 # TEST_CONFIG definition. It's designed to exercise most of the interesting

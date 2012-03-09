@@ -19,6 +19,7 @@ from . import test_sync_trees
 from .. import site_config, site_sql, validation, sync_trees, mirror_config
 from .compat import unittest
 
+from . import example_site
 # Quick fix after moving the example site definition out to a separate file...
 from .example_site import *
 
@@ -63,6 +64,12 @@ class TestSiteConfig(unittest.TestCase):
         # This checks that the initial validation of the config file works
         example = json.loads(TEST_CONFIG)
         self.assertSpecValid(site_config.SiteConfig(example))
+
+    def test_get_site_config(self):
+        # This checks a helper function in example_site
+        example = example_site.get_site_config()
+        self.assertSpecValid(example)
+        self.assertValid(example)
 
     def test_raw_trees_only(self):
         example = json.loads(TEST_CONFIG)
