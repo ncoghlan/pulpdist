@@ -15,6 +15,7 @@ from . import sync_config, validation
 _fail_validation = validation.fail_validation
 
 class RepoConfig(validation.ValidatedConfig):
+    _ALLOW_EXTRA = True
     _SPEC = {
         u"repo_id": validation.check_simple_id(),
         u"display_name": validation.check_text(),

@@ -131,7 +131,7 @@ def check_mapping_items(key_validator, value_validator, allow_none=False):
             value_validator(v, field)
     return validator
 
-def check_mapping(spec, allow_none=False):
+def check_mapping(spec, allow_none=False, allow_extra=False):
     def validator(value, setting='setting'):
         if allow_none and value is None:
             return
@@ -148,12 +148,15 @@ def check_mapping(spec, allow_none=False):
         if missing:
             fail_validation("{0!r} missing from {1}, got {2!r}",
                             sorted(missing), setting, value)
-        extra = provided - expected
-        if extra:
-            fail_validation("{0!r} unexpected in {1}, got {2!r}",
-                            sorted(extra), setting, value)
+        if not allow_extra:
+            extra = provided - expected
+            if extra:
+                fail_validation("{0!r} unexpected in {1}, got {2!r}",
+                                sorted(extra), setting, value)
         # Check the validation of the individual items
         for key, value in value_items:
+            if allow_extra and key not in spec:
+                continue
             value_setting = setting + "[{0!r}]".format(key)
             checker = spec[key]
             if hasattr(checker, "check"):
@@ -163,10 +166,12 @@ def check_mapping(spec, allow_none=False):
             checker(value, value_setting)
     return validator
 
-def validate_config(config, spec):
-    check_mapping(spec)(config, 'config')
+def validate_config(config, spec, *args, **kwds):
+    check_mapping(spec, *args, **kwds)(config, 'config')
 
 class ValidatedConfig(object):
+    _ALLOW_NONE = False
+    _ALLOW_EXTRA = False
     _SPEC = {}
     _DEFAULTS = {}
 
@@ -206,7 +211,9 @@ class ValidatedConfig(object):
 
     @classmethod
     def check(cls):
-        mapping_validator = check_mapping(cls._SPEC)
+        mapping_validator = check_mapping(cls._SPEC,
+                                          cls._ALLOW_NONE,
+                                          cls._ALLOW_EXTRA)
         def validator(value, setting='setting'):
             mapping_validator(value, setting)
             cls.post_validate(value)

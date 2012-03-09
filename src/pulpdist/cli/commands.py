@@ -68,6 +68,8 @@ class PulpCommand(object):
             upload_meta = False
             if verbose:
                 print_msg("Converting raw config format to site config format")
+            for tree in config_data:
+                tree["repo_id"] = tree.pop("id")
             config_data = {"RAW_TREES": config_data}
         self._site_config = site_config = SiteConfig(config_data)
         if upload_meta:
