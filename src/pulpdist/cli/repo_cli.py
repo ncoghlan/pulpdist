@@ -12,17 +12,8 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.\
 
 import argparse
-import socket
 
 from . import commands
-
-def _default_host():
-    # For reasons I don't understand, getfqdn() returns rubbish on Fedora
-    # but gethostname() returns the right answer
-    fqdn = socket.getfqdn()
-    if fqdn != "localhost.localdomain":
-        return fqdn
-    return socket.gethostname()
 
 def make_parser():
     prog = "python -m {0}.manage_repos".format(__package__)
@@ -32,7 +23,7 @@ def make_parser():
                                      description=description,
                                      epilog=epilog)
     parser.add_argument("--host", metavar="HOST",
-                        dest="pulp_host", default=_default_host(),
+                        dest="pulp_host", default=commands.default_host(),
                         help="The Pulp server to be managed (Default: %(default)s)")
     parser.add_argument("-v", "--verbose",
                         dest="verbose", action='count',

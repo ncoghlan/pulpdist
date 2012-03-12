@@ -14,6 +14,7 @@
 
 import argparse
 import json
+import socket
 
 from ..core.pulpapi import PulpServerClient, ServerRequestError
 from ..core.repo_config import RepoConfig
@@ -25,6 +26,42 @@ from .display import (print_msg, print_header, print_data,
 #       clumsy and broken. Need to tidy it up and make it easy to apply
 #       deltas that will then be correctly reflected in a subsequent export.
 
+#====================================================
+# Meta-description of the supported "args" attributes
+#====================================================
+
+def default_host():
+    """Returns a meaningful default hostname.
+
+       Tries socket.getfqdn() first, but falls back to socket.gethostname()
+       if getfqdn() returns "localhost.localdomain" (as it does on a default
+       Fedora install)
+    """
+    fqdn = socket.getfqdn()
+    if fqdn != "localhost.localdomain":
+        return fqdn
+    return socket.gethostname()
+
+
+def make_args(pulp_host=None, verbose=0, ignoremeta=False,
+              config_fname=None, num_entries=0,
+              showlog=False, dryrun=False, success=False, force=False,
+              repo_list=(), mirror_list=(), site_list=(),
+              tree_list=(), source_list=(), server_list=()):
+    """Creates a valid "args" attribute suitable for passing to any
+       command initialiser. Not all parameters make sense for all commands.
+
+       See repo_cli.py for the parameter descriptions and applicability to
+       the various commands.
+    """
+    if pulp_host is None:
+        pulp_host = default_host()
+    args = argparse.Namespace()
+    vars(args).update(locals())
+    del args.args
+    return args
+
+
 #================================================================
 # Basic commands - work directly off the site metadata
 #================================================================
@@ -32,10 +69,12 @@ from .display import (print_msg, print_header, print_data,
 class PulpCommand(object):
     """Operations on PulpDist managed Pulp repositories"""
 
-    def __init__(self, args):
+    def __init__(self, args, server=None):
         self.args = args
         self._site_config = None
-        self.server = PulpServerClient(args.pulp_host)
+        if server is None:
+            server = PulpServerClient(args.pulp_host)
+        self.server = server
 
     @property
     def site_config(self):
@@ -376,65 +415,64 @@ class DeleteRepo(ModificationCommand):
 #================================================================
 
 class InitialiseRepos(ModificationCommand):
-    FMT_PROMPT = "{0}"
+    FMT_PROMPT = "Initialise {0}"
 
-    def upload_metadata(self):
-        if not self._confirm_operation("Initialise PulpDist site metadata"):
+    def upload_metadata(self, site_config):
+        if not self._confirm_operation("PulpDist site metadata"):
             raise RuntimeError("Cannot configure from site definition without "
                                "updating site metadata first")
-        if verbose:
+        if self.args.verbose:
             print_msg("Initialising site metadata")
         err_msg = "Failed to save PulpDist site config metadata to server"
         with catch_server_error(err_msg) as ex:
-            server.save_site_config(self.site_config.config)
+            self.server.save_site_config(site_config.config)
         if ex: # Failed to save metadata, abort
-            sys.exit(-1)
+            raise ex[0]
 
-    def _load_metadata(self):
-        # Unlike other commands, this on can change the server's metadata
-        super(InitialiseRepos, self)._load_metadata(upload_meta=True)
+    def _load_site_config(self):
+        # Unlike other commands, this one can change the server's metadata
+        super(InitialiseRepos, self)._load_site_config(upload_meta=True)
 
     def process_repos(self, repos):
+        args = self.args
         verbose = args.verbose
         server = self.server
-        for repo_id, display_id, repo in _get_repos(args):
-            if not _confirm_operation("Initialise", display_id, args):
+        for repo_id, display_id, repo in self._get_repos():
+            if not self._confirm_operation(display_id):
                 if verbose:
-                    print("Not initialising {0}".format(display_id))
+                    print_msg("Not initialising {0}", display_id)
                 continue
             if verbose:
-                print("Creating or updating {0}".format(display_id))
+                print_msg("Creating or updating {0}", display_id)
             if verbose > 1:
-                print("Configuration:")
-                print(_format_data(repo))
-            try:
+                print_msg("Configuration:")
+                print_data(repo)
+            with catch_server_error("Failed to create or update {0}", display_id) as ex:
                 server.create_or_save_repo(
                     repo_id,
                     repo.get("display_name", None),
                     repo.get("description", None),
                     repo.get("notes", None))
-            except ServerRequestError, ex:
-                msg = "Failed to create or update {0}".format(display_id)
-                _print_server_error(msg, ex)
+            if ex:
                 continue
             if verbose:
-                print("Created or updated {0}".format(display_id))
+                print_msg("Created or updated {0}", display_id)
             importer_id = repo.get("importer_type_id", None)
             if importer_id is not None:
                 if verbose:
-                    print("Adding {0} importer to {1}".format(importer_id, display_id))
+                    print_msg("Adding {0} importer to {1}", importer_id, display_id)
                 err_msg = "Failed to add {0} importer to {1}"
-                with catch_server_error(err_msg.format(importer_id, display_id)):
+                with catch_server_error(err_msg, importer_id, display_id):
                     server.add_importer(repo_id,
                                         importer_id,
                                         repo.get("importer_config", None))
                 if verbose:
-                    print("Added {0} importer to {1}".format(importer_id, display_id))
+                    print_msg("Added {0} importer to {1}", importer_id, display_id)
             if verbose > 1:
-                print("Checking repository details for {0}".format(display_id))
-                with catch_server_error("Failed to retrieve {0}".format(display_id)):
+                print_msg("Checking repository details for {0}", display_id)
+                with catch_server_error("Failed to retrieve {0}", display_id):
                     data = server.get_repo(repo_id)
-                    print(_format_data(data))
+                    print_data(data)
 
 def _cron_sync_repos(args):
     raise NotImplementedError
