@@ -204,11 +204,53 @@ class TestHistoryCommands(InitialisedTestCase):
         expected = example_site.ALL_REPOS
         self.check_sync_stats(output, expected, "No sync attempts for")
 
+    def test_sync_stats_success(self):
+        cmd = self.command(commands.ShowSyncStats, success=True)
+        output = self.get_cmd_output(cmd)
+        expected = example_site.ALL_REPOS
+        self.check_sync_stats(output, expected, "No successful sync entry for")
 
-"""
-ShowSyncHistory
-ShowSyncLog
-"""
+    def check_sync_history(self, output, expected, repo_header):
+        seen = []
+        def expected_id():
+            repo_id = expected[len(seen)]
+            return repo_id, DISPLAY_IDS[repo_id]
+        for line in output:
+            if line.startswith(repo_header):
+                repo_id, display_id = expected_id()
+                self.assertIn(display_id, line)
+                seen.append(repo_id)
+        self.assertEqual(seen, expected)
+
+    def test_sync_history(self):
+        cmd = self.command(commands.ShowSyncHistory)
+        output = self.get_cmd_output(cmd)
+        expected = example_site.ALL_REPOS
+        self.check_sync_history(output, expected, "No sync history for")
+
+    def check_sync_log(self, output, expected, repo_header):
+        seen = []
+        def expected_id():
+            repo_id = expected[len(seen)]
+            return repo_id, DISPLAY_IDS[repo_id]
+        for line in output:
+            if line.startswith(repo_header):
+                repo_id, display_id = expected_id()
+                self.assertIn(display_id, line)
+                seen.append(repo_id)
+        self.assertEqual(seen, expected)
+
+    def test_sync_log(self):
+        cmd = self.command(commands.ShowSyncLog)
+        output = self.get_cmd_output(cmd)
+        expected = example_site.ALL_REPOS
+        self.check_sync_history(output, expected, "No sync attempts for")
+
+    def test_sync_log_success(self):
+        cmd = self.command(commands.ShowSyncLog, success=True)
+        output = self.get_cmd_output(cmd)
+        expected = example_site.ALL_REPOS
+        self.check_sync_history(output, expected, "No successful sync entry for")
 
 """
 DeleteRepo
