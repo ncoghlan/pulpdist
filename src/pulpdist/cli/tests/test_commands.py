@@ -163,7 +163,7 @@ class TestBasicCommands(InitialisedTestCase):
         self.check_repo_details(output, expected)
 
 
-class TestHistoryCommands(InitialisedTestCase):
+class SyncHistoryTestCase(InitialisedTestCase):
 
     def check_repo_status(self, output, expected, status):
         lines = iter(output)
@@ -180,12 +180,6 @@ class TestHistoryCommands(InitialisedTestCase):
             seen.append(repo_id)
         self.assertEqual(seen, expected)
 
-    def check_repo_status(self):
-        cmd = self.command(commands.ShowRepoStatus)
-        output = self.get_cmd_output(cmd)
-        expected = example_site.ALL_REPOS
-        self.check_status_output(output, expected, "Never synchronised")
-
     def check_sync_stats(self, output, expected, repo_header):
         seen = []
         def expected_id():
@@ -197,18 +191,6 @@ class TestHistoryCommands(InitialisedTestCase):
                 self.assertIn(display_id, line)
                 seen.append(repo_id)
         self.assertEqual(seen, expected)
-
-    def test_sync_stats(self):
-        cmd = self.command(commands.ShowSyncStats)
-        output = self.get_cmd_output(cmd)
-        expected = example_site.ALL_REPOS
-        self.check_sync_stats(output, expected, "No sync attempts for")
-
-    def test_sync_stats_success(self):
-        cmd = self.command(commands.ShowSyncStats, success=True)
-        output = self.get_cmd_output(cmd)
-        expected = example_site.ALL_REPOS
-        self.check_sync_stats(output, expected, "No successful sync entry for")
 
     def check_sync_history(self, output, expected, repo_header):
         seen = []
@@ -222,12 +204,6 @@ class TestHistoryCommands(InitialisedTestCase):
                 seen.append(repo_id)
         self.assertEqual(seen, expected)
 
-    def test_sync_history(self):
-        cmd = self.command(commands.ShowSyncHistory)
-        output = self.get_cmd_output(cmd)
-        expected = example_site.ALL_REPOS
-        self.check_sync_history(output, expected, "No sync history for")
-
     def check_sync_log(self, output, expected, repo_header):
         seen = []
         def expected_id():
@@ -239,6 +215,32 @@ class TestHistoryCommands(InitialisedTestCase):
                 self.assertIn(display_id, line)
                 seen.append(repo_id)
         self.assertEqual(seen, expected)
+
+class TestNoSyncHistory(SyncHistoryTestCase):
+
+    def test_repo_status(self):
+        cmd = self.command(commands.ShowRepoStatus)
+        output = self.get_cmd_output(cmd)
+        expected = example_site.ALL_REPOS
+        self.check_repo_status(output, expected, "Never synchronised")
+
+    def test_sync_stats(self):
+        cmd = self.command(commands.ShowSyncStats)
+        output = self.get_cmd_output(cmd)
+        expected = example_site.ALL_REPOS
+        self.check_sync_stats(output, expected, "No sync attempts for")
+
+    def test_sync_stats_success(self):
+        cmd = self.command(commands.ShowSyncStats, success=True)
+        output = self.get_cmd_output(cmd)
+        expected = example_site.ALL_REPOS
+        self.check_sync_stats(output, expected, "No successful sync entry for")
+
+    def test_sync_history(self):
+        cmd = self.command(commands.ShowSyncHistory)
+        output = self.get_cmd_output(cmd)
+        expected = example_site.ALL_REPOS
+        self.check_sync_history(output, expected, "No sync history for")
 
     def test_sync_log(self):
         cmd = self.command(commands.ShowSyncLog)
