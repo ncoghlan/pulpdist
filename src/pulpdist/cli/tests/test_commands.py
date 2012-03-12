@@ -71,6 +71,7 @@ class BaseTestCase(pulpapi_util.PulpTestCase):
     def get_cmd_output(self, cmd):
         with capture_stdout() as output:
             cmd()
+        output.seek(0)
         return output
 
 
@@ -118,18 +119,39 @@ class InitialisedTestCase(BaseTestCase):
                                   force=True)
         commands.InitialiseRepos(args, self.server)()
 
+
 class TestBasicCommands(InitialisedTestCase):
+
     def test_repo_summary(self):
         args = commands.make_args()
         cmd = commands.ShowRepoSummary(args, self.server)
         output = self.get_cmd_output(cmd)
         lines = iter(output)
         for line in lines:
-            print(line)
             self.assertTrue(line.startswith("Repositories defined"))
             break
-        for line, repo_id in zip(lines, example_site.ALL_REPOS):
+        seen = []
+        expected = example_site.ALL_REPOS
+        for line, repo_id in zip(lines, expected):
             self.assertTrue(line.startswith(DISPLAY_IDS[repo_id]))
+            seen.append(repo_id)
+        self.assertEqual(seen, expected)
+
+    def test_repo_details(self):
+        args = commands.make_args()
+        cmd = commands.ShowRepoDetails(args, self.server)
+        output = self.get_cmd_output(cmd)
+        seen = []
+        expected = example_site.ALL_REPOS
+        def expected_id():
+            repo_id = expected[len(seen)]
+            return repo_id, DISPLAY_IDS[repo_id]
+        for line in output:
+            if line.startswith("Repository details for"):
+                repo_id, display_id = expected_id()
+                self.assertIn(display_id, line)
+                seen.append(repo_id)
+        self.assertEqual(seen, expected)
 
 """
 DeleteRepo
