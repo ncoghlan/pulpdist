@@ -55,9 +55,11 @@ class PulpCommand(object):
             server = self.server
             if verbose:
                 print_msg("Loading configuration from host {0!r}", server.host)
-            with catch_server_error() as ex:
-                config_data = server.get_site_config()
-            if ex:
+            config_data = None
+            if not args.ignoremeta:
+                with catch_server_error() as ex:
+                    config_data = server.get_site_config()
+            if config_data is None:
                 config_data = server.get_repos()
         else:
             if verbose:

@@ -37,6 +37,8 @@ def make_parser():
     parser.add_argument("-v", "--verbose",
                         dest="verbose", action='count',
                         help="Increase level of debugging information displayed")
+    parser.add_argument("--ignoremeta", action='store_true',
+                            help="Ignore any PulpDist metadata stored on the server")
     add_parser_subcommands(parser)
     return parser
 

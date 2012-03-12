@@ -277,6 +277,8 @@ fi
 - when the site configuration data is available, manage_repos now supports
   filtering by the local site and the remote tree, source and server, in
   addition to filtering directly by repository identifier (NYI)
+- the --ignoremeta option is now available to tell the command line to treat
+  the Pulp server as if it was simply a collection of raw trees
 
 * Fri Feb 17 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.6-1
 - Created pulpdist.cli subpackage for Management CLI support code

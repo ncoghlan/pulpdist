@@ -96,6 +96,13 @@ If no specific repositories are identified, most commands default to affecting
 every repository defined on the server, or, if the command accepts a
 configuration file, every repository named in the file.
 
+By default, the command line client uses the metadata stored on the server to
+identify the available repositories. If this metadata is incomplete or invalid,
+the ``--ignoremeta`` option can be passed before the command to be executed. In
+this mode, the Pulp server will be treated as containing only raw tree
+definitions, allowing listing and manipulation of repos that would otherwise be
+ignored (due to the fact they aren't recorded in the stored metadata).
+
 .. note::
 
    ``--site``, ``--mirror``, ``--tree``, ``--source`` and ``--server`` are not
