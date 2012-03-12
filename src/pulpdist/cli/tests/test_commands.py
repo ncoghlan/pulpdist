@@ -34,6 +34,13 @@ def capture_stdout():
 # Be warned: this *is* a destructive test that will clobber all repos
 # in the local Pulp database...
 
+DISPLAY_IDS = {
+    "raw_sync": "raw_sync",
+    "simple_sync__default": "simple_sync(default)",
+    "snapshot_sync__default": "snapshot_sync(default)",
+    "versioned_sync__other": "versioned_sync(other)",
+}
+
 class BaseTestCase(pulpapi_util.PulpTestCase):
 
     CONFIG_FILE = tempfile.NamedTemporaryFile()
@@ -61,29 +68,69 @@ class BaseTestCase(pulpapi_util.PulpTestCase):
             repo = self.server.get_repo(repo_id)
             self.assertEqual(repo[u"id"], repo_id)
 
-class TestInitialisation(BaseTestCase):
-    # Sanity check to ensure "setUp" will work for other test cases
+    def get_cmd_output(self, cmd):
+        with capture_stdout() as output:
+            cmd()
+        return output
+
+
+class TestUninitialised(BaseTestCase):
+    # Test the init and validate commands
+
     def test_init(self):
         args = commands.make_args(config_fname=self.CONFIG_FILE.name,
                                   force=True)
         cmd = commands.InitialiseRepos(args, self.server)
-        with capture_stdout() as output:
-            cmd()
-        self.assertEqual(output.getvalue(), "")
+        output_text = self.get_cmd_output(cmd).getvalue()
+        self.assertEqual(output_text, "")
         self.assertReposExist(example_site.ALL_REPOS)
 
     def test_init_verbose(self):
         args = commands.make_args(config_fname=self.CONFIG_FILE.name,
                                   force=True, verbose=1)
         cmd = commands.InitialiseRepos(args, self.server)
-        with capture_stdout() as output:
-            cmd()
-        output_text = output.getvalue()
-        self.assertIn("Added simple_tree importer to raw_sync", output_text)
-        self.assertIn("Added simple_tree importer to simple_sync(default)", output_text)
-        self.assertIn("Added snapshot_tree importer to snapshot_sync(default)", output_text)
-        self.assertIn("Added versioned_tree importer to versioned_sync(other)", output_text)
+        output_text = self.get_cmd_output(cmd).getvalue()
+        for repo_id in example_site.ALL_REPOS:
+            importer_type = example_site.IMPORTER_TYPES[repo_id]
+            display_id = DISPLAY_IDS[repo_id]
+            msg = "Added {0} importer to {1}".format(importer_type, display_id)
+            self.assertIn(msg, output_text)
         self.assertReposExist(example_site.ALL_REPOS)
+
+    def test_validate(self):
+        args = commands.make_args(config_fname=self.CONFIG_FILE.name,
+                                  force=True)
+        cmd = commands.ValidateRepoConfig(args, self.server)
+        output_text = self.get_cmd_output(cmd).getvalue()
+        for repo_id in example_site.ALL_REPOS:
+            display_id = DISPLAY_IDS[repo_id]
+            msg = "Config for {0} is valid".format(display_id)
+            self.assertIn(msg, output_text)
+        self.assertReposExist([])
+
+
+class InitialisedTestCase(BaseTestCase):
+    # Base test case for tests that need the repos initialised first
+
+    def setUp(self):
+        super(InitialisedTestCase, self).setUp()
+        args = commands.make_args(config_fname=self.CONFIG_FILE.name,
+                                  force=True)
+        commands.InitialiseRepos(args, self.server)()
+
+class TestBasicCommands(InitialisedTestCase):
+    def test_repo_summary(self):
+        args = commands.make_args()
+        cmd = commands.ShowRepoSummary(args, self.server)
+        output = self.get_cmd_output(cmd)
+        lines = iter(output)
+        for line in lines:
+            print(line)
+            self.assertTrue(line.startswith("Repositories defined"))
+            break
+        for line, repo_id in zip(lines, example_site.ALL_REPOS):
+            self.assertTrue(line.startswith(DISPLAY_IDS[repo_id]))
+
 """
 DeleteRepo
 DisableSync
@@ -99,7 +146,6 @@ RequestSync
 ServerRequestError
 ShowRepoDetails
 ShowRepoStatus
-ShowRepoSummary
 ShowSyncHistory
 ShowSyncLog
 ShowSyncStats

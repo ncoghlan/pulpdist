@@ -41,6 +41,12 @@ OTHER_REPOS = ["versioned_sync__other", "raw_sync"]
 
 ALL_REPOS = sorted(DEFAULT_REPOS + OTHER_REPOS)
 
+IMPORTER_TYPES = {
+    "raw_sync": "simple_tree",
+    "simple_sync__default": "simple_tree",
+    "snapshot_sync__default": "snapshot_tree",
+    "versioned_sync__other": "versioned_tree",
+}
 
 TEST_CONFIG = """\
 {
