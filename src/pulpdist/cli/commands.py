@@ -44,7 +44,7 @@ def default_host():
 
 
 def make_args(pulp_host=None, verbose=0, ignoremeta=False,
-              config_fname=None, num_entries=0,
+              config_fname=None, num_entries=None,
               showlog=False, dryrun=False, success=False, force=False,
               repo_list=(), mirror_list=(), site_list=(),
               tree_list=(), source_list=(), server_list=()):
@@ -271,14 +271,16 @@ class ShowSyncHistory(SyncHistoryCommand):
         if not history:
             print_msg("No sync history for {0}", repo.display_id)
             return
+        args = self.args
         num_entries = args.num_entries
         if num_entries is not None:
             history = history[:num_entries]
+        print_header("Sync history for {0}", repo.display_id)
         for sync_job in history:
             details = sync_job.get("details")
             if details and not args.showlog:
                 details.pop("sync_log", None)
-            print_msg(format_data(sync_job))
+            print_data(sync_job)
 
 class LatestSyncCommand(SyncHistoryCommand):
     """Operations that need to access the latest success or attempt"""

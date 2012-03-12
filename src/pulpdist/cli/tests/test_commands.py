@@ -35,6 +35,7 @@ def capture_stdout():
 # in the local Pulp database...
 
 DISPLAY_IDS = {
+    "pulpdist-meta": "pulpdist-meta",
     "raw_sync": "raw_sync",
     "simple_sync__default": "simple_sync(default)",
     "snapshot_sync__default": "snapshot_sync(default)",
@@ -124,6 +125,11 @@ class InitialisedTestCase(BaseTestCase):
                            force=True)
         cmd()
 
+    def check_output(self, output, fmt, expected):
+        for line, repo_id in zip(output, expected):
+            expected_line = fmt.format(DISPLAY_IDS[repo_id])
+            self.assertEqual(line.strip(), expected_line)
+
 
 class TestBasicCommands(InitialisedTestCase):
 
@@ -180,31 +186,7 @@ class SyncHistoryTestCase(InitialisedTestCase):
             seen.append(repo_id)
         self.assertEqual(seen, expected)
 
-    def check_sync_stats(self, output, expected, repo_header):
-        seen = []
-        def expected_id():
-            repo_id = expected[len(seen)]
-            return repo_id, DISPLAY_IDS[repo_id]
-        for line in output:
-            if line.startswith(repo_header):
-                repo_id, display_id = expected_id()
-                self.assertIn(display_id, line)
-                seen.append(repo_id)
-        self.assertEqual(seen, expected)
-
-    def check_sync_history(self, output, expected, repo_header):
-        seen = []
-        def expected_id():
-            repo_id = expected[len(seen)]
-            return repo_id, DISPLAY_IDS[repo_id]
-        for line in output:
-            if line.startswith(repo_header):
-                repo_id, display_id = expected_id()
-                self.assertIn(display_id, line)
-                seen.append(repo_id)
-        self.assertEqual(seen, expected)
-
-    def check_sync_log(self, output, expected, repo_header):
+    def check_repo_display(self, output, expected, repo_header):
         seen = []
         def expected_id():
             repo_id = expected[len(seen)]
@@ -228,38 +210,148 @@ class TestNoSyncHistory(SyncHistoryTestCase):
         cmd = self.command(commands.ShowSyncStats)
         output = self.get_cmd_output(cmd)
         expected = example_site.ALL_REPOS
-        self.check_sync_stats(output, expected, "No sync attempts for")
+        self.check_repo_display(output, expected, "No sync attempts for")
 
     def test_sync_stats_success(self):
         cmd = self.command(commands.ShowSyncStats, success=True)
         output = self.get_cmd_output(cmd)
         expected = example_site.ALL_REPOS
-        self.check_sync_stats(output, expected, "No successful sync entry for")
+        self.check_repo_display(output, expected, "No successful sync entry for")
 
     def test_sync_history(self):
         cmd = self.command(commands.ShowSyncHistory)
         output = self.get_cmd_output(cmd)
         expected = example_site.ALL_REPOS
-        self.check_sync_history(output, expected, "No sync history for")
+        self.check_repo_display(output, expected, "No sync history for")
 
     def test_sync_log(self):
         cmd = self.command(commands.ShowSyncLog)
         output = self.get_cmd_output(cmd)
         expected = example_site.ALL_REPOS
-        self.check_sync_history(output, expected, "No sync attempts for")
+        self.check_repo_display(output, expected, "No sync attempts for")
 
     def test_sync_log_success(self):
         cmd = self.command(commands.ShowSyncLog, success=True)
         output = self.get_cmd_output(cmd)
         expected = example_site.ALL_REPOS
-        self.check_sync_history(output, expected, "No successful sync entry for")
+        self.check_repo_display(output, expected, "No successful sync entry for")
+
+
+class TestDisabledSyncHistory(SyncHistoryTestCase):
+    def setUp(self):
+        super(TestDisabledSyncHistory, self).setUp()
+        self.get_cmd_output(self.command(commands.RequestSync, force=True))
+
+    def test_repo_status(self):
+        cmd = self.command(commands.ShowRepoStatus)
+        output = self.get_cmd_output(cmd)
+        expected = example_site.ALL_REPOS
+        self.check_repo_status(output, expected, "SYNC_DISABLED")
+
+    def test_sync_stats(self):
+        cmd = self.command(commands.ShowSyncStats)
+        output = self.get_cmd_output(cmd)
+        expected = example_site.ALL_REPOS
+        self.check_repo_display(output, expected, "Most recent sync statistics for")
+
+    def test_sync_stats_success(self):
+        cmd = self.command(commands.ShowSyncStats, success=True)
+        output = self.get_cmd_output(cmd)
+        expected = example_site.ALL_REPOS
+        self.check_repo_display(output, expected, "No successful sync entry for")
+
+    def test_sync_history(self):
+        cmd = self.command(commands.ShowSyncHistory)
+        output = self.get_cmd_output(cmd)
+        expected = example_site.ALL_REPOS
+        self.check_repo_display(output, expected, "Sync history for")
+        self.assertNotIn("sync_log", output.getvalue())
+
+    def test_sync_history_no_entries(self):
+        cmd = self.command(commands.ShowSyncHistory, num_entries=0)
+        output = self.get_cmd_output(cmd)
+        expected = example_site.ALL_REPOS
+        self.check_repo_display(output, expected, "Sync history for")
+        self.assertNotIn("{", output.getvalue())
+        self.assertNotIn("}", output.getvalue())
+
+    def test_sync_history_show_log(self):
+        cmd = self.command(commands.ShowSyncHistory, showlog=True)
+        output = self.get_cmd_output(cmd)
+        expected = example_site.ALL_REPOS
+        self.check_repo_display(output, expected, "Sync history for")
+        self.assertIn("sync_log", output.getvalue())
+
+    def test_sync_log(self):
+        cmd = self.command(commands.ShowSyncLog)
+        output = self.get_cmd_output(cmd)
+        expected = example_site.ALL_REPOS
+        self.check_repo_display(output, expected, "Most recent sync log for")
+        self.assertIn("Ignoring sync request", output.getvalue())
+
+    def test_sync_log_success(self):
+        cmd = self.command(commands.ShowSyncLog, success=True)
+        output = self.get_cmd_output(cmd)
+        expected = example_site.ALL_REPOS
+        self.check_repo_display(output, expected, "No successful sync entry for")
+
+
+class TestEnabledSyncHistory(SyncHistoryTestCase):
+    # TODO: Adjust this so that the sync commands actually *succeed*
+    # Should be more like core.tests.test_site_config.TestDataTransfer
+    def setUp(self):
+        super(TestEnabledSyncHistory, self).setUp()
+        self.get_cmd_output(self.command(commands.EnableSync, force=True))
+        self.get_cmd_output(self.command(commands.RequestSync, force=True))
+
+    def test_repo_status(self):
+        cmd = self.command(commands.ShowRepoStatus)
+        output = self.get_cmd_output(cmd)
+        expected = example_site.ALL_REPOS
+        self.check_repo_status(output, expected, "SYNC_FAILED")
+
+    def test_sync_log(self):
+        cmd = self.command(commands.ShowSyncLog)
+        output = self.get_cmd_output(cmd)
+        expected = example_site.ALL_REPOS
+        self.check_repo_display(output, expected, "Most recent sync log for")
+        self.assertIn("Syncing tree", output.getvalue())
+
+
+class TestModifyCommands(InitialisedTestCase):
+    def check_sync_status(self, expected):
+        server = self.server
+        for repo in server.get_repos():
+            repo_id = repo[u"id"]
+            if repo_id == "pulpdist-meta":
+                continue
+            importer = server.get_importer(repo_id)
+            enabled = importer[u"config"].get(u"enabled", False)
+            self.assertEqual(enabled, expected)
+
+    def test_update_sync(self):
+        self.check_sync_status(False)
+        cmd = self.command(commands.EnableSync, force=True)
+        output = self.get_cmd_output(cmd)
+        self.check_output(output, "Enabled sync on {0}", example_site.ALL_REPOS)
+        self.check_sync_status(True)
+        cmd = self.command(commands.DisableSync, force=True)
+        output = self.get_cmd_output(cmd)
+        self.check_output(output, "Disabled sync on {0}", example_site.ALL_REPOS)
+        self.check_sync_status(False)
+
+    def test_delete_repo(self):
+        cmd = self.command(commands.DeleteRepo, force=True)
+        output = self.get_cmd_output(cmd)
+        self.check_output(output, "Deleted {0}", example_site.ALL_REPOS)
+        self.assertEqual(len(self.server.get_repos()), 1)
+        cmd = self.command(commands.DeleteRepo, force=True, ignoremeta=True)
+        output = self.get_cmd_output(cmd)
+        self.check_output(output, "Deleted {0}", ["pulpdist-meta"])
+        self.assertEqual(self.server.get_repos(), [])
+
 
 """
-DeleteRepo
-DisableSync
-EnableSync
-InitialiseRepos
-RequestSync
 _cron_sync_repos
 _export_repos
 """
