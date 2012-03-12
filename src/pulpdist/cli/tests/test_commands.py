@@ -52,6 +52,10 @@ class BaseTestCase(pulpapi_util.PulpTestCase):
         for repo in server.get_repos():
             server.delete_repo(repo[u"id"])
 
+    def command(self, cmd_type, **kwds):
+        cmd_args = commands.make_args(**kwds)
+        return cmd_type(cmd_args, self.server)
+
     def setUp(self):
         super(BaseTestCase, self).setUp()
         self.purge_server()
@@ -79,17 +83,17 @@ class TestUninitialised(BaseTestCase):
     # Test the init and validate commands
 
     def test_init(self):
-        args = commands.make_args(config_fname=self.CONFIG_FILE.name,
-                                  force=True)
-        cmd = commands.InitialiseRepos(args, self.server)
+        cmd = self.command(commands.InitialiseRepos,
+                           config_fname=self.CONFIG_FILE.name,
+                           force=True)
         output_text = self.get_cmd_output(cmd).getvalue()
         self.assertEqual(output_text, "")
         self.assertReposExist(example_site.ALL_REPOS)
 
     def test_init_verbose(self):
-        args = commands.make_args(config_fname=self.CONFIG_FILE.name,
-                                  force=True, verbose=1)
-        cmd = commands.InitialiseRepos(args, self.server)
+        cmd = self.command(commands.InitialiseRepos,
+                           config_fname=self.CONFIG_FILE.name,
+                           force=True, verbose=1)
         output_text = self.get_cmd_output(cmd).getvalue()
         for repo_id in example_site.ALL_REPOS:
             importer_type = example_site.IMPORTER_TYPES[repo_id]
@@ -99,9 +103,9 @@ class TestUninitialised(BaseTestCase):
         self.assertReposExist(example_site.ALL_REPOS)
 
     def test_validate(self):
-        args = commands.make_args(config_fname=self.CONFIG_FILE.name,
-                                  force=True)
-        cmd = commands.ValidateRepoConfig(args, self.server)
+        cmd = self.command(commands.ValidateRepoConfig,
+                           config_fname=self.CONFIG_FILE.name,
+                           force=True)
         output_text = self.get_cmd_output(cmd).getvalue()
         for repo_id in example_site.ALL_REPOS:
             display_id = DISPLAY_IDS[repo_id]
@@ -115,34 +119,33 @@ class InitialisedTestCase(BaseTestCase):
 
     def setUp(self):
         super(InitialisedTestCase, self).setUp()
-        args = commands.make_args(config_fname=self.CONFIG_FILE.name,
-                                  force=True)
-        commands.InitialiseRepos(args, self.server)()
+        cmd = self.command(commands.InitialiseRepos,
+                           config_fname=self.CONFIG_FILE.name,
+                           force=True)
+        cmd()
 
 
 class TestBasicCommands(InitialisedTestCase):
 
-    def test_repo_summary(self):
-        args = commands.make_args()
-        cmd = commands.ShowRepoSummary(args, self.server)
-        output = self.get_cmd_output(cmd)
+    def check_repo_summary(self, output, expected):
         lines = iter(output)
         for line in lines:
             self.assertTrue(line.startswith("Repositories defined"))
             break
         seen = []
-        expected = example_site.ALL_REPOS
         for line, repo_id in zip(lines, expected):
             self.assertTrue(line.startswith(DISPLAY_IDS[repo_id]))
             seen.append(repo_id)
         self.assertEqual(seen, expected)
 
-    def test_repo_details(self):
-        args = commands.make_args()
-        cmd = commands.ShowRepoDetails(args, self.server)
+    def test_repo_summary(self):
+        cmd = self.command(commands.ShowRepoSummary)
         output = self.get_cmd_output(cmd)
-        seen = []
         expected = example_site.ALL_REPOS
+        self.check_repo_summary(output, expected)
+
+    def check_repo_details(self, output, expected):
+        seen = []
         def expected_id():
             repo_id = expected[len(seen)]
             return repo_id, DISPLAY_IDS[repo_id]
@@ -153,27 +156,66 @@ class TestBasicCommands(InitialisedTestCase):
                 seen.append(repo_id)
         self.assertEqual(seen, expected)
 
+    def test_repo_details(self):
+        cmd = self.command(commands.ShowRepoDetails)
+        output = self.get_cmd_output(cmd)
+        expected = example_site.ALL_REPOS
+        self.check_repo_details(output, expected)
+
+
+class TestHistoryCommands(InitialisedTestCase):
+
+    def check_repo_status(self, output, expected, status):
+        lines = iter(output)
+        for line in lines:
+            self.assertTrue(line.startswith("Sync status for"))
+            break
+        for line in lines:
+            self.assertTrue(line.startswith("Repo ID"))
+            break
+        seen = []
+        for line, repo_id in zip(lines, expected):
+            self.assertTrue(line.startswith(DISPLAY_IDS[repo_id]))
+            self.assertIn(status, line)
+            seen.append(repo_id)
+        self.assertEqual(seen, expected)
+
+    def check_repo_status(self):
+        cmd = self.command(commands.ShowRepoStatus)
+        output = self.get_cmd_output(cmd)
+        expected = example_site.ALL_REPOS
+        self.check_status_output(output, expected, "Never synchronised")
+
+    def check_sync_stats(self, output, expected, repo_header):
+        seen = []
+        def expected_id():
+            repo_id = expected[len(seen)]
+            return repo_id, DISPLAY_IDS[repo_id]
+        for line in output:
+            if line.startswith(repo_header):
+                repo_id, display_id = expected_id()
+                self.assertIn(display_id, line)
+                seen.append(repo_id)
+        self.assertEqual(seen, expected)
+
+    def test_sync_stats(self):
+        cmd = self.command(commands.ShowSyncStats)
+        output = self.get_cmd_output(cmd)
+        expected = example_site.ALL_REPOS
+        self.check_sync_stats(output, expected, "No sync attempts for")
+
+
+"""
+ShowSyncHistory
+ShowSyncLog
+"""
+
 """
 DeleteRepo
 DisableSync
 EnableSync
 InitialiseRepos
-LatestSyncCommand
-ModificationCommand
-PulpCommand
-PulpRepo
-PulpServerClient
-RepoConfig
 RequestSync
-ServerRequestError
-ShowRepoDetails
-ShowRepoStatus
-ShowSyncHistory
-ShowSyncLog
-ShowSyncStats
-SiteConfig
-SyncHistoryCommand
-ValidateRepoConfig
 _cron_sync_repos
 _export_repos
 """

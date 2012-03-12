@@ -300,6 +300,8 @@ class ShowSyncLog(LatestSyncCommand):
     def process_repo(self, repo):
         display_id = repo.display_id
         sync_job = self.get_latest_sync(repo)
+        if sync_job is None:
+            return
         details = sync_job["details"]
         if details is None:
             print_msg("No sync details for {0}", display_id)
@@ -313,6 +315,8 @@ class ShowSyncStats(LatestSyncCommand):
     def process_repo(self, repo):
         display_id = repo.display_id
         sync_job = self.get_latest_sync(repo)
+        if sync_job is None:
+            return
         summary = sync_job["summary"]
         if summary is None:
             print("No sync details for {0}".format(display_id))
