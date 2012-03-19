@@ -263,7 +263,7 @@ class BaseSyncCommand(object):
         """Construct rsync parameters common to all operations"""
         params = []
         if self.old_remote_daemon:
-            params.append("--old-d")
+            params.append("--no-implied-dirs")
         if self.rsync_port:
             params.append("--port={0}".format(self.rsync_port))
         return params
