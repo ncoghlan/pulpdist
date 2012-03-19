@@ -91,6 +91,7 @@ class PulpCommand(object):
         verbose = args.verbose
         config_fname = args.config_fname
         if config_fname is None:
+            upload_meta = False
             server = self.server
             if verbose:
                 print_msg("Loading configuration from host {0!r}", server.host)
@@ -100,18 +101,16 @@ class PulpCommand(object):
                     config_data = server.get_site_config()
             if config_data is None:
                 config_data = server.get_repos()
+                if verbose:
+                    print_msg("Handling all repos on server as raw trees")
+                for tree in config_data:
+                    tree["repo_id"] = tree.pop("id")
+                config_data = {"RAW_TREES": config_data}
         else:
             if verbose:
                 print_msg("Loading configuration from file {0!r}", config_fname)
             with open(config_fname) as config_file:
                 config_data = json.load(config_file)
-        if isinstance(config_data, list):
-            upload_meta = False
-            if verbose:
-                print_msg("Converting raw config format to site config format")
-            for tree in config_data:
-                tree["repo_id"] = tree.pop("id")
-            config_data = {"RAW_TREES": config_data}
         self._site_config = site_config = SiteConfig(config_data)
         if verbose > 2:
             print_data(site_config.config, 2)

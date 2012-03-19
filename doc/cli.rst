@@ -103,10 +103,6 @@ this mode, the Pulp server will be treated as containing only raw tree
 definitions, allowing listing and manipulation of repos that would otherwise be
 ignored (due to the fact they aren't recorded in the stored metadata).
 
-.. note::
-
-   ``--site``, ``--mirror``, ``--tree``, ``--source`` and ``--server`` are not
-   yet implemented.
 
 Scheduling sync operations
 --------------------------
@@ -178,30 +174,8 @@ These are JSON files that specify the information needed to create the
 repositories on the Pulp server, and appropriately configure the associated
 importer plugins.
 
-Currently, only the `raw configuration format`_ is supported. A
-higher level `site configuration format`_ is in development.
-
-``init`` and ``validate`` will accept either format (deciding which to use
-based on whether the top level JSON value is a sequence or mapping).
-
-``export`` (once implemented) will always emit a site configuration file.
-
-
-Raw configuration format
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-A raw config file consists of a single top-level JSON sequence, containing
-`raw tree definitions`_.
-
-
 Site configuration format
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. note:: This configuration format is not yet implemented
-
-Whereas the raw configuration format maps almost directly to Pulp API calls
-and plugin configuration settings, the site configuration format revolves
-around the idea of sharing common settings across multiple tree definitions.
 
 A site config file consists of a top-level JSON mapping, defining
 the following attributes:
@@ -435,20 +409,8 @@ source tree for demonstration purposes:
    :language: js
 
 
-Example raw repository definition file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The following file is a set of example repositories defined in the PulpDist
-source tree for demonstration purposes:
-
-.. literalinclude:: ../misc/example_repos.json
-   :language: js
-
-
 PulpDist metadata in Pulp
 -------------------------
-
-.. note:: this metadata storage scheme is not yet implemented
 
 When PulpDist repositories are initialised from a site configuration file,
 a ``pulpdist-meta`` repo is automatically created to record the full contents

@@ -268,17 +268,19 @@ fi
 
 %changelog
 * ??? Mar ?? 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.7-1
-- manage_repos now supports a new site configuration format
+- the manage_repos client now uses a new site configuration format
 - site configuration data is saved to the server as the "pulpdist-meta" repo
 - if no configuration file is provided, the manage_repos init and validate
-  commands will use the data in the "puldist-meta" repo if it is available (NYI)
+  commands will use the data in the "puldist-meta" repo if it is available
 - the --repo filtering option is now applied at the individual subcommand level
   rather than at the manage_repos invocation level
 - when the site configuration data is available, manage_repos now supports
-  filtering by the local site and the remote tree, source and server, in
-  addition to filtering directly by repository identifier (NYI)
+  filtering by the local site and mirror names and the remote tree, source and
+  server, in addition to filtering directly by repository identifier
 - the --ignoremeta option is now available to tell the command line to treat
   the Pulp server as if it was simply a collection of raw trees
+- the old configuration format is no longer supported, use a site configuration
+  file that defines only RAW_TREES instead
 
 * Fri Feb 17 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.6-1
 - Created pulpdist.cli subpackage for Management CLI support code
