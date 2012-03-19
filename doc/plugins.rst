@@ -45,8 +45,8 @@ Configuration options for this plugin are:
   tree synchronisation operation. Defaults to no filtering.
 * ``bandwidth_limit``: If provided and not zero, passed to rsync as
   ``--bwlimit`` to limit the amount of bandwidth used by the operation.
-* ``old_remote_daemon``:  If provided and true, passes ``--old-d`` to rsync to
-  run it in a mode compatible with older versions of the rsync daemon.
+* ``old_remote_daemon``:  If provided and true, passes ``--no-implied-dirs`` to
+  rsync to run it in a mode compatible with older versions of the rsync daemon.
 * ``rsync_port``: If provided and not zero, passed to rsync as ``--port`` to
   allow connections to a remote daemon that isn't running on the default port.
 * ``enabled``: If provided and true, actually performs a sync operation when
