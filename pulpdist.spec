@@ -286,6 +286,8 @@ fi
   been renamed accordingly.
 - BZ#802627: rsync commands now use the "--no-implied-dirs" option when
   communicating with an old remote daemon
+- the "sync_log" CLI command has been shortened to "log"
+- the "sync_stats" CLI command has been shortened to "stats"
 
 * Fri Feb 17 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.6-1
 - Created pulpdist.cli subpackage for Management CLI support code

@@ -43,8 +43,8 @@ Repository Status Queries
 * ``info``: Display details for repositories
 * ``status``: Display repository synchronisation status
 * ``history``: Display repository synchronisation history
-* ``sync_log``: Display most recent synchronisation log
-* ``sync_stats``: Display most recent synchronisation statistics
+* ``log``: Display most recent synchronisation log
+* ``stats``: Display most recent synchronisation statistics
 
 
 Repository Management Commands
