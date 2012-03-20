@@ -18,10 +18,11 @@ from django.core.urlresolvers import reverse
 from django.conf import settings
 
 from .models import PulpServer
+from ..core import util as core_util
 
 # Easy access to common version definition
 def version():
-    return "0.1a0"
+    return core_util.__version__
 
 def app_context(request):
     app_details = {
