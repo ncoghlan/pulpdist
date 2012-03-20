@@ -66,9 +66,13 @@ class RsyncDaemon(object):
                 pass
             else:
                 with f:
-                    yield f
+                    pid_text = f.read().strip()
+                    if pid_text:
+                        yield pid_text
                 break
             time.sleep(0.01)
+        else:
+            raise RuntimeError("rsync server failed to start")
 
     def start(self):
         rsync_dir = self.rsync_dir
@@ -85,8 +89,8 @@ class RsyncDaemon(object):
         command = ["rsync", "--daemon", "-v", config_option]
         # print command
         if subprocess.call(command) == 0:
-            with self._wait_for_pid_file(pid_path) as f:
-                self.pid = int(f.read().strip())
+            with self._wait_for_pid_file(pid_path) as pid_text:
+                self.pid = int(pid_text)
 
     def close(self):
         if self.pid is not None:
