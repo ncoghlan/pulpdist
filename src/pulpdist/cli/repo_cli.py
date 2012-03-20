@@ -14,6 +14,7 @@
 import argparse
 
 from . import commands
+from ..core import util
 
 def make_parser():
     prog = "python -m {0}.manage_repos".format(__package__)
@@ -30,6 +31,8 @@ def make_parser():
                         help="Increase level of debugging information displayed")
     parser.add_argument("--ignoremeta", action='store_true',
                             help="Ignore any PulpDist metadata stored on the server")
+    parser.add_argument("-V", "--version", action='version',
+                        version='PulpDist {0}'.format(util.__version__))
     add_parser_subcommands(parser)
     return parser
 

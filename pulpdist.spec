@@ -288,6 +288,7 @@ fi
   communicating with an old remote daemon
 - the "sync_log" CLI command has been shortened to "log"
 - the "sync_stats" CLI command has been shortened to "stats"
+- BZ#799204: the manage_repos CLI now provides a -V/--version option
 
 * Fri Feb 17 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.6-1
 - Created pulpdist.cli subpackage for Management CLI support code
