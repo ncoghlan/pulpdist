@@ -70,11 +70,11 @@ class MirrorConverter(object):
         }
         sync_filters = mirror.sync_filters + tree.sync_filters
         config[u"sync_filters"] = sync_filters
-        excluded_files = list(set(mirror.excluded_files
-                        + tree.excluded_files
-                        + site.default_excluded_files
-                        + default_site.default_excluded_files))
-        config[u"excluded_files"] = excluded_files
+        exclude_from_sync = list(set(mirror.exclude_from_sync
+                                     + tree.exclude_from_sync
+                                     + site.exclude_from_sync
+                                     + default_site.exclude_from_sync))
+        config[u"exclude_from_sync"] = exclude_from_sync
         mirror_path = mirror.mirror_path
         if mirror_path is None:
             mirror_path = tree.tree_path
@@ -104,27 +104,28 @@ class MirrorConverter(object):
         tree = mirror.tree
         site = mirror.site
         default_site = mirror.default_site
+        source = tree.source
         config = self._build_simple_config()
         config[u"delete_old_dirs"] = mirror.delete_old_dirs
-        version_pattern = tree.version_pattern
-        if version_pattern is None:
-            version_pattern = tree.version_prefix + site.version_suffix
-        config[u"version_pattern"] = version_pattern
+        listing_pattern = tree.listing_pattern
+        if listing_pattern is None:
+            listing_pattern = tree.listing_prefix + source.listing_suffix
+        config[u"listing_pattern"] = listing_pattern
         def _not_this(other_pattern):
-            return fnmatch(other_pattern, version_pattern)
-        excluded_versions = list(set(mirror.excluded_versions
-                           + tree.excluded_versions
-                           + site.default_excluded_versions
-                           + default_site.default_excluded_versions))
-        excluded_versions = [v for v in excluded_versions if _not_this(v)]
-        config[u"excluded_versions"] = excluded_versions
-        version_filters = mirror.version_filters + tree.version_filters
-        config[u"subdir_filters"] = version_filters
+            return fnmatch(other_pattern, listing_pattern)
+        exclude_from_listing = list(set(mirror.exclude_from_listing
+                                        + tree.exclude_from_listing
+                                        + site.exclude_from_listing
+                                        + default_site.exclude_from_listing))
+        exclude_from_listing = [v for v in exclude_from_listing if _not_this(v)]
+        config[u"exclude_from_listing"] = exclude_from_listing
+        listing_filters = mirror.listing_filters + tree.listing_filters
+        config[u"listing_filters"] = listing_filters
         return config
 
     def _build_snapshot_config(self):
-        version_prefix = self.mirror.tree.version_prefix
+        listing_prefix = self.mirror.tree.listing_prefix
         config = self._build_versioned_config()
-        if version_prefix is not None:
-            config[u"latest_link_name"] = u"latest-" + version_prefix
+        if listing_prefix is not None:
+            config[u"latest_link_name"] = u"latest-" + listing_prefix
         return config

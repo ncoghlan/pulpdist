@@ -459,7 +459,7 @@ class TestLinkValidation(TreeTestCase):
         extra_dirs.extend(u"link5 dir5".split())
         # Existing symlinks that loop back to the upstream name are left alone
         # Exclude this dir from the sync so the link remains in place
-        params["excluded_versions"] = [u"dir6"]
+        params["exclude_from_listing"] = [u"dir6"]
         os.mkdir(_path(local_path, u"link6"))
         os.symlink(u"link6", _path(local_path, u"dir6"))
         dirnames.remove(u"dir6")

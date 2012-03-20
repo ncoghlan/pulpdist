@@ -281,7 +281,7 @@ class BaseSyncCommand(object):
         for rsync_filter in self.sync_filters:
             params.append("--filter={0}".format(rsync_filter))
         # Add exclude filters
-        for excluded_file in self.excluded_files:
+        for excluded_file in self.exclude_from_sync:
             params.append("--exclude={0}".format(excluded_file))
         # Protect directories from deletion if they contain a file called PROTECTED
         for dir_info in shellutil.filtered_walk(local_dest_path, file_pattern='PROTECTED'):
@@ -370,6 +370,7 @@ class SyncTree(BaseSyncCommand):
         local_dest_path = self.local_path
         return self.fetch_dir(remote_source_path, local_dest_path)
 
+
 class SyncVersionedTree(BaseSyncCommand):
     """Sync the contents of a directory containing multiple versions of a tree"""
     CONFIG_TYPE = sync_config.VersionedSyncConfig
@@ -379,10 +380,10 @@ class SyncVersionedTree(BaseSyncCommand):
         params = ["-nl"]
         params.extend(self._build_common_rsync_params())
         # Filter out unwanted directories
-        for subdir_filter in self.subdir_filters:
+        for subdir_filter in self.listing_filters:
             params.append("--filter={0}".format(subdir_filter))
-        for excluded_version in self.excluded_versions:
-            params.append("--exclude={0}".format(excluded_version))
+        for excluded_pattern in self.exclude_from_listing:
+            params.append("--exclude={0}".format(excluded_pattern))
         params.append(remote_ls_path)
         return params
 
@@ -427,8 +428,8 @@ class SyncVersionedTree(BaseSyncCommand):
     def _iter_local_versions(self):
         local_path = self.local_path
         dir_info = shellutil.filtered_walk(local_path,
-                                           dir_pattern=self.version_pattern,
-                                           excluded_dirs=self.excluded_versions,
+                                           dir_pattern=self.listing_pattern,
+                                           excluded_dirs=self.exclude_from_listing,
                                            depth=0).next()
         for d in dir_info.subdirs:
             yield os.path.join(local_path, d)
@@ -520,7 +521,7 @@ class SyncVersionedTree(BaseSyncCommand):
 
     def _do_transfer(self):
         sync_stats = _null_sync_stats
-        remote_pattern = os.path.join(self.remote_path, self.version_pattern)
+        remote_pattern = os.path.join(self.remote_path, self.listing_pattern)
         remote_ls_path = "rsync://{0}{1}".format(self.remote_server, remote_pattern)
         dir_entries, link_entries = self.remote_ls(remote_ls_path)
         if not dir_entries:

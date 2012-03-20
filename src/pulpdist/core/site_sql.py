@@ -60,19 +60,20 @@ class RemoteServer(Base, FieldsMixin):
 
 class RemoteSource(Base, FieldsMixin):
     __tablename__ = "remote_sources"
-    _FIELDS = "source_id server_id name remote_path".split()
+    _FIELDS = "source_id server_id name remote_path listing_suffix".split()
     source_id = sqla.Column(sqla.String, primary_key=True)
     server_id = sqla.Column(sqla.String, sqla.ForeignKey("remote_servers.server_id"))
     server = _linked_from(RemoteServer, "sources", "source_id")
     name = sqla.Column(sqla.String, nullable=False)
     remote_path = sqla.Column(sqla.String, nullable=False)
+    listing_suffix = sqla.Column(sqla.String, server_default="")
 
 
 class RemoteTree(Base, FieldsMixin):
     __tablename__ = "remote_trees"
     _FIELDS = """tree_id source_id name description tree_path sync_hours
-                 sync_type excluded_files sync_filters version_pattern
-                 version_prefix excluded_versions version_filters""".split()
+                 sync_type exclude_from_sync sync_filters listing_pattern
+                 listing_prefix exclude_from_listing listing_filters""".split()
     tree_id = sqla.Column(sqla.String, primary_key=True)
     source_id = sqla.Column(sqla.String, sqla.ForeignKey("remote_sources.source_id"))
     source = _linked_from(RemoteSource, "trees", "tree_id")
@@ -81,25 +82,24 @@ class RemoteTree(Base, FieldsMixin):
     tree_path = sqla.Column(sqla.String, nullable=False)
     sync_hours = sqla.Column(sqla.Integer)
     sync_type = sqla.Column(sqla.String)
-    excluded_files = sqla.Column(sqla.PickleType)
+    exclude_from_sync = sqla.Column(sqla.PickleType)
     sync_filters = sqla.Column(sqla.PickleType)
-    version_pattern = sqla.Column(sqla.String)
-    version_prefix = sqla.Column(sqla.String)
-    excluded_versions = sqla.Column(sqla.PickleType)
-    version_filters = sqla.Column(sqla.PickleType)
+    listing_pattern = sqla.Column(sqla.String)
+    listing_prefix = sqla.Column(sqla.String)
+    exclude_from_listing = sqla.Column(sqla.PickleType)
+    listing_filters = sqla.Column(sqla.PickleType)
 
 
 class SiteSettings(Base, FieldsMixin):
     __tablename__ = "site_settings"
-    _FIELDS = """site_id name storage_prefix version_suffix
-                 default_excluded_files default_excluded_versions
+    _FIELDS = """site_id name storage_prefix
+                 exclude_from_sync exclude_from_listing
                  server_prefixes source_prefixes""".split()
     site_id = sqla.Column(sqla.String, nullable=False, primary_key=True)
     name = sqla.Column(sqla.String, nullable=False)
     storage_prefix = sqla.Column(sqla.String, nullable=False)
-    version_suffix = sqla.Column(sqla.String, server_default="")
-    default_excluded_files = sqla.Column(sqla.PickleType)
-    default_excluded_versions = sqla.Column(sqla.PickleType)
+    exclude_from_sync = sqla.Column(sqla.PickleType)
+    exclude_from_listing = sqla.Column(sqla.PickleType)
 
     @hybrid_property
     def server_prefixes(self):
@@ -153,7 +153,7 @@ class SourcePrefix(Base, FieldsMixin):
 class LocalMirror(Base, FieldsMixin):
     __tablename__ = "local_mirrors"
     _FIELDS = """mirror_id tree_id site_id name description mirror_path
-                 excluded_files sync_filters excluded_versions version_filters
+                 exclude_from_sync sync_filters exclude_from_listing listing_filters
                  notes enabled dry_run_only delete_old_dirs""".split()
     mirror_id = sqla.Column(sqla.String, primary_key=True)
     tree_id = sqla.Column(sqla.String, sqla.ForeignKey("remote_trees.tree_id"))
@@ -165,20 +165,22 @@ class LocalMirror(Base, FieldsMixin):
     name = sqla.Column(sqla.String)
     description = sqla.Column(sqla.String)
     mirror_path = sqla.Column(sqla.String)
-    excluded_files = sqla.Column(sqla.PickleType)
+    exclude_from_sync = sqla.Column(sqla.PickleType)
     sync_filters = sqla.Column(sqla.PickleType)
-    excluded_versions = sqla.Column(sqla.PickleType)
-    version_filters = sqla.Column(sqla.PickleType)
+    exclude_from_listing = sqla.Column(sqla.PickleType)
+    listing_filters = sqla.Column(sqla.PickleType)
     notes = sqla.Column(sqla.PickleType)
     enabled = sqla.Column(sqla.Boolean, default=False)
     dry_run_only = sqla.Column(sqla.Boolean, default=False)
     delete_old_dirs = sqla.Column(sqla.Boolean, default=False)
 
+    # Easy access to the default site for creation of the repo definition
     default_site_id = sqla.Column(sqla.String,
                                   sqla.ForeignKey("site_settings.site_id"),
                                   default="default")
     default_site = relation(SiteSettings, viewonly = True,
                             primaryjoin = SiteSettings.site_id == default_site_id)
+
 
 class PulpRepository(Base, FieldsMixin):
     __tablename__ = "pulp_repositories"

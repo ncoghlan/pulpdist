@@ -52,6 +52,7 @@ class RemoteSourceConfig(validation.ValidatedConfig):
         u"server_id": validation.check_simple_id(),
         u"name": validation.check_text(),
         u"remote_path": validation.check_text(),
+        u"listing_suffix": validation.check_rsync_filter(),
     }
 
 
@@ -64,34 +65,34 @@ class RemoteTreeConfig(validation.ValidatedConfig):
         u"tree_path": validation.check_path(),
         u"sync_hours": validation.check_type(int, allow_none=True),
         u"sync_type": validation.check_value(sync_config.SYNC_TYPES),
-        u"excluded_files": validation.check_rsync_filter_sequence(),
+        u"exclude_from_sync": validation.check_rsync_filter_sequence(),
         u"sync_filters": validation.check_rsync_filter_sequence(),
-        u"version_pattern": validation.check_rsync_filter(allow_none=True),
-        u"version_prefix": validation.check_path(allow_none=True),
-        u"excluded_versions": validation.check_rsync_filter_sequence(),
-        u"version_filters": validation.check_rsync_filter_sequence(),
+        u"listing_pattern": validation.check_rsync_filter(allow_none=True),
+        u"listing_prefix": validation.check_path(allow_none=True),
+        u"exclude_from_listing": validation.check_rsync_filter_sequence(),
+        u"listing_filters": validation.check_rsync_filter_sequence(),
     }
     _DEFAULTS =  {
         u"description": None,
         u"sync_hours": None,
-        u"excluded_files": [],
+        u"exclude_from_sync": [],
         u"sync_filters": [],
-        u"version_pattern": None,
-        u"version_prefix": None,
-        u"excluded_versions": [],
-        u"version_filters": [],
+        u"listing_pattern": None,
+        u"listing_prefix": None,
+        u"exclude_from_listing": [],
+        u"listing_filters": [],
     }
 
     @classmethod
     def post_validate(self, config):
-        pattern = config[u"version_pattern"]
-        prefix = config[u"version_prefix"]
+        pattern = config[u"listing_pattern"]
+        prefix = config[u"listing_prefix"]
         sync_type = config[u"sync_type"]
         if pattern is None:
-            if prefix is None and sync_config.requires_version(sync_type):
-                validation.fail_validation("Must set either version_prefix or version_pattern")
+            if prefix is None and sync_config.retrieves_listing(sync_type):
+                validation.fail_validation("Must set either listing_prefix or listing_pattern")
         elif prefix is not None:
-            validation.fail_validation("Cannot set both version_prefix and version_pattern")
+            validation.fail_validation("Cannot set both listing_prefix and listing_pattern")
 
 
 class LocalMirrorConfig(validation.ValidatedConfig):
@@ -102,10 +103,10 @@ class LocalMirrorConfig(validation.ValidatedConfig):
         u"name": validation.check_text(allow_none=True),
         u"description": validation.check_text(allow_none=True),
         u"mirror_path": validation.check_path(allow_none=True),
-        u"excluded_files": validation.check_rsync_filter_sequence(),
+        u"exclude_from_sync": validation.check_rsync_filter_sequence(),
         u"sync_filters": validation.check_rsync_filter_sequence(),
-        u"excluded_versions": validation.check_rsync_filter_sequence(),
-        u"version_filters": validation.check_rsync_filter_sequence(),
+        u"exclude_from_listing": validation.check_rsync_filter_sequence(),
+        u"listing_filters": validation.check_rsync_filter_sequence(),
         u"notes": validation.check_type(dict, allow_none=True),
         u"enabled": validation.check_type(int),
         u"dry_run_only": validation.check_type(int),
@@ -116,10 +117,10 @@ class LocalMirrorConfig(validation.ValidatedConfig):
         u"name": None,
         u"description": None,
         u"mirror_path": None,
-        u"excluded_files": [],
+        u"exclude_from_sync": [],
         u"sync_filters": [],
-        u"excluded_versions": [],
-        u"version_filters": [],
+        u"exclude_from_listing": [],
+        u"listing_filters": [],
         u"notes": {},
         u"enabled": False,
         u"dry_run_only": False,
@@ -131,15 +132,14 @@ class SiteSettingsConfig(validation.ValidatedConfig):
         u"site_id": validation.check_simple_id(),
         u"name": validation.check_text(),
         u"storage_prefix": validation.check_text(),
-        u"version_suffix": validation.check_rsync_filter(),
-        u"default_excluded_files": validation.check_rsync_filter_sequence(),
-        u"default_excluded_versions": validation.check_rsync_filter_sequence(),
+        u"exclude_from_sync": validation.check_rsync_filter_sequence(),
+        u"exclude_from_listing": validation.check_rsync_filter_sequence(),
         u"server_prefixes": check_path_mapping(),
         u"source_prefixes": check_path_mapping(),
     }
     _DEFAULTS =  {
-        u"default_excluded_files": [],
-        u"default_excluded_versions": [],
+        u"exclude_from_sync": [],
+        u"exclude_from_listing": [],
         u"server_prefixes": {},
         u"source_prefixes": {},
     }

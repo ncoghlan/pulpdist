@@ -268,7 +268,7 @@ fi
 
 %changelog
 * ??? Mar ?? 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.7-1
-- the manage_repos client now uses a new site configuration format
+- BZ#795212: the manage_repos client now uses a new site configuration format
 - site configuration data is saved to the server as the "pulpdist-meta" repo
 - if no configuration file is provided, the manage_repos init and validate
   commands will use the data in the "puldist-meta" repo if it is available
@@ -281,6 +281,9 @@ fi
   the Pulp server as if it was simply a collection of raw trees
 - the old configuration format is no longer supported, use a site configuration
   file that defines only RAW_TREES instead
+- the two phases of versioned and snapshots syncs are now consistently referred
+  to as the "listing" and "sync" phases. Several configuration settings have
+  been renamed accordingly.
 - BZ#802627: rsync commands now use the "--no-implied-dirs" option when
   communicating with an old remote daemon
 

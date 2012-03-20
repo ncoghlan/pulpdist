@@ -216,13 +216,13 @@ A local mirror definition is a mapping with the following attributes:
 * ``mirror_path``: final path segment for this tree (default: same as tree_path)
 * ``enabled``: whether the tree starts with sync enabled (default: false)
 * ``dry_run_only``: whether the tree starts in dry run mode (default: false)
-* ``excluded_files``: rsync wildcard patterns to ignore when retrieving files
-  (optional)
+* ``exclude_from_sync``: rsync wildcard patterns to ignore when retrieving
+  files (optional)
 * ``sync_filters``: additional rsync filters applied when retrieving files
   (optional)
 * ``notes``: additional notes to store in the Pulp repo metadata (optional)
 
-The ``excluded_files`` and ``sync_filters`` settings are appended to the
+The ``exclude_from_sync`` and ``sync_filters`` settings are appended to the
 default filtering options including in the remote tree definition.
 
 The following additional settings are only valid if the remote tree specifies
@@ -230,12 +230,12 @@ the use of either ``versioned`` or ``snapshot`` as the sync algorithm:
 
 * ``delete_old_dirs``: whether local dirs no longer in the remote tree are
   deleted (default: false)
-* ``excluded_versions``: additional rsync wildcard patterns to ignore when
+* ``exclude_from_listing``: additional rsync wildcard patterns to ignore when
   determining which version directories to synchronise (optional)
-* ``version_filters``: additional rsync filters applied when determining
+* ``listing_filters``: additional rsync filters applied when determining
   which version directories to synchronise (optional)
 
-The ``excluded_versions`` and ``version_filters`` settings are appended to
+The ``exclude_from_listing`` and ``listing_filters`` settings are appended to
 the default filtering options including in the remote tree definition.
 
 
@@ -253,8 +253,8 @@ A remote tree definition is a mapping with the following attributes:
 * ``tree_path``: final path segment for this tree (before the tree contents)
 * ``sync_hours``: used for `scheduling sync operations with cron`_.
 * ``sync_type``: the tree sync algorithm to use. See below for details.
-* ``excluded_files``: rsync wildcard patterns to ignore when retrieving files
-  (optional)
+* ``exclude_from_sync``: rsync wildcard patterns to ignore when retrieving
+  files (optional)
 * ``sync_filters``: additional rsync filters applied when retrieving files
   (optional)
 
@@ -267,14 +267,14 @@ The currently supported sync algorithms are:
 The following additional settings are only valid if the sync algorithm is
 either ``versioned`` or ``snapshot``:
 
-* ``version_pattern``: rsync wildcard pattern used to determine which
+* ``listing_pattern``: rsync wildcard pattern used to determine which
   directories to synchronise (default: '*')
-* ``version_prefix``: alternative mechanism to specify the version pattern
-  as ``version_prefix + version_suffix`` (where the latter comes from the
-  shared remote tree settings.
-* ``excluded_versions``: rsync wildcard patterns to ignore when determining
+* ``listing_prefix``: alternative mechanism to specify the listing pattern
+  as ``listing_prefix + listing_suffix`` (where the latter comes from the
+  remote source settings).
+* ``exclude_from_listing``: rsync wildcard patterns to ignore when determining
   which version directories to synchronise (optional)
-* ``version_filters``: rsync filters applied when determining which version
+* ``listing_filters``: rsync filters applied when determining which version
   directories to synchronise (optional)
 
 When the ``version_prefix`` setting is used for a ``snapshot`` tree, a
@@ -292,6 +292,8 @@ A remote source definition is a mapping with the following attributes:
 * ``server_id``: the ID of the remote server that publishes these trees
 * ``name``: human readable name for this group of remote trees
 * ``remote_path``: shared path prefix for these trees on the remote server
+* ``listing_suffix``: rsync wildcard pattern to append when a remote tree
+  definition uses the ``listing_prefix`` setting
 
 
 Remote Server Definitions
@@ -311,25 +313,20 @@ A remote server definition is a mapping with the following attributes:
 Site Definitions
 ^^^^^^^^^^^^^^^^
 
-A site definition a mapping with the following attributes:
+A site definition is a mapping with the following attributes:
 
 * ``site_id``: locally unique ID (alphanumeric characters and hyphens only)
 * ``name``: human readable name for this site
 * ``storage_prefix``: The shared path prefix for the local data storage area
 * ``server_prefixes``: mapping from ``server_id`` values to path segments
 * ``source_prefixes``: mapping from ``source_id`` values to path segments
-* ``version_suffix``: rsync wildcard pattern to append when a remote tree
-  definition uses the ``version_prefix`` setting
-* ``default_excluded_versions``: rsync wildcard patterns to ignore by default
+* ``exclude_from_listing``: rsync wildcard patterns to ignore by default
   when determining which version directories to synchronise (if one of these
   filters matches the wildcard pattern identifying *desired* versions, then
   that exclusion filter will be omitted from the raw tree definition).
-* ``default_excluded_files``: rsync wildcard patterns that are always ignored
+* ``exclude_from_sync``: rsync wildcard patterns that are always ignored
   when creating a raw tree definition (e.g. to exclude standard locations for
   temporary working files)
-
-The special ``default`` site settings are used if no more specific settings are
-provided to override them.
 
 Raw Tree Definitions
 ^^^^^^^^^^^^^^^^^^^^
@@ -397,6 +394,13 @@ The remote path used to retrieve a tree is calculated as::
 These values are all taken directly from the appropriate remote server, remote
 source and remote tree settings, respectively.
 
+The filtering options for the sync process (and, if applicable, the listing
+process) are determined by inspecting the settings for the local mirror, the
+remote tree, the local site and the default site. All filtering options given
+in any of those applications are applied to the underlying rsync command. (The
+one exception is that any listing exclusion settings that would exclude
+directories matching the listing pattern for a particular tree are omitted
+from the remote listing command for that tree)
 
 
 Example site definition file

@@ -39,8 +39,8 @@ Configuration options for this plugin are:
 * ``remote_server``: The host name or IPv4 address of the source rsync server
 * ``remote_path``: The path to read from on the remote server
 * ``local_path``: The local destination path for the received tree
-* ``excluded_files``: A list of rsync ``--exclude`` patterns applied to the
-  tree synchronisation operation. Defaults to no filtering.
+* ``exclude_from_sync``: A list of rsync ``--exclude`` patterns applied to the
+  tree synchronisation operation. Defaults to no exclusions.
 * ``sync_filters``: A list of rsync ``--filter`` patterns applied to the
   tree synchronisation operation. Defaults to no filtering.
 * ``bandwidth_limit``: If provided and not zero, passed to rsync as
@@ -51,7 +51,6 @@ Configuration options for this plugin are:
   allow connections to a remote daemon that isn't running on the default port.
 * ``enabled``: If provided and true, actually performs a sync operation when
   invoked by Pulp. Defaults to ignoring sync requests.
-  - sync requests are currently always processed)
 * ``dry_run_only``: If provided and true, passes ``-n`` to rsync to run it in
   "dry run" mode (i.e. no actual file transfers will take place).
 
@@ -74,19 +73,19 @@ In addition to all of the simple tree sync configuration options, the
 versioned tree sync has the following additional options that are used to
 build the list of individual subtrees to be synchronised:
 
-* ``version_pattern``: An rsync ``--include`` pattern identifying the subtrees
+* ``listing_pattern``: An rsync ``--include`` pattern identifying the subtrees
   to synchronise. Defaults to all subdirectories of ``remote_path``.
-* ``excluded_versions``: A list of rsync ``--exclude`` patterns applied to the
-  subtree identification operation. Defaults to no filtering.
-* ``subdir_filters``: A list of rsync ``--filter`` patterns applied to the
-  subtree identification operation. Defaults to no filtering.
+* ``exclude_from_listing``: A list of rsync ``--exclude`` patterns applied to
+  the subtree listing operation. Defaults to no filtering.
+* ``listing_filters``: A list of rsync ``--filter`` patterns applied to the
+  subtree listing operation. Defaults to no filtering.
 * ``delete_old_dirs``: If provided and true, removes local subdirectories that
   are no longer present on the source server. By default, local subdirectories
   are retained until explicitly deleted by a system administrator. Adding a
   ``PROTECTED`` file will also ensure a directory is not deleted automatically.
 
 The versioned tree sync also reproduces locally any upstream symlinks that
-match the version pattern and point to destinations that exist on the local
+match the listing pattern and point to destinations that exist on the local
 server after the sync operation is otherwise complete.
 
 .. _snapshot-tree-sync:

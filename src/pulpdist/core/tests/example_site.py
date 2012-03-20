@@ -62,21 +62,19 @@ TEST_CONFIG = """\
       "source_prefixes": {
         "sync_demo": "sync_demo_trees"
       },
-      "version_suffix": "*",
-      "default_excluded_files": ["*dull*"]
+      "exclude_from_sync": ["*dull*"]
     },
     {
       "site_id": "other",
       "name": "Other Site",
-      "storage_prefix": "/var/www/pub",
-      "version_suffix": "*"
+      "storage_prefix": "/var/www/pub"
     }
   ],
   "LOCAL_MIRRORS": [
     {
       "mirror_id": "simple_sync",
       "tree_id": "simple_sync",
-      "excluded_files": ["*skip*"],
+      "exclude_from_sync": ["*skip*"],
       "sync_filters": ["exclude_irrelevant/"],
       "notes": {
         "basic": "note",
@@ -89,9 +87,9 @@ TEST_CONFIG = """\
       "mirror_id": "versioned_sync",
       "tree_id": "versioned_sync",
       "site_id": "other",
-      "excluded_files": ["*skip*"],
+      "exclude_from_sync": ["*skip*"],
       "sync_filters": ["exclude_dull/"],
-      "excluded_versions": ["relevant-but*"],
+      "exclude_from_listing": ["relevant-but*"],
       "notes": {
         "site_custom": {
           "origin": "PulpDist example repository"
@@ -126,8 +124,8 @@ TEST_CONFIG = """\
       "sync_type": "versioned",
       "sync_hours": 12,
       "source_id": "sync_demo_other",
-      "version_pattern": "relevant*",
-      "excluded_files": ["*skip*"],
+      "listing_pattern": "relevant*",
+      "exclude_from_sync": ["*skip*"],
       "sync_filters": ["exclude_irrelevant/"]
     },
     {
@@ -138,9 +136,9 @@ TEST_CONFIG = """\
       "sync_type": "snapshot",
       "sync_hours": 1,
       "source_id": "sync_demo",
-      "version_prefix": "relev",
-      "excluded_versions": ["relevant-but*"],
-      "excluded_files": ["*skip*"],
+      "listing_prefix": "relev",
+      "exclude_from_listing": ["relevant-but*"],
+      "exclude_from_sync": ["*skip*"],
       "sync_filters": ["exclude_irrelevant/", "exclude_dull/"]
     }
   ],
@@ -149,13 +147,15 @@ TEST_CONFIG = """\
       "source_id": "sync_demo",
       "server_id": "demo_server",
       "name": "Sync Demo Trees",
-      "remote_path": "test_data"
+      "remote_path": "test_data",
+      "listing_suffix": "*"
     },
     {
       "source_id": "sync_demo_other",
       "server_id": "other_demo_server",
       "name": "Other Sync Demo Trees",
-      "remote_path": "test_data"
+      "remote_path": "test_data",
+      "listing_suffix": "*"
     }
   ],
   "REMOTE_SERVERS": [
@@ -189,7 +189,7 @@ TEST_CONFIG = """\
         "remote_server": "localhost",
         "remote_path": "/test_data/simple/",
         "local_path": "/var/www/pub/sync_demo_raw/",
-        "excluded_files": ["*skip*"],
+        "exclude_from_sync": ["*skip*"],
         "sync_filters": ["exclude_irrelevant/", "exclude_dull/"]
       }
     }
@@ -227,7 +227,7 @@ EXPECTED_REPO_CONFIGS = """\
       "dry_run_only": false,
       "old_remote_daemon": false,
       "tree_name": "simple_sync__default",
-      "excluded_files": [
+      "exclude_from_sync": [
         "*skip*",
         "*dull*"
       ],
@@ -259,17 +259,17 @@ EXPECTED_REPO_CONFIGS = """\
         "exclude_irrelevant/"
       ],
       "dry_run_only": false,
-      "subdir_filters": [],
+      "listing_filters": [],
       "remote_path": "/test_data/versioned/",
-      "excluded_versions": ["relevant-but*"],
+      "exclude_from_listing": ["relevant-but*"],
       "old_remote_daemon": false,
       "tree_name": "versioned_sync__other",
-      "excluded_files": [
+      "exclude_from_sync": [
         "*skip*",
         "*dull*"
       ],
       "remote_server": "localhost",
-      "version_pattern": "relevant*",
+      "listing_pattern": "relevant*",
       "enabled": false,
       "delete_old_dirs": false,
       "local_path": "/var/www/pub/sync_demo/sync_demo_trees/versioned/"
@@ -299,18 +299,18 @@ EXPECTED_REPO_CONFIGS = """\
         "exclude_dull/"
       ],
       "dry_run_only": false,
-      "subdir_filters": [],
+      "listing_filters": [],
       "remote_path": "/test_data/snapshot/",
-      "excluded_versions": ["relevant-but*"],
+      "exclude_from_listing": ["relevant-but*"],
       "latest_link_name": "latest-relev",
       "old_remote_daemon": false,
       "tree_name": "snapshot_sync__default",
-      "excluded_files": [
+      "exclude_from_sync": [
         "*skip*",
         "*dull*"
       ],
       "remote_server": "localhost",
-      "version_pattern": "relev*",
+      "listing_pattern": "relev*",
       "enabled": false,
       "delete_old_dirs": false,
       "local_path": "/var/www/pub/sync_demo/sync_demo_trees/snapshot/"
@@ -338,7 +338,7 @@ EXPECTED_REPO_CONFIGS = """\
       "remote_path": "/test_data/simple/",
       "local_path": "/var/www/pub/sync_demo_raw/",
       "tree_name": "Raw Simple Tree",
-      "excluded_files": [
+      "exclude_from_sync": [
         "*skip*"
       ]
     }

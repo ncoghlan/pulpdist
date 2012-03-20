@@ -13,10 +13,10 @@
 from . import validation
 
 SYNC_TYPES = "simple versioned snapshot".split()
-REQUIRE_VERSION_PATTERN = SYNC_TYPES[1:]
+RETRIEVES_LISTING = SYNC_TYPES[1:]
 
-def requires_version(sync_type):
-    return sync_type in REQUIRE_VERSION_PATTERN
+def retrieves_listing(sync_type):
+    return sync_type in RETRIEVES_LISTING
 
 def _updated(original, additions):
     new = original.copy()
@@ -29,7 +29,7 @@ class TreeSyncConfig(validation.ValidatedConfig):
         u"remote_server": validation.check_host(),
         u"remote_path": validation.check_remote_path(),
         u"local_path": validation.check_path(),
-        u"excluded_files": validation.check_rsync_filter_sequence(),
+        u"exclude_from_sync": validation.check_rsync_filter_sequence(),
         u"sync_filters": validation.check_rsync_filter_sequence(),
         u"bandwidth_limit": validation.check_type(int),
         u"dry_run_only": validation.check_type(int),
@@ -38,7 +38,7 @@ class TreeSyncConfig(validation.ValidatedConfig):
         u"enabled": validation.check_type(int),
     }
     _DEFAULTS = {
-        u"excluded_files": (),
+        u"exclude_from_sync": (),
         u"sync_filters": (),
         u"bandwidth_limit": 0,
         u"dry_run_only": False,
@@ -49,15 +49,15 @@ class TreeSyncConfig(validation.ValidatedConfig):
 
 class VersionedSyncConfig(TreeSyncConfig):
     _SPEC = _updated(TreeSyncConfig._SPEC, {
-        u"version_pattern": validation.check_rsync_filter(),
-        u"excluded_versions": validation.check_rsync_filter_sequence(),
-        u"subdir_filters": validation.check_rsync_filter_sequence(),
+        u"listing_pattern": validation.check_rsync_filter(),
+        u"exclude_from_listing": validation.check_rsync_filter_sequence(),
+        u"listing_filters": validation.check_rsync_filter_sequence(),
         u"delete_old_dirs": validation.check_type(int),
     })
     _DEFAULTS = _updated(TreeSyncConfig._DEFAULTS, {
-        u"version_pattern": u'*',
-        u"excluded_versions": (),
-        u"subdir_filters": (),
+        u"listing_pattern": u'*',
+        u"exclude_from_listing": (),
+        u"listing_filters": (),
         u"delete_old_dirs": False,
     })
 
@@ -71,7 +71,7 @@ class SnapshotSyncConfig(VersionedSyncConfig):
 
     def __init__(self, config=None):
         super(SnapshotSyncConfig, self).__init__(config)
-        excluded_files = list(self.config[u"excluded_files"])
-        excluded_files += [u"STATUS", u".STATUS"]
-        self.config[u"excluded_files"] = excluded_files
+        exclude_from_sync = list(self.config[u"exclude_from_sync"])
+        exclude_from_sync += [u"STATUS", u".STATUS"]
+        self.config[u"exclude_from_sync"] = exclude_from_sync
 

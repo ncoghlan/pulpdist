@@ -9,15 +9,14 @@
       },
       "source_prefixes": {
         "sync_demo": "sync_demo_trees"
-      },
-      "version_suffix": "*"
+      }
     }
   ],
   "LOCAL_MIRRORS": [
     {
       "mirror_id": "simple_sync",
       "tree_id": "simple_sync",
-      "excluded_files": ["*skip*"],
+      "exclude_from_sync": ["*skip*"],
       "sync_filters": ["exclude_irrelevant/"],
       "notes": {
         "basic": "note",
@@ -30,7 +29,7 @@
       "mirror_id": "versioned_sync",
       "tree_id": "versioned_sync",
       "sync_filters": ["exclude_dull/"],
-      "excluded_versions": ["relevant-but*"],
+      "exclude_from_listing": ["relevant-but*"],
       "notes": {
         "site_custom": {
           "origin": "PulpDist example repository"
@@ -65,8 +64,8 @@
       "sync_type": "versioned",
       "sync_hours": 12,
       "source_id": "sync_demo",
-      "version_pattern": "relevant*",
-      "excluded_files": ["*skip*"],
+      "listing_pattern": "relevant*",
+      "exclude_from_sync": ["*skip*"],
       "sync_filters": ["exclude_irrelevant/"]
     },
     {
@@ -77,9 +76,9 @@
       "sync_type": "snapshot",
       "sync_hours": 1,
       "source_id": "sync_demo",
-      "version_prefix": "relev",
-      "excluded_versions": ["relevant-but*"],
-      "excluded_files": ["*skip*"],
+      "listing_prefix": "relev",
+      "exclude_from_listing": ["relevant-but*"],
+      "exclude_from_sync": ["*skip*"],
       "sync_filters": ["exclude_irrelevant/", "exclude_dull/"]
     }
   ],
@@ -88,7 +87,8 @@
       "source_id": "sync_demo",
       "server_id": "demo_server",
       "name": "Sync Demo Trees",
-      "remote_path": "demo"
+      "remote_path": "demo",
+      "listing_suffix": "*"
     }
   ],
   "REMOTE_SERVERS": [
@@ -117,7 +117,7 @@
         "remote_server": "localhost",
         "remote_path": "/demo/simple/",
         "local_path": "/var/www/pub/sync_demo_raw/",
-        "excluded_files": ["*skip*"],
+        "exclude_from_sync": ["*skip*"],
         "sync_filters": ["exclude_irrelevant/", "exclude_dull/"]
       }
     }
