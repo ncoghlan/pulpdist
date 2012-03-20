@@ -186,6 +186,11 @@ class BaseSyncCommand(object):
             msg = fmt
         self._run_log_file.write(msg.rstrip() + '\n')
 
+    def _finish_run_log(self):
+        if self._run_log_file is None:
+            return
+        self._run_log_file.flush()
+
     def _run_shell_command(self, cmd):
         shell_output = []
         with self._indent_run_log(0):
@@ -257,6 +262,7 @@ class BaseSyncCommand(object):
         msg = "Completed sync of {0!r} at {1} (Result: {2}, Duration: {3})"
         self._update_run_log(msg, self.tree_name,
                              finish_time, result, finish_time - start_time)
+        self._finish_run_log()
         return result, start_time, finish_time, sync_stats
 
     def _build_common_rsync_params(self):

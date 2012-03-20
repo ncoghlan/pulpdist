@@ -19,3 +19,4 @@ cover
 doc/_build
 *kate-swp
 var/log/pulpdist/*.log*
+var/www/pub/pulpdist_sync_logs/*.log*

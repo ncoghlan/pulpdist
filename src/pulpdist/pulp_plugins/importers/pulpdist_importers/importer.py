@@ -15,16 +15,28 @@ import sys
 import traceback
 from cStringIO import StringIO
 
+# BZ#799203: As a workaround until the more flexible progress reporting is
+# implemented in the Pulp APIs, we hardcode writing out the sync logs to
+# a directory we publish over https
+import shutil
+SYNC_LOG_RELPATH = "var/www/pub/pulpdist_sync_logs"
+
 try:
     from pulpdist.core import sync_trees, validation
+    SYNC_LOG_DIR = "/" + SYNC_LOG_RELPATH
 except ImportError:
     # Hack to allow running from a source checkout
     import os, sys
-    # We're in pulpdist/pulp_plugins/importers/pulpdist_importers, so need to go up 4 dirs
+    # We're in src/pulpdist/pulp_plugins/importers/pulpdist_importers in Git
+    # so need to go up 4 dirs to find the dir to add to sys.path
     this_dir = os.path.realpath(os.path.dirname(__file__))
-    plugin_dir = os.path.abspath(this_dir + "/../../../..")
-    sys.path.append(plugin_dir)
-    from pulpdist.core import sync_trees, validation
+    src_dir = os.path.abspath(this_dir + "/../../../..")
+    sys.path.append(src_dir)
+    from pulpdist.core import sync_trees, validation, util
+    # And then another dir up to find where to put the sync logs
+    SYNC_LOG_DIR = os.path.abspath(
+                         os.path.normpath(
+                             os.path.join(src_dir, '..', SYNC_LOG_RELPATH)))
 
 
 from pulp.server.content.plugins.importer import Importer
@@ -53,9 +65,24 @@ class _BaseImporter(Importer):
         sync_config.validate()
         return True
 
+    def _init_sync_log(self, log_name):
+        log_file = log_name + ".log"
+        log_path = os.path.join(SYNC_LOG_DIR, log_file)
+        # This relies on the use of unique tree names and Pulp serialising
+        # sync requests to avoid a race condition...
+        if os.path.exists(log_path):
+            backup_file = log_file + ".bak"
+            backup_path = os.path.join(SYNC_LOG_DIR, backup_file)
+            os.rename(log_path, backup_path)
+        return log_path
+
+    def _read_sync_log(self, sync_log):
+        with open(sync_log) as f:
+            return f.read()
+
     def sync_repo(self, repo, sync_conduit, config):
         sync_config = self._build_sync_config(config)
-        sync_log = StringIO()
+        sync_log = self._init_sync_log(repo.id)
         command = self.SYNC_COMMAND(sync_config.config, sync_log)
         try:
             # TODO: Refactor to support progress reporting
@@ -71,7 +98,7 @@ class _BaseImporter(Importer):
             )
             raise RuntimeError(msg.format(et, ev,
                                traceback.format_tb(tb),
-                               sync_log.getvalue()))
+                               self._read_sync_log(sync_log)))
         result = sync_info[0]
         summary = {
             "result": result,
@@ -79,7 +106,9 @@ class _BaseImporter(Importer):
             "finish_time": sync_info[2].isoformat(),
             "stats": sync_info[3]._asdict(),
         }
-        details = {"sync_log": sync_log.getvalue()}
+        details = {
+            "sync_log": self._read_sync_log(sync_log),
+        }
         report = sync_conduit.build_report(summary, details)
         return report
 

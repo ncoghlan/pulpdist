@@ -133,6 +133,7 @@ popd
 %define database_file %{data_dir}/djangoORM.db
 
 %define httpd_static_media /var/www/pub/%{name}
+%define httpd_sync_logs /var/www/pub/%{name}_sync_logs
 
 %define plugin_src src/%{name}/pulp_plugins
 %define plugin_dest /var/lib/pulp/plugins
@@ -160,6 +161,8 @@ cp -R etc/%{name}/* %{buildroot}%{config_dir}
 mkdir -p %{buildroot}%{log_dir}
 # Storage for static media files (e.g. CSS, JS, images)
 mkdir -p %{buildroot}%{httpd_static_media}
+# Storage for in-progress sync logs
+mkdir -p %{buildroot}%{httpd_sync_logs}
 # Apache Configuration
 mkdir -p %{buildroot}/etc/httpd/conf.d/
 cp etc/httpd/conf.d/%{name}.conf %{buildroot}/etc/httpd/conf.d/
@@ -207,6 +210,10 @@ pushd src
 popd
 chmod -R u=rwX,g=rX,o=rX %{httpd_static_media}
 chown -R apache:apache %{httpd_static_media}
+
+# Sync logs
+chmod -R u=rwX,g=rX,o=rX %{httpd_sync_logs}
+chown -R apache:apache %{httpd_sync_logs}
 
 # SELinux contexts for Apache runtime access
 if selinuxenabled ; then
@@ -291,6 +298,7 @@ fi
 - BZ#799204: the manage_repos CLI now provides a -V/--version option
 - BZ#799205: the web UI footer now displays a more accurate version number
 - Fixed a race condition with tests waiting for the rsync server to start
+- BZ#799203: in-progress sync logs are now published via https as flat files
 
 * Fri Feb 17 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.6-1
 - Created pulpdist.cli subpackage for Management CLI support code
