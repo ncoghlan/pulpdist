@@ -18,7 +18,7 @@ from cStringIO import StringIO
 # BZ#799203: As a workaround until the more flexible progress reporting is
 # implemented in the Pulp APIs, we hardcode writing out the sync logs to
 # a directory we publish over https
-import shutil
+import os, os.path
 SYNC_LOG_RELPATH = "var/www/pub/pulpdist_sync_logs"
 
 try:
