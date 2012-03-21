@@ -27,6 +27,7 @@ DIRS = (
     '/srv',
     '/var/lib',
     '/var/www/pub/pulpdist',
+    '/var/www/pub/pulpdist_sync_logs',
     '/var/log/pulpdist',
 )
 
@@ -126,10 +127,12 @@ def install(opts):
     os.system('setfacl -m user:apache:rwx /var/log/pulpdist')
     os.system('setfacl -m user:apache:rwx /var/lib/pulpdist')
     os.system('setfacl -m user:apache:rwx /var/www/pub/pulpdist')
+    os.system('setfacl -m user:apache:rwx /var/www/pub/pulpdist_sync_logs')
     # guarantee apache always has write permissions
     os.system('chmod 3775 /var/log/pulpdist')
     os.system('chmod 3775 /var/lib/pulpdist')
     os.system('chmod 3775 /var/www/pub/pulpdist')
+    os.system('chmod 3775 /var/www/pub/pulpdist_sync_logs')
 
     # Disable existing SSL configuration
     #if os.path.exists('/etc/httpd/conf.d/ssl.conf'):
