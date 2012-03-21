@@ -16,7 +16,6 @@ import sqlalchemy as sqla
 from sqlalchemy.sql import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import sessionmaker, relation, backref
 from sqlalchemy.orm.collections import attribute_mapped_collection
 
@@ -101,7 +100,7 @@ class SiteSettings(Base, FieldsMixin):
     exclude_from_sync = sqla.Column(sqla.PickleType)
     exclude_from_listing = sqla.Column(sqla.PickleType)
 
-    @hybrid_property
+    @property
     def server_prefixes(self):
         mapped = {}
         for k, v in self._raw_server_prefixes.items():
@@ -115,7 +114,7 @@ class SiteSettings(Base, FieldsMixin):
             mapped[k] = ServerPrefix.from_fields(self.site_id, k, v)
         self._raw_server_prefixes = mapped
 
-    @hybrid_property
+    @property
     def source_prefixes(self):
         mapped = {}
         for k, v in self._raw_source_prefixes.items():
