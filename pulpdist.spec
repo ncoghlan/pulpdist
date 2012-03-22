@@ -26,7 +26,6 @@ Requires: python-dateutil
 Requires: m2crypto
 Requires: openssl
 Requires: python-ldap
-Requires: python-sqlalchemy >= 0.6
 Requires: python-sqlalchemy >= 0.5
 Requires: python-argparse
 
