@@ -136,13 +136,13 @@ popd
 %define database_file %{data_dir}/djangoORM.db
 
 %define httpd_static_media /var/www/pub/%{name}
-%define httpd_sync_logs /var/www/pub/%{name}_sync_logs
 
 %define plugin_src src/%{name}/pulp_plugins
 %define plugin_dest /var/lib/pulp/plugins
 %define plugin_type_spec types/%{name}.json
 %define plugin_importer importers/%{name}_importers
 %define plugin_distributor distributors/%{name}_distributors
+%define plugin_sync_logs /var/www/pub/%{name}_sync_logs
 
 %install
 rm -rf %{buildroot}
@@ -164,8 +164,6 @@ cp -R etc/%{name}/* %{buildroot}%{config_dir}
 mkdir -p %{buildroot}%{log_dir}
 # Storage for static media files (e.g. CSS, JS, images)
 mkdir -p %{buildroot}%{httpd_static_media}
-# Storage for in-progress sync logs
-mkdir -p %{buildroot}%{httpd_sync_logs}
 # Apache Configuration
 mkdir -p %{buildroot}/etc/httpd/conf.d/
 cp etc/httpd/conf.d/%{name}.conf %{buildroot}/etc/httpd/conf.d/
@@ -180,6 +178,8 @@ mkdir -p %{buildroot}%{plugin_dest}/%{plugin_importer}
 cp -R %{plugin_src}/%{plugin_importer}/* %{buildroot}%{plugin_dest}/%{plugin_importer}
 mkdir -p %{buildroot}%{plugin_dest}/%{plugin_distributor}
 cp -R %{plugin_src}/%{plugin_distributor}/* %{buildroot}%{plugin_dest}/%{plugin_distributor}
+# Storage for in-progress sync logs
+mkdir -p %{buildroot}%{plugin_sync_logs}
 
 %clean
 rm -rf %{buildroot}
@@ -213,10 +213,6 @@ pushd src
 popd
 chmod -R u=rwX,g=rX,o=rX %{httpd_static_media}
 chown -R apache:apache %{httpd_static_media}
-
-# Sync logs
-chmod -R u=rwX,g=rX,o=rX %{httpd_sync_logs}
-chown -R apache:apache %{httpd_sync_logs}
 
 # SELinux contexts for Apache runtime access
 if selinuxenabled ; then
@@ -259,7 +255,6 @@ fi
 %attr(750, apache, apache) /srv/%{name}/django.wsgi
 %ghost %{database_file}
 %{httpd_static_media}
-%{httpd_sync_logs}
 /var/log/%{name}/
 %config(noreplace) /etc/%{name}/site.conf
 
@@ -269,6 +264,7 @@ fi
 %{plugin_dest}/%{plugin_type_spec}
 %{plugin_dest}/%{plugin_importer}/
 %{plugin_dest}/%{plugin_distributor}/
+%{plugin_sync_logs}
 
 # -- files - meta-packages ----------------------------------------------------------
 %files -n %{django_meta}
@@ -280,6 +276,7 @@ fi
 %changelog
 * Thu Mar 22 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.7-3
 - Fix some Python 2.6 incompatibilities that crept into the source
+- Move sync log directory ownership to the plugins RPM (where it belongs)
 
 * Thu Mar 22 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.7-2
 - Correctly identify the sync log directory as part of the httpd deployment
