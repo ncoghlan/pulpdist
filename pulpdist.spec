@@ -6,7 +6,7 @@
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
 Version:        0.0.7
-Release:        2%{?dist}
+Release:        3%{?dist}
 Group:          Development/Tools
 License:        GPLv2
 Source0:        %{name}-%{version}.tar.gz
@@ -278,6 +278,9 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* Thu Mar 22 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.7-3
+- Fix some Python 2.6 incompatibilities that crept into the source
+
 * Thu Mar 22 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.7-2
 - Correctly identify the sync log directory as part of the httpd deployment
 

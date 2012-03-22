@@ -29,20 +29,20 @@ def link_names():
     for target in LINKS:
         link_target = os.path.join(LOCAL_PREFIX, target)
         link_origin = os.path.join(PULP_INSTALL_PREFIX, target)
-        print ("{} -> {}".format(link_origin, link_target))
+        print ("{0} -> {1}".format(link_origin, link_target))
         os.symlink(link_target, link_origin)
 
 def unlink_names():
     for target in LINKS:
         link_origin = os.path.join(PULP_INSTALL_PREFIX, target)
         if not os.path.lexists(link_origin):
-            print("{} does not exist, skipping".format(link_origin))
+            print("{0} does not exist, skipping".format(link_origin))
             continue
         if not os.path.islink(link_origin):
-            print("{} is not a symlink, skipping".format(link_origin))
+            print("{0} is not a symlink, skipping".format(link_origin))
             continue
         link_target = os.readlink(link_origin)
-        print ("Unlinking {} from {}".format(link_origin, link_target))
+        print ("Unlinking {0} from {1}".format(link_origin, link_target))
         os.unlink(link_origin)
 
 if __name__ == "__main__":

@@ -86,7 +86,7 @@ _REPO_FILTERS = (
 
 def _add_repo_filters(cmd_parser):
     for flag, metavar, target, description in _REPO_FILTERS:
-        help_msg = ("Apply operation to {} "
+        help_msg = ("Apply operation to {0} "
                     "(may be passed more than once)").format(description)
         cmd_parser.add_argument(flag, metavar=metavar, dest=target, default=[],
                                 action='append', help=help_msg)

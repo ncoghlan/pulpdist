@@ -50,7 +50,7 @@ class MirrorConverter(object):
         mirror = self.mirror
         sync_type = mirror.tree.sync_type
         tree_type = sync_type + u"_tree"
-        config_builder = getattr(self, u"_build_{}_config".format(sync_type))
+        config_builder = getattr(self, u"_build_{0}_config".format(sync_type))
         self.config[u"importer_type_id"] = tree_type
         self.config[u"importer_config"] = config_builder()
 
