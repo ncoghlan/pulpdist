@@ -186,10 +186,15 @@ class BaseSyncCommand(object):
             msg = fmt
         self._run_log_file.write(msg.rstrip() + '\n')
 
-    def _finish_run_log(self):
+    @contextlib.contextmanager
+    def _flush_run_log(self):
         if self._run_log_file is None:
-            return
-        self._run_log_file.flush()
+            yield
+        else:
+            try:
+                yield
+            finally:
+                self._run_log_file.flush()
 
     def _run_shell_command(self, cmd):
         shell_output = []
@@ -229,8 +234,7 @@ class BaseSyncCommand(object):
         msg = "AMQP support not yet implemented ({0})"
         self._update_run_log(msg, details)
 
-    def run_sync(self):
-        """Execute the full synchronisation task"""
+    def _run_sync_inner(self):
         start_time = datetime.utcnow()
         if not self.enabled:
             self._update_run_log("Ignoring sync request for {0!r} at {1}", self.tree_name, start_time)
@@ -262,8 +266,16 @@ class BaseSyncCommand(object):
         msg = "Completed sync of {0!r} at {1} (Result: {2}, Duration: {3})"
         self._update_run_log(msg, self.tree_name,
                              finish_time, result, finish_time - start_time)
-        self._finish_run_log()
         return result, start_time, finish_time, sync_stats
+
+    def run_sync(self):
+        """Execute the full synchronisation task
+
+           Ensures the sync log is flushed before returing
+        """
+        with self._flush_run_log():
+            return self._run_sync_inner()
+
 
     def _build_common_rsync_params(self):
         """Construct rsync parameters common to all operations"""
