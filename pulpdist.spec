@@ -6,7 +6,7 @@
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
 Version:        0.0.7
-Release:        1%{?dist}
+Release:        2%{?dist}
 Group:          Development/Tools
 License:        GPLv2
 Source0:        %{name}-%{version}.tar.gz
@@ -259,6 +259,7 @@ fi
 %attr(750, apache, apache) /srv/%{name}/django.wsgi
 %ghost %{database_file}
 %{httpd_static_media}
+%{httpd_sync_logs}
 /var/log/%{name}/
 %config(noreplace) /etc/%{name}/site.conf
 
@@ -277,6 +278,9 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* Thu Mar 22 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.7-2
+- Correctly identify the sync log directory as part of the httpd deployment
+
 * Thu Mar 22 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.7-1
 - BZ#795212: the manage_repos client now uses a new site configuration format
 - site configuration data is saved to the server as the "pulpdist-meta" repo
