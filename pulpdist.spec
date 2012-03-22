@@ -277,7 +277,7 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
-* ??? Mar ?? 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.7-1
+* Thu Mar 22 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.7-1
 - BZ#795212: the manage_repos client now uses a new site configuration format
 - site configuration data is saved to the server as the "pulpdist-meta" repo
 - if no configuration file is provided, the manage_repos init and validate
