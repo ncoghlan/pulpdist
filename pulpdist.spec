@@ -89,6 +89,9 @@ Requires: pulp >= 0.0.262
 Requires: rsync
 Requires: hardlink
 
+# Requires: python-parse
+# Not yet packaged, use "pip install parse" instead
+
 %description -n %{plugin_package}
 The Pulp plugins to be installed on each Pulp server in a PulpDist mirroring network
 
