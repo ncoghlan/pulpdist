@@ -186,6 +186,7 @@ class PulpRepository(Base, FieldsMixin):
     __table_args__ = (
         sqla.ForeignKeyConstraint("mirror_id site_id".split(),
                                  (LocalMirror.mirror_id, LocalMirror.site_id)),
+        {}
     )
     _FIELDS = """repo_id mirror_id site_id tree_id source_id
                  server_id sync_hours config""".split()
