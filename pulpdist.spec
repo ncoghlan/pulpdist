@@ -5,8 +5,8 @@
 # -- headers - pulpdist Python package  --------------------------------------
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
-Version:        0.0.7
-Release:        3%{?dist}
+Version:        0.0.8
+Release:        1%{?dist}
 Group:          Development/Tools
 License:        GPLv2
 Source0:        %{name}-%{version}.tar.gz
@@ -274,6 +274,11 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* Mon Mar 26 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.8-1
+- BZ#806740: Added "latest_link" attribute to remote tree configurations to
+  correctly handle cases where the listing_prefix doesn't match the desired
+  name for the link (the link name is now *never* derived from the prefix)
+
 * Thu Mar 22 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.7-3
 - Fix some Python 2.6 incompatibilities that crept into the source
 - Move sync log directory ownership to the plugins RPM (where it belongs)

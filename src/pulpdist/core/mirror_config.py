@@ -124,8 +124,8 @@ class MirrorConverter(object):
         return config
 
     def _build_snapshot_config(self):
-        listing_prefix = self.mirror.tree.listing_prefix
         config = self._build_versioned_config()
-        if listing_prefix is not None:
-            config[u"latest_link_name"] = u"latest-" + listing_prefix
+        latest_link = self.mirror.tree.latest_link
+        if latest_link is not None:
+            config[u"latest_link_name"] = latest_link
         return config

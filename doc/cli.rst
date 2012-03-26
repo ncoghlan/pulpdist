@@ -277,9 +277,13 @@ either ``versioned`` or ``snapshot``:
 * ``listing_filters``: rsync filters applied when determining which directories
   to synchronise (optional)
 
-When the ``listing_prefix`` setting is used for a ``snapshot`` tree, a
-symbolic link to the latest version of the tree will automatically be
-generated as ``latest-<listing_prefix>``.
+The following additional settings is required if the sync algorithm is set to
+``snapshot``:
+
+* ``latest_link``: the filename used for a symlink that refers to the most
+  recently synchronised snapshot directory. If omitted, indicates that no
+  such symlink should be created.
+
 
 Remote Source Definitions
 ^^^^^^^^^^^^^^^^^^^^^^^^^

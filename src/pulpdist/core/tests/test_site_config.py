@@ -233,6 +233,34 @@ class TestSiteConfig(unittest.TestCase):
         self.assertSpecValid(site)
         self.assertInvalid(site)
 
+    # BZ#806740, handle latest link naming variants
+    def test_latest_link(self):
+        config = json.loads(TEST_CONFIG)
+        expected = config["REMOTE_TREES"][2]["latest_link"]
+        site = site_config.SiteConfig(config)
+        repos = site.get_repo_configs(mirrors=["snapshot_sync"])
+        self.assertEqual(len(repos), 1)
+        importer = repos[0]["importer_config"]
+        self.assertEqual(importer["latest_link_name"], expected)
+
+    def test_no_latest_link(self):
+        config = json.loads(TEST_CONFIG)
+        del config["REMOTE_TREES"][2]["latest_link"]
+        site = site_config.SiteConfig(config)
+        repos = site.get_repo_configs(mirrors=["snapshot_sync"])
+        self.assertEqual(len(repos), 1)
+        importer = repos[0]["importer_config"]
+        self.assertNotIn("latest_link_name", importer)
+
+    def test_omit_latest_link(self):
+        config = json.loads(TEST_CONFIG)
+        config["REMOTE_TREES"][2]["latest_link"] = None
+        site = site_config.SiteConfig(config)
+        repos = site.get_repo_configs(mirrors=["snapshot_sync"])
+        self.assertEqual(len(repos), 1)
+        importer = repos[0]["importer_config"]
+        self.assertNotIn("latest_link_name", importer)
+
 
 class TestQueryMirrors(unittest.TestCase):
 
@@ -310,6 +338,7 @@ class TestConversion(unittest.TestCase):
         for repo in repo_configs:
             repo_id = repo["repo_id"]
             self.assertEqual(repo, expected[repo_id])
+
 
 class TestDataTransfer(test_sync_trees.BaseTestCase):
 

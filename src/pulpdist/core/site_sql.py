@@ -71,8 +71,9 @@ class RemoteSource(Base, FieldsMixin):
 class RemoteTree(Base, FieldsMixin):
     __tablename__ = "remote_trees"
     _FIELDS = """tree_id source_id name description tree_path sync_hours
-                 sync_type exclude_from_sync sync_filters listing_pattern
-                 listing_prefix exclude_from_listing listing_filters""".split()
+                 sync_type exclude_from_sync sync_filters
+                 listing_pattern listing_prefix latest_link
+                 exclude_from_listing listing_filters""".split()
     tree_id = sqla.Column(sqla.String, primary_key=True)
     source_id = sqla.Column(sqla.String, sqla.ForeignKey("remote_sources.source_id"))
     source = _linked_from(RemoteSource, "trees", "tree_id")
@@ -85,6 +86,7 @@ class RemoteTree(Base, FieldsMixin):
     sync_filters = sqla.Column(sqla.PickleType)
     listing_pattern = sqla.Column(sqla.String)
     listing_prefix = sqla.Column(sqla.String)
+    latest_link = sqla.Column(sqla.String)
     exclude_from_listing = sqla.Column(sqla.PickleType)
     listing_filters = sqla.Column(sqla.PickleType)
 

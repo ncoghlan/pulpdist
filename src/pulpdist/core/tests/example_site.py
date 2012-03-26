@@ -136,7 +136,8 @@ TEST_CONFIG = """\
       "sync_type": "snapshot",
       "sync_hours": 1,
       "source_id": "sync_demo",
-      "listing_prefix": "relev",
+      "listing_prefix": "re*ev",
+      "latest_link": "latest-relevant",
       "exclude_from_listing": ["relevant-but*"],
       "exclude_from_sync": ["*skip*"],
       "sync_filters": ["exclude_irrelevant/", "exclude_dull/"]
@@ -302,7 +303,7 @@ EXPECTED_REPO_CONFIGS = """\
       "listing_filters": [],
       "remote_path": "/test_data/snapshot/",
       "exclude_from_listing": ["relevant-but*"],
-      "latest_link_name": "latest-relev",
+      "latest_link_name": "latest-relevant",
       "old_remote_daemon": false,
       "tree_name": "snapshot_sync__default",
       "exclude_from_sync": [
@@ -310,7 +311,7 @@ EXPECTED_REPO_CONFIGS = """\
         "*dull*"
       ],
       "remote_server": "localhost",
-      "listing_pattern": "relev*",
+      "listing_pattern": "re*ev*",
       "enabled": false,
       "delete_old_dirs": false,
       "local_path": "/var/www/pub/sync_demo/sync_demo_trees/snapshot/"

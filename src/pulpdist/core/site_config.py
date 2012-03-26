@@ -68,7 +68,8 @@ class RemoteTreeConfig(validation.ValidatedConfig):
         u"exclude_from_sync": validation.check_rsync_filter_sequence(),
         u"sync_filters": validation.check_rsync_filter_sequence(),
         u"listing_pattern": validation.check_rsync_filter(allow_none=True),
-        u"listing_prefix": validation.check_path(allow_none=True),
+        u"listing_prefix": validation.check_rsync_filter(allow_none=True),
+        u"latest_link": validation.check_path(allow_none=True),
         u"exclude_from_listing": validation.check_rsync_filter_sequence(),
         u"listing_filters": validation.check_rsync_filter_sequence(),
     }
@@ -79,6 +80,7 @@ class RemoteTreeConfig(validation.ValidatedConfig):
         u"sync_filters": [],
         u"listing_pattern": None,
         u"listing_prefix": None,
+        u"latest_link": None,
         u"exclude_from_listing": [],
         u"listing_filters": [],
     }
