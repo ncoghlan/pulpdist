@@ -273,13 +273,13 @@ either ``versioned`` or ``snapshot``:
   as ``listing_prefix + listing_suffix`` (where the latter comes from the
   remote source settings).
 * ``exclude_from_listing``: rsync wildcard patterns to ignore when determining
-  which version directories to synchronise (optional)
-* ``listing_filters``: rsync filters applied when determining which version
-  directories to synchronise (optional)
+  which directories to synchronise (optional)
+* ``listing_filters``: rsync filters applied when determining which directories
+  to synchronise (optional)
 
-When the ``version_prefix`` setting is used for a ``snapshot`` tree, a
+When the ``listing_prefix`` setting is used for a ``snapshot`` tree, a
 symbolic link to the latest version of the tree will automatically be
-generated as ``latest-<version_prefix>``.
+generated as ``latest-<listing_prefix>``.
 
 Remote Source Definitions
 ^^^^^^^^^^^^^^^^^^^^^^^^^
