@@ -5,7 +5,7 @@
 # -- headers - pulpdist Python package  --------------------------------------
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
-Version:        0.0.8
+Version:        0.0.9
 Release:        1%{?dist}
 Group:          Development/Tools
 License:        GPLv2
@@ -274,6 +274,11 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* Tue Mar 27 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.9-1
+- BZ#802627: For an old remote daemon, the "--old-d" option is still needed for
+  directory listing operations. It should only be omitted for the actual sync
+  operations.
+
 * Mon Mar 26 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.8-1
 - BZ#806740: Added "latest_link" attribute to remote tree configurations to
   correctly handle cases where the listing_prefix doesn't match the desired
