@@ -277,7 +277,8 @@ fi
 * Tue Mar 27 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.9-1
 - BZ#802627: For an old remote daemon, the "--old-d" option is still needed for
   directory listing operations. It should only be omitted for the actual sync
-  operations.
+  operations
+- Omit trailing slash from directory aliases in pulpdist-site Apache config
 
 * Mon Mar 26 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.8-1
 - BZ#806740: Added "latest_link" attribute to remote tree configurations to
