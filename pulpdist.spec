@@ -5,8 +5,8 @@
 # -- headers - pulpdist Python package  --------------------------------------
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
-Version:        0.0.9
-Release:        2%{?dist}
+Version:        0.0.10
+Release:        1%{?dist}
 Group:          Development/Tools
 License:        GPLv2
 Source0:        %{name}-%{version}.tar.gz
@@ -274,6 +274,10 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* Tue Mar 27 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.10-1
+- "exclude_from_listing" entries that conflict with the listing_pattern are
+  now correctly ignored when creating a repo config from a mirror config
+
 * Tue Mar 27 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.9-2
 - Actually include the code changes intended for 0.0.9
 - Omit trailing slash from directory aliases in pulpdist-site Apache config

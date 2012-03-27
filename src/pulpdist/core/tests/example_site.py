@@ -62,7 +62,8 @@ TEST_CONFIG = """\
       "source_prefixes": {
         "sync_demo": "sync_demo_trees"
       },
-      "exclude_from_sync": ["*dull*"]
+      "exclude_from_sync": ["*dull*"],
+      "exclude_from_listing": ["*justfortesting*"]
     },
     {
       "site_id": "other",
@@ -229,8 +230,8 @@ EXPECTED_REPO_CONFIGS = """\
       "old_remote_daemon": false,
       "tree_name": "simple_sync__default",
       "exclude_from_sync": [
-        "*skip*",
-        "*dull*"
+        "*dull*",
+        "*skip*"
       ],
       "enabled": false,
       "remote_path": "/test_data/simple/"
@@ -262,12 +263,15 @@ EXPECTED_REPO_CONFIGS = """\
       "dry_run_only": false,
       "listing_filters": [],
       "remote_path": "/test_data/versioned/",
-      "exclude_from_listing": ["relevant-but*"],
       "old_remote_daemon": false,
       "tree_name": "versioned_sync__other",
       "exclude_from_sync": [
-        "*skip*",
-        "*dull*"
+        "*dull*",
+        "*skip*"
+      ],
+      "exclude_from_listing": [
+        "*justfortesting*",
+        "relevant-but*"
       ],
       "remote_server": "localhost",
       "listing_pattern": "relevant*",
@@ -302,13 +306,16 @@ EXPECTED_REPO_CONFIGS = """\
       "dry_run_only": false,
       "listing_filters": [],
       "remote_path": "/test_data/snapshot/",
-      "exclude_from_listing": ["relevant-but*"],
       "latest_link_name": "latest-relevant",
       "old_remote_daemon": false,
       "tree_name": "snapshot_sync__default",
       "exclude_from_sync": [
-        "*skip*",
-        "*dull*"
+        "*dull*",
+        "*skip*"
+      ],
+      "exclude_from_listing": [
+        "*justfortesting*",
+        "relevant-but*"
       ],
       "remote_server": "localhost",
       "listing_pattern": "re*ev*",

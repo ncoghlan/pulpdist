@@ -70,7 +70,7 @@ class MirrorConverter(object):
         }
         sync_filters = mirror.sync_filters + tree.sync_filters
         config[u"sync_filters"] = sync_filters
-        exclude_from_sync = list(set(mirror.exclude_from_sync
+        exclude_from_sync = sorted(set(mirror.exclude_from_sync
                                      + tree.exclude_from_sync
                                      + site.exclude_from_sync
                                      + default_site.exclude_from_sync))
@@ -111,13 +111,14 @@ class MirrorConverter(object):
         if listing_pattern is None:
             listing_pattern = tree.listing_prefix + source.listing_suffix
         config[u"listing_pattern"] = listing_pattern
-        def _not_this(other_pattern):
-            return fnmatch(other_pattern, listing_pattern)
-        exclude_from_listing = list(set(mirror.exclude_from_listing
+        def _matches_this(other_pattern):
+            return fnmatch(listing_pattern, other_pattern)
+        exclude_from_listing = sorted(set(mirror.exclude_from_listing
                                         + tree.exclude_from_listing
                                         + site.exclude_from_listing
                                         + default_site.exclude_from_listing))
-        exclude_from_listing = [v for v in exclude_from_listing if _not_this(v)]
+        exclude_from_listing = [v for v in exclude_from_listing
+                                                   if not _matches_this(v)]
         config[u"exclude_from_listing"] = exclude_from_listing
         listing_filters = mirror.listing_filters + tree.listing_filters
         config[u"listing_filters"] = listing_filters
