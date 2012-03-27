@@ -396,6 +396,10 @@ class SyncVersionedTree(BaseSyncCommand):
     def _build_remote_ls_rsync_params(self, remote_ls_path):
         """Construct rsync parameters to get a remote directory listing"""
         params = ["-nl"]
+        if self.old_remote_daemon:
+            # The common params handles adding --no-implied-dirs, but the
+            # directory listing operation also needs this option
+            params.append("--old-d")
         params.extend(self._build_common_rsync_params())
         # Filter out unwanted directories
         for subdir_filter in self.listing_filters:
