@@ -6,7 +6,7 @@
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
 Version:        0.0.9
-Release:        1%{?dist}
+Release:        2%{?dist}
 Group:          Development/Tools
 License:        GPLv2
 Source0:        %{name}-%{version}.tar.gz
@@ -274,11 +274,14 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* Tue Mar 27 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.9-2
+- Actually include the code changes intended for 0.0.9
+- Omit trailing slash from directory aliases in pulpdist-site Apache config
+
 * Tue Mar 27 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.9-1
 - BZ#802627: For an old remote daemon, the "--old-d" option is still needed for
   directory listing operations. It should only be omitted for the actual sync
   operations
-- Omit trailing slash from directory aliases in pulpdist-site Apache config
 
 * Mon Mar 26 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.8-1
 - BZ#806740: Added "latest_link" attribute to remote tree configurations to
