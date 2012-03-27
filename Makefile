@@ -25,6 +25,8 @@ pushtag:
 rpm:
 	tito build --rpm $(TITO_ARGS)
 
+rpmfull: rpmtag pushtag rpm
+
 pulp-auth:
 	pulp-admin --host $(PULP_HOST) auth login --username=$(PULP_USER) --password=$(PULP_PASS)
 
