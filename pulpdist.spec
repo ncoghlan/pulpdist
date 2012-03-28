@@ -274,9 +274,11 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
-* Tue Mar 27 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.10-1
+* Wed Mar 28 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.10-1
 - "exclude_from_listing" entries that conflict with the listing_pattern are
   now correctly ignored when creating a repo config from a mirror config
+- use line-buffered IO when sync log output is requested by passing in a
+  filesystem path
 
 * Tue Mar 27 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.9-2
 - Actually include the code changes intended for 0.0.9

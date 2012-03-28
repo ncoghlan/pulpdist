@@ -161,9 +161,11 @@ class BaseSyncCommand(object):
         if log_dest is None:
             self._run_log_file = None
         elif isinstance(log_dest, basestring):
-            self._run_log_file = open(log_dest, 'w')
+            # Use line buffered output by default
+            self._run_log_file = open(log_dest, 'w', 1)
         else:
             self._run_log_file = log_dest
+        self._update_run_log("Log initialised: %s %s")
 
     @contextlib.contextmanager
     def _indent_run_log(self, level=None):
