@@ -97,7 +97,7 @@ _INFO_COMMANDS = (
     ("info", "ShowRepoDetails", "Display repository details", ()),
     ("status", "ShowRepoStatus", "Display repository sync status", ()),
     ("history", "ShowSyncHistory", "Display repository sync history", [_add_entries, _add_showlog]),
-    ("log", "ShowSyncLog", "Display most recent sync log", [_add_success]),
+    ("log", "ShowSyncLog", "Display most recent sync log (opens web browser)", [_add_success]),
     ("stats", "ShowSyncStats", "Display most recent sync statistics", [_add_success]),
 )
 

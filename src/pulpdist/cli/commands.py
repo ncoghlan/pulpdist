@@ -15,6 +15,7 @@
 import argparse
 import json
 import socket
+import webbrowser
 
 from ..core.pulpapi import PulpServerClient, ServerRequestError
 from ..core.repo_config import RepoConfig
@@ -299,16 +300,15 @@ class LatestSyncCommand(SyncHistoryCommand):
 class ShowSyncLog(LatestSyncCommand):
     """Command that displays the most recent sync log of each repository"""
     def process_repo(self, repo):
-        display_id = repo.display_id
         sync_job = self.get_latest_sync(repo)
         if sync_job is None:
             return
-        details = sync_job["details"]
-        if details is None:
-            print_msg("No sync details for {0}", display_id)
-            return
-        print_header("Most recent sync log for {0}", display_id)
-        print_msg(details["sync_log"])
+        # See BZ#799203 for more info on why this works this way
+        host = self.args.pulp_host
+        print_header("Most recent sync log for {0}", repo.display_id)
+        log_url = "https://{0}/sync_logs/{1}.log".format(host, repo.id)
+        print_msg("Opening '{0}' in browser".format(log_url))
+        webbrowser.open_new_tab(log_url)
 
 
 class ShowSyncStats(LatestSyncCommand):

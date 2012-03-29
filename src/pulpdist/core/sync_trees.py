@@ -25,7 +25,7 @@ import collections
 import re
 import contextlib
 
-from . import sync_config
+from . import sync_config, util
 
 _BASE_FETCH_DIR_PARAMS = """
     -rlptDvH --delete-after --ignore-errors --progress --stats --human-readable
@@ -165,7 +165,9 @@ class BaseSyncCommand(object):
             self._run_log_file = open(log_dest, 'w', 1)
         else:
             self._run_log_file = log_dest
-        self._update_run_log("Log initialised: %s %s")
+        self._update_run_log("Log initialised: {0} {1}",
+                             type(self).__name__,
+                             util.__version__)
 
     @contextlib.contextmanager
     def _indent_run_log(self, level=None):

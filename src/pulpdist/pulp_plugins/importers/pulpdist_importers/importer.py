@@ -22,7 +22,7 @@ import os, os.path
 SYNC_LOG_RELPATH = "var/www/pub/pulpdist_sync_logs"
 
 try:
-    from pulpdist.core import sync_trees, validation
+    from pulpdist.core import sync_trees, validation, util
     SYNC_LOG_DIR = "/" + SYNC_LOG_RELPATH
 except ImportError:
     # Hack to allow running from a source checkout
@@ -94,11 +94,9 @@ class _BaseImporter(Importer):
                 "exception: {0}\n"
                 "error_message: {1}\n"
                 "traceback:\n{2}\n"
-                "log_details:\n{3}\n"
             )
             raise RuntimeError(msg.format(et, ev,
-                               traceback.format_tb(tb),
-                               self._read_sync_log(sync_log)))
+                               traceback.format_tb(tb)))
         result = sync_info[0]
         summary = {
             "result": result,
@@ -107,7 +105,8 @@ class _BaseImporter(Importer):
             "stats": sync_info[3]._asdict(),
         }
         details = {
-            "sync_log": self._read_sync_log(sync_log),
+            "plugin_type": self.PULP_ID,
+            "plugin_version": util.__version__,
         }
         report = sync_conduit.build_report(summary, details)
         return report

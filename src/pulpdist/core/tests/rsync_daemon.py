@@ -58,7 +58,7 @@ class RsyncDaemon(object):
     def _wait_for_pid_file(self, pid_path):
         # We give the rsync server a couple of seconds to start
         start = time.time()
-        max_delay = 2
+        max_delay = 5
         while time.time() - start < max_delay:
             try:
                 f = open(pid_path)

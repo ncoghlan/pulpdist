@@ -19,7 +19,7 @@ from tempfile import NamedTemporaryFile
 from cStringIO import StringIO
 from datetime import datetime, timedelta
 
-from .. import sync_trees
+from .. import sync_trees, util
 from . example_trees import TreeTestCase
 
 _path = os.path.join
@@ -148,10 +148,15 @@ class TestSyncTree(BaseTestCase):
         self.check_sync_details(task.run_sync(), "SYNC_COMPLETED", stats)
         self.check_tree_layout(local_path)
 
+    def check_version_logged(self, tree_type, log_data):
+        version_info = "{0} {1}".format(tree_type, util.__version__)
+        self.assertIn(version_info, log_data)
+
     def test_path_logging(self):
         with NamedTemporaryFile() as sync_log:
             self.log_simple_sync(sync_log.name)
             log_data = sync_log.read()
+        self.check_version_logged("SyncTree", log_data)
         self.check_log_output(log_data,
                               "SYNC_COMPLETED",
                               self.EXPECTED_TREE_STATS)
@@ -159,7 +164,9 @@ class TestSyncTree(BaseTestCase):
     def test_stream_logging(self):
         stream = StringIO()
         self.log_simple_sync(stream)
-        self.check_log_output(stream.getvalue(),
+        log_data = stream.getvalue()
+        self.check_version_logged("SyncTree", log_data)
+        self.check_log_output(log_data,
                               "SYNC_COMPLETED",
                               self.EXPECTED_TREE_STATS)
 

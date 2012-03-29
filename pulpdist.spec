@@ -279,6 +279,14 @@ fi
   now correctly ignored when creating a repo config from a mirror config
 - use line-buffered IO when sync log output is requested by passing in a
   filesystem path
+- BZ#799203 (continued): due to the potential file size (and associated
+  problems with storage in MongoDB and the amount of data included when
+  retrieving sync history from the server), the sync log is now stored solely
+  on the Pulp server filesystem. The repo management CLI had been updated to
+  derive the sync log URL from the Pulp server host name and the repository
+  identifier.
+- BZ#799201: the sync history details now includes plugin_type and
+  plugin_version information
 
 * Tue Mar 27 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.9-2
 - Actually include the code changes intended for 0.0.9

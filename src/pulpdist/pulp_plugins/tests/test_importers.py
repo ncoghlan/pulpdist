@@ -20,10 +20,12 @@ from datetime import datetime, timedelta
 
 from parse import parse as parse_str
 
+from ...core import util
 from ...core.tests import example_trees
 from ...core.tests.pulpapi_util import (PulpTestCase,
                                         BasicAuthMixin,
                                         LocalCertMixin)
+from ...core.tests.compat import unittest
 
 IMPORTERS = [u"simple_tree", u"versioned_tree", u"snapshot_tree",
              u"delta_tree", u"snapshot_delta"]
@@ -223,9 +225,11 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
             self.check_stats(stats, expected_stats)
         # Check details
         details = sync_meta[u"details"]
-        sync_log = details[u"sync_log"]
-        self.assertIsInstance(sync_log, unicode)
-        self.check_log_output(sync_log, expected_result, expected_stats)
+        self.assertEqual(details[u"plugin_type"], imp[u"importer_type_id"])
+        self.assertEqual(details[u"plugin_version"], util.__version__)
+        #BZ#799203 - sync log is no longer saved in the sync history
+        self.assertNotIn(u"sync_log", details)
+        #self.check_log_output(sync_log, expected_result, expected_stats)
 
     def test_simple_tree_sync_partial(self):
         importer_id = u"simple_tree"

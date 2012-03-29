@@ -275,6 +275,7 @@ class TestDisabledSyncHistory(SyncHistoryTestCase):
         self.assertNotIn("{", output.getvalue())
         self.assertNotIn("}", output.getvalue())
 
+    @unittest.skip("Automated test disabled due to BZ#799203")
     def test_sync_history_show_log(self):
         cmd = self.command(commands.ShowSyncHistory, showlog=True)
         output = self.get_cmd_output(cmd)
@@ -282,6 +283,7 @@ class TestDisabledSyncHistory(SyncHistoryTestCase):
         self.check_repo_display(output, expected, "Sync history for")
         self.assertIn("sync_log", output.getvalue())
 
+    @unittest.skip("Automated test disabled due to BZ#799203")
     def test_sync_log(self):
         cmd = self.command(commands.ShowSyncLog)
         output = self.get_cmd_output(cmd)
@@ -289,6 +291,7 @@ class TestDisabledSyncHistory(SyncHistoryTestCase):
         self.check_repo_display(output, expected, "Most recent sync log for")
         self.assertIn("Ignoring sync request", output.getvalue())
 
+    @unittest.skip("Automated test disabled due to BZ#799203")
     def test_sync_log_success(self):
         cmd = self.command(commands.ShowSyncLog, success=True)
         output = self.get_cmd_output(cmd)
@@ -310,6 +313,7 @@ class TestEnabledSyncHistory(SyncHistoryTestCase):
         expected = example_site.ALL_REPOS
         self.check_repo_status(output, expected, "SYNC_FAILED")
 
+    @unittest.skip("Automated test disabled due to BZ#799203")
     def test_sync_log(self):
         cmd = self.command(commands.ShowSyncLog)
         output = self.get_cmd_output(cmd)
