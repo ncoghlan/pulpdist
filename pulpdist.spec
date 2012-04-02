@@ -5,7 +5,7 @@
 # -- headers - pulpdist Python package  --------------------------------------
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
-Version:        0.0.10
+Version:        0.0.11
 Release:        1%{?dist}
 Group:          Development/Tools
 License:        GPLv2
