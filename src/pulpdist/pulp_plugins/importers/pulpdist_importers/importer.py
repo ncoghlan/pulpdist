@@ -13,6 +13,8 @@
 """PulpDist importer plugins"""
 import sys
 import traceback
+import contextlib
+import shutil
 from cStringIO import StringIO
 
 # BZ#799203: As a workaround until the more flexible progress reporting is
@@ -65,29 +67,41 @@ class _BaseImporter(Importer):
         sync_config.validate()
         return True
 
-    def _init_sync_log(self, log_name):
+    @contextlib.contextmanager
+    def _manage_sync_log(self, log_name):
         log_file = log_name + ".log"
         log_path = os.path.join(SYNC_LOG_DIR, log_file)
         # This relies on the use of unique tree names and Pulp serialising
         # sync requests to avoid a race condition...
         if os.path.exists(log_path):
-            backup_file = log_file + ".bak"
-            backup_path = os.path.join(SYNC_LOG_DIR, backup_file)
-            os.rename(log_path, backup_path)
-        return log_path
+            os.rename(log_path, log_path + ".prev")
+        # Helper class for log file management
+        SYNC_COMPLETED = self.SYNC_COMMAND.SYNC_COMPLETED
+        class LogHelper(object):
+            path = log_path
 
-    def _read_sync_log(self, sync_log):
-        with open(sync_log) as f:
-            return f.read()
+            def update_backup(self, result):
+                """Update backup log file if the sync updated the tree"""
+                if result != SYNC_COMPLETED:
+                  return
+                shutil.copy2(log_path, log_path + ".bak")
+
+            def append_msg(self, msg):
+                """Add a new message to end of the log file"""
+                with open(sync_log, 'a') as f:
+                    f.write(msg + "\n")
+                    f.flush()
+        yield LogHelper()
+
 
     def sync_repo(self, repo, sync_conduit, config):
         sync_config = self._build_sync_config(config)
-        sync_log = self._init_sync_log(repo.id)
-        command = self.SYNC_COMMAND(sync_config.config, sync_log)
         try:
             # TODO: Refactor to support progress reporting
             # TODO: Refactor to populate content unit metadata
-            sync_info = command.run_sync()
+            with self._manage_sync_log(repo.id) as sync_log:
+                command = self.SYNC_COMMAND(sync_config.config, sync_log.path)
+                sync_info = command.run_sync()
         except:
             et, ev, tb = sys.exc_info()
             msg = (
@@ -95,9 +109,11 @@ class _BaseImporter(Importer):
                 "error_message: {1}\n"
                 "traceback:\n{2}\n"
             )
-            raise RuntimeError(msg.format(et, ev,
-                               traceback.format_tb(tb)))
+            failure = msg.format(et, ev, traceback.format_tb(tb))
+            sync_log.append_msg(failure)
+            raise RuntimeError(failure)
         result = sync_info[0]
+        sync_log.update_backup(result)
         summary = {
             "result": result,
             "start_time": sync_info[1].isoformat(),

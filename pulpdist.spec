@@ -274,6 +274,11 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* ??? ??? ?? 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.11-1
+- BZ#799203 (continued): 3 sync log files are now preserved: <repo_id>.log
+  (latest sync attempt), <repo_id>.log.prev (previous sync attempt) and
+  <repo_id>.log.bak (latest successful sync attempt).
+
 * Thu Mar 29 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.10-1
 - "exclude_from_listing" entries that conflict with the listing_pattern are
   now correctly ignored when creating a repo config from a mirror config

@@ -30,6 +30,18 @@ from ...core.tests.compat import unittest
 IMPORTERS = [u"simple_tree", u"versioned_tree", u"snapshot_tree",
              u"delta_tree", u"snapshot_delta"]
 
+def _calc_sync_log_dir():
+    SYNC_LOG_RELPATH = "var/www/pub/pulpdist_sync_logs"
+    # We're in src/pulpdist/pulp_plugins/tests/test_importers in Git
+    # so need to go up 4 dirs to find the common path to the log files
+    this_dir = os.path.realpath(os.path.dirname(__file__))
+    base_dir = os.path.abspath(this_dir + "/../../../..")
+    return os.path.abspath(
+               os.path.normpath(
+                   os.path.join(base_dir, SYNC_LOG_RELPATH)))
+
+SYNC_LOG_DIR = _calc_sync_log_dir()
+
 def _naive_utc(dt):
     if dt.utcoffset() is None:
         return dt # already naive
@@ -135,12 +147,25 @@ class TestLocalCertConfiguration(LocalCertMixin, TestConfiguration): pass
 class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
     # Actually test synchronisation
 
+    def _get_sync_log_paths(self):
+        log_path = os.path.join(SYNC_LOG_DIR, self.REPO_ID + ".log")
+        return log_path, log_path + ".prev", log_path + ".bak"
+
+
+    def _remove_logs(self):
+        for log_path in self._get_sync_log_paths():
+            try:
+                os.unlink(log_path)
+            except OSError:
+                continue
+
     def setUp(self):
         super(TestLocalSync, self).setUp()
         self.server = self.local_test_server()
         self.repo = self.local_test_repo()
         # Ensure Pulp server can write to our data dir
         os.chmod(self.local_path, 0o777)
+        self._remove_logs()
 
     def tearDown(self):
         self.server.delete_repo(self.repo[u"id"])
@@ -162,13 +187,14 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
     def _get_sync_history(self):
         return self.server.get_sync_history(self.repo[u"id"])
 
-    def _wait_for_sync(self):
+    def _wait_for_sync(self, previous_sync=None):
         deadline = time.time() + 10
         sync_started = False
         while time.time() < deadline:
             imp = self._get_importer()
-            if imp[u"last_sync"] is not None:
-                break
+            last_sync = imp[u"last_sync"]
+            if last_sync != previous_sync:
+                return last_sync
             if sync_started:
                 self.assertTrue(imp[u"sync_in_progress"])
             else:
@@ -197,7 +223,37 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
             max_delta = timedelta(seconds=max_error_seconds)
             self.assertLessEqual(reference_time - dt, max_delta)
 
-    def check_postsync(self, expected_result, expected_stats):
+    def check_log(self, log_path, expected_result, expected_stats):
+        self.assertExists(log_path)
+        with open(log_path) as sync_log:
+            self.check_log_output(sync_log.read(),
+                                  expected_result,
+                                  expected_stats)
+
+    def check_logs(self, expected_result, expected_stats,
+                         previous_result=None, previous_stats=None):
+        log_path, previous_path, backup_path  = self._get_sync_log_paths()
+        # Check current log
+        self.check_log(log_path, expected_result, expected_stats)
+        # Check previous log is always backed up
+        if previous_result is not None:
+            self.check_log(previous_path, previous_result, previous_stats)
+        else:
+            self.assertNotExists(previous_path)
+        # Check successful log is backed up
+        if "SYNC_COMPLETED" in (expected_result, previous_result):
+            if expected_result == "SYNC_COMPLETED":
+                backup_result = expected_result
+                backup_stats = expected_stats
+            else:
+                backup_result = previous_result
+                backup_stats = previous_stats
+            self.check_log(backup_path, backup_result, backup_stats)
+        else:
+            self.assertNotExists(backup_path)
+
+    def check_postsync(self, expected_result, expected_stats,
+                             previous_result=None, previous_stats=None):
         imp = self._get_importer()
         self.assertFalse(imp[u"sync_in_progress"])
         sync_time = imp[u"last_sync"]
@@ -206,8 +262,8 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         history = self._get_sync_history()
         self.assertGreaterEqual(len(history), 1)
         sync_meta = history[0]
-        # TODO: Report and check sync status properly
-        # print(sync_meta["summary"]["result"])
+        # TODO: Report and check Pulp level sync status properly
+        #       Requires Pulp upgrade to get access to relevant plugin API
         # Check top level sync history
         self.assertEqual(sync_meta[u"result"], u"success")
         self.assertIsNotNone(sync_meta[u"started"])
@@ -227,9 +283,10 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         details = sync_meta[u"details"]
         self.assertEqual(details[u"plugin_type"], imp[u"importer_type_id"])
         self.assertEqual(details[u"plugin_version"], util.__version__)
-        #BZ#799203 - sync log is no longer saved in the sync history
+        # BZ#799203 - sync log is no longer saved in the sync history
         self.assertNotIn(u"sync_log", details)
-        #self.check_log_output(sync_log, expected_result, expected_stats)
+        self.check_logs(expected_result, expected_stats,
+                        previous_result, previous_stats)
 
     def test_simple_tree_sync_partial(self):
         importer_id = u"simple_tree"
@@ -247,7 +304,8 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         self.check_postsync("SYNC_PARTIAL", stats)
         self.check_tree_layout(self.local_path)
 
-    def test_simple_tree_sync(self):
+    def check_simple_tree_sync(self):
+        # Factored out as a helper method so we can use in multiple places
         importer_id = u"simple_tree"
         params = self.CONFIG_TREE_SYNC.copy()
         # Work around for the odd behaviour described under
@@ -257,10 +315,14 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         imp = self._add_importer(importer_id, params)
         self.check_presync(imp, importer_id, params)
         self.assertTrue(self._sync_repo())
-        self._wait_for_sync()
+        last_sync = self._wait_for_sync()
         stats = self.EXPECTED_TREE_STATS
         self.check_postsync("SYNC_COMPLETED", stats)
         self.check_tree_layout(self.local_path)
+        return last_sync, stats
+
+    def test_simple_tree_sync(self):
+        self.check_simple_tree_sync()
 
     def test_versioned_tree_sync(self):
         importer_id = u"versioned_tree"
@@ -284,6 +346,24 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         stats = self.EXPECTED_SNAPSHOT_STATS
         self.check_postsync("SYNC_COMPLETED", stats)
         self.check_snapshot_layout(self.local_path, *details)
+
+    def test_sync_log_backup(self):
+        # First, we repeat test_simple_tree_sync to get a good backup
+        last_sync, previous_stats = self.check_simple_tree_sync()
+        # Then we rerun the sync without making any changes
+        # Timestamp resolution is only 1 second, so we ensure it changes
+        # Once we upgrade to a more recent Pulp version, we'll have the full
+        # async tasking REST API available and this "wait for sync" dance
+        # can be cleaned up significantly
+        time.sleep(1.5) 
+        self.assertTrue(self._sync_repo())
+        self._wait_for_sync(last_sync)
+        stats = self.EXPECTED_TREE_STATS.copy()
+        stats.update(self.EXPECTED_REPEAT_STATS)
+        self.check_postsync("SYNC_UP_TO_DATE", stats,
+                            "SYNC_COMPLETED", previous_stats)
+        self.check_tree_layout(self.local_path)
+
 
 class TestBasicAuthLocalSync(BasicAuthMixin, TestLocalSync): pass
 class TestLocalCertLocalSync(LocalCertMixin, TestLocalSync): pass
