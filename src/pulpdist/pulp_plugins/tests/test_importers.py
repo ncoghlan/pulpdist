@@ -364,6 +364,25 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
                             "SYNC_COMPLETED", previous_stats)
         self.check_tree_layout(self.local_path)
 
+    def test_importer_update(self):
+        last_sync, previous_stats = self.check_simple_tree_sync()
+        # As with the backup log test, currently need to force a delay to
+        # ensure the timestamp changes between runs :(
+        time.sleep(1.5)
+        # Tweak the settings to write to a new subdirectory
+        importer_id = u"simple_tree"
+        params = self.CONFIG_TREE_SYNC.copy()
+        local_path = os.path.join(self.local_path, "different_dir/")
+        self.local_path = self.params["local_path"] = local_path
+        imp = self._add_importer(importer_id, params)
+        self.check_presync(imp, importer_id, params)
+        self.assertTrue(self._sync_repo())
+        last_sync = self._wait_for_sync()
+        stats = self.EXPECTED_TREE_STATS
+        self.check_postsync("SYNC_COMPLETED", stats,
+                            "SYNC_COMPLETED", previous_stats)
+        self.check_tree_layout(self.local_path)
+
 
 class TestBasicAuthLocalSync(BasicAuthMixin, TestLocalSync): pass
 class TestLocalCertLocalSync(LocalCertMixin, TestLocalSync): pass
