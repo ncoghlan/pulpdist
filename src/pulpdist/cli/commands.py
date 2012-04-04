@@ -243,32 +243,44 @@ class SyncHistoryCommand(PulpCommand):
 class ShowRepoStatus(SyncHistoryCommand):
     """Command that displays the sync status of each repository"""
 
+    def print_sync(self, title, sync_info):
+        if sync_info is None:
+            print_msg("{0}: {1}", title, "Never")
+        else:
+            summary = sync_info["summary"]
+            if summary is None:
+                result = "PLUGIN_ERROR"
+            else:
+                result = summary["result"]
+            start = sync_info["started"]
+            finish = summary["finish_time"]
+            print_msg("{0}: {1} ({2} -> {3})", title, result, start, finish)
+
     def process_repos(self, repos):
-        field_format = "{0:30}{1:30}{2}"
-        headings = field_format.format("Last Sync", "Last Attempt", "Last Result")
+        print_msg("Sync status for repositories on {0!r}", self.server.host)
         for repo_id, display_id, repo in repos:
+            print_header("Sync status for {0}", display_id)
             history = repo["sync_history"]
             if history is None:
-                repo["sync_summary"] = "Failed to retrieve sync history"
+                print_msg("  Failed to retrieve sync history")
                 continue
-            last_attempt = repo["last_attempt"]
-            if last_attempt is None:
-                repo["sync_summary"] = "Never synchronised"
-                continue
-            attempt_summary = last_attempt["summary"]
-            if attempt_summary is None:
-                attempt_result = "PLUGIN_ERROR"
-            else:
-                attempt_result = attempt_summary["result"]
-            attempt_time = last_attempt["started"]
-            last_success = repo["last_success"]
-            if last_success is None:
-                success_time = "Never"
-            else:
-                success_time = last_success["started"]
-            repo["sync_summary"] = field_format.format(success_time, attempt_time, attempt_result)
-        print_msg("Sync status for repositories on {0!r}", self.server.host)
-        print_repo_table("{sync_summary}", repos, headings)
+            self.print_sync("Last Attempted", repo["last_attempt"])
+            self.print_sync("Last Successful", repo["last_success"])
+            with catch_server_error("Failed to retrieve importer for {0}", display_id):
+                importer = self.server.get_importer(repo_id)
+                if importer is None:
+                    sync_status = "  No importer configured for repo"
+                else:
+                    config = importer["config"]
+                    if config.get("enabled", False):
+                        sync_status = "Enabled"
+                    else:
+                        sync_status = "Disabled"
+                    if config.get("dry_run_only", False):
+                        sync_status += " (Dry Run Only)"
+                    if importer["sync_in_progress"]:
+                        sync_status += " (In Progress)"
+                print_msg("Current Status: {0}", sync_status)
 
 
 class ShowSyncHistory(SyncHistoryCommand):

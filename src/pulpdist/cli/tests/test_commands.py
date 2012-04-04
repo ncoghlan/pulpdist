@@ -177,17 +177,34 @@ class SyncHistoryTestCase(InitialisedTestCase):
         self.assertEqual(actual, expected)
 
     def check_repo_status(self, output, expected, status):
+        # The for/break approach to single line access is forward compatible
+        # with Py3k, whereas direct invocation of .next() on the iterator
+        # is not.
         lines = iter(output)
         for line in lines:
             self.check_line_start(line, "Sync status for")
             break
-        for line in lines:
-            self.check_line_start(line, "Repo ID")
-            break
         seen = []
-        for line, repo_id in zip(lines, expected):
-            self.check_line_start(line, DISPLAY_IDS[repo_id])
-            self.assertIn(status, line)
+        for repo_id in expected:
+            for line in lines:
+                self.check_line_start(line, "====")
+                break
+            for line in lines:
+                self.assertIn(DISPLAY_IDS[repo_id], line)
+                break
+            for line in lines:
+                self.check_line_start(line, "====")
+                break
+            for line in lines:
+                expected_line = "Last Attempted: {0}".format(status)
+                self.check_line_start(line, expected_line)
+                break
+            for line in lines:
+                self.check_line_start(line, "Last Successful: ")
+                break
+            for line in lines:
+                self.check_line_start(line, "Current Status: ")
+                break
             seen.append(repo_id)
         self.assertEqual(seen, expected)
 
@@ -209,7 +226,7 @@ class TestNoSyncHistory(SyncHistoryTestCase):
         cmd = self.command(commands.ShowRepoStatus)
         output = self.get_cmd_output(cmd)
         expected = example_site.ALL_REPOS
-        self.check_repo_status(output, expected, "Never synchronised")
+        self.check_repo_status(output, expected, "Never")
 
     def test_sync_stats(self):
         cmd = self.command(commands.ShowSyncStats)
@@ -342,7 +359,7 @@ class TestScheduledSync(SyncHistoryTestCase):
         self.check_status_output(expected_repos, expected_status)
         other_repos = set(example_site.ALL_REPOS) - set(expected_repos)
         if other_repos:
-            self.check_status_output(other_repos, "Never synchronised")
+            self.check_status_output(other_repos, "Never")
 
     def run_cron_sync(self, current_hour=None, dryrun=False):
         cmd = self.command(commands.ScheduledSync,
