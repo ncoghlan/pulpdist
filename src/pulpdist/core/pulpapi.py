@@ -216,6 +216,10 @@ class PulpServerClient(pulp.client.api.server.PulpServer):
         config["enabled"] = False
         self.add_importer(repo_id, type_id, config)
 
+    def sync_enabled(self, repo_id):
+        type_id, config = self.get_importer_config(repo_id)
+        return config.get("enabled", False)
+
     def get_sync_history(self, repo_id):
         return PulpRepositories(self).get_sync_history(repo_id)
 
@@ -256,6 +260,9 @@ class PulpServer(PulpServerClient):
     def _request(self, method, path, queries=(), body=None):
         # make a request to the pulp server and return the response
         # NOTE this throws a ServerRequestError if the request did not succeed
+        # HACK: To avoid thread safety issues with self.headers, we do something
+        # clumsy and horrible: create a new PulpServerClient instance and make the
+        # request on that instance...
         url = self._build_url(path, queries)
         # Oauth setup
         consumer = self.oauth_consumer
@@ -263,6 +270,7 @@ class PulpServer(PulpServerClient):
         self._log.debug('signing %r request to %r', method, https_url)
         oauth_request = oauth.Request.from_consumer_and_token(consumer, http_method=method, http_url=https_url)
         oauth_request.sign_request(self.oauth_sign_method(), consumer, None)
-        self.headers['Authorization'] = oauth_request.to_header()['Authorization'].encode('ascii')
-        self.headers.update(pulp_user='admin') # TODO: use Django login (eventually Kerberos)
-        return super(PulpServer, self)._request(method, path, queries, body)
+        server = PulpServerClient(self.host)
+        server.headers['Authorization'] = oauth_request.to_header()['Authorization'].encode('ascii')
+        server.headers.update(pulp_user='admin') # TODO: use Django login (eventually Kerberos)
+        return server._request(method, path, queries, body)

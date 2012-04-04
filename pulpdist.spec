@@ -278,6 +278,7 @@ fi
 - BZ#799203 (continued): 3 sync log files are now preserved: <repo_id>.log
   (latest sync attempt), <repo_id>.log.prev (previous sync attempt) and
   <repo_id>.log.bak (latest successful sync attempt).
+- BZ#794547: pulpdist.manage_repos now supports the cron_sync command
 
 * Thu Mar 29 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.10-1
 - "exclude_from_listing" entries that conflict with the listing_pattern are

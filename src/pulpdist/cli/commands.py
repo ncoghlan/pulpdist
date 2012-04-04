@@ -16,16 +16,22 @@ import argparse
 import json
 import socket
 import webbrowser
+import tempfile
+import os.path
+import contextlib
+import datetime
 
 from ..core.pulpapi import PulpServerClient, ServerRequestError
 from ..core.repo_config import RepoConfig
 from ..core.site_config import SiteConfig, PulpRepo
 from .display import (print_msg, print_header, print_data,
                       print_repo_table, catch_server_error)
+from .thread_pool import ThreadPool, PendingTasks
 
 # TODO: The whole structure of the metadata updating and management is
-#       clumsy and broken. Need to tidy it up and make it easy to apply
-#       deltas that will then be correctly reflected in a subsequent export.
+#       very clumsy. Need to tidy it up and make it easy to apply deltas
+#       that will then be correctly reflected in a subsequent export.
+#       BZ#801251 (requesting a separate 'add' command) is relevant
 
 #====================================================
 # Meta-description of the supported "args" attributes
@@ -45,8 +51,9 @@ def default_host():
 
 
 def make_args(pulp_host=None, verbose=0, ignoremeta=False,
-              config_fname=None, num_entries=None,
+              config_fname=None, num_entries=None, current_hour=None,
               showlog=False, dryrun=False, success=False, force=False,
+              num_threads=4,
               repo_list=(), mirror_list=(), site_list=(),
               tree_list=(), source_list=(), server_list=()):
     """Creates a valid "args" attribute suitable for passing to any
@@ -479,8 +486,103 @@ class InitialiseRepos(ModificationCommand):
                     data = server.get_repo(repo_id)
                     print_data(data)
 
-def _cron_sync_repos(args):
-    raise NotImplementedError
+class ScheduledSync(PulpCommand):
+    _LOCK_DIR = os.path.join(tempfile.gettempdir(), "pulpdist_cron_sync.lock")
+
+    def get_current_hour(self):
+        current_hour = self.args.current_hour
+        if current_hour is not None:
+            return current_hour
+        return datetime.datetime.now().hour
+
+    def queue_for_sync(self, pool, priority, repo):
+        print_msg("{0} is scheduled for synchronisation", repo.display_id)
+        if pool is None:
+            return
+        pool.add_task(priority, self.server.sync_repo, repo.id)
+
+    def get_sync_hours(self, repo):
+        try:
+            return repo[u"notes"][u"pulpdist"][u"sync_hours"]
+        except KeyError:
+            pass
+        return None
+
+    def _make_thread_pool(self):
+        if self.args.dryrun:
+            return None
+        return ThreadPool(self.args.num_threads)
+
+
+    def sync_loop(self):
+        # Some details of note:
+        #   - jobs that are checked more often are treated as higher priority
+        #     when multiple jobs are picked up in a single pass through the
+        #     repo list. This is the reason jobs are not enqueued immediately
+        #     when found in the list.
+        #   - the "already enqueued" set includes the current hour value in
+        #     case sync operations take a long time and the command is still
+        #     running when a previously synchronised repo comes up for
+        #     synchronisation again
+        #   - this command is designed to be run once per hour. Running it more
+        #     often may result in the same sync job being executed multiple
+        #     times during the relevant hours. Unscheduled sync jobs should be
+        #     requested directly via the "sync" command
+        verbose = self.args.verbose
+        server = self.server
+        enqueued = set()
+        pool = self._make_thread_pool()
+        poll_frequency = 300 # Check for new jobs every 5 minutes
+        while 1:
+          current_hour = self.get_current_hour()
+          if verbose:
+              print_msg("Current hour is {0}", current_hour)
+          all_repos = self._get_repos()
+          jobs_to_enqueue = []
+          for repo in all_repos:
+              if (repo.display_id, current_hour) in enqueued:
+                  continue
+              sync_hours = self.get_sync_hours(repo.config)
+              if not sync_hours: # 0 and None both mean "no scheduled sync"
+                  continue
+              if current_hour % sync_hours != 0:
+                  continue
+              if server.sync_enabled(repo.id):
+                  jobs_to_enqueue.append((sync_hours, repo))
+          jobs_to_enqueue.sort()
+          for sync_hours, repo in jobs_to_enqueue:
+              self.queue_for_sync(pool, sync_hours, repo)
+              enqueued.add((repo.display_id, current_hour))
+          if pool is not None:
+              try:
+                  pool.wait_for_tasks(poll_frequency)
+              except PendingTasks:
+                  # Some tasks are still running, so just go around again to
+                  # see if any new tasks need to be scheduled
+                  continue
+          if enqueued:
+              print_msg("No further repos require synchronisation")
+          else:
+              print_msg("No repos require synchronisation")
+          break
+
+    @contextlib.contextmanager
+    def _cron_sync_lock(self):
+        try:
+            os.mkdir(self._LOCK_DIR)
+        except OSError:
+            print_msg("Failed to create lock dir {0}", self._LOCK_DIR)
+            yield False
+        else:
+            try:
+                yield True
+            finally:
+                os.rmdir(self._LOCK_DIR)
+
+    def __call__(self):
+        with self._cron_sync_lock() as acquired_lock:
+            if acquired_lock:
+                self.sync_loop()
 
 def _export_repos(args):
     raise NotImplementedError

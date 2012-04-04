@@ -32,7 +32,8 @@ def capture_stdout():
         sys.stdout = saved
 
 # Be warned: this *is* a destructive test that will clobber all repos
-# in the local Pulp database...
+# in the local Pulp database... but you've updated your production server
+# so the default login used by the tests has at most read access, haven't you?
 
 DISPLAY_IDS = {
     "pulpdist-meta": "pulpdist-meta",
@@ -171,17 +172,21 @@ class TestBasicCommands(InitialisedTestCase):
 
 class SyncHistoryTestCase(InitialisedTestCase):
 
+    def check_line_start(self, line, expected):
+        actual = line[:len(expected)]
+        self.assertEqual(actual, expected)
+
     def check_repo_status(self, output, expected, status):
         lines = iter(output)
         for line in lines:
-            self.assertTrue(line.startswith("Sync status for"))
+            self.check_line_start(line, "Sync status for")
             break
         for line in lines:
-            self.assertTrue(line.startswith("Repo ID"))
+            self.check_line_start(line, "Repo ID")
             break
         seen = []
         for line, repo_id in zip(lines, expected):
-            self.assertTrue(line.startswith(DISPLAY_IDS[repo_id]))
+            self.check_line_start(line, DISPLAY_IDS[repo_id])
             self.assertIn(status, line)
             seen.append(repo_id)
         self.assertEqual(seen, expected)
@@ -320,6 +325,89 @@ class TestEnabledSyncHistory(SyncHistoryTestCase):
         expected = example_site.ALL_REPOS
         self.check_repo_display(output, expected, "Most recent sync log for")
         self.assertIn("Syncing tree", output.getvalue())
+
+
+class TestScheduledSync(SyncHistoryTestCase):
+
+    def enable_sync(self):
+        self.get_cmd_output(self.command(commands.EnableSync, force=True))
+
+    def check_status_output(self, repos, expected_status):
+        repo_list = sorted(repos)
+        cmd = self.command(commands.ShowRepoStatus, repo_list=repo_list)
+        output = self.get_cmd_output(cmd)
+        self.check_repo_status(output, repo_list, expected_status)
+
+    def check_server_status(self, expected_repos, expected_status):
+        self.check_status_output(expected_repos, expected_status)
+        other_repos = set(example_site.ALL_REPOS) - set(expected_repos)
+        if other_repos:
+            self.check_status_output(other_repos, "Never synchronised")
+
+    def run_cron_sync(self, current_hour=None, dryrun=False):
+        cmd = self.command(commands.ScheduledSync,
+                           current_hour=current_hour,
+                           dryrun=dryrun)
+        return self.get_cmd_output(cmd)
+
+    def check_cron_sync_output(self, output, expected):
+        lines = iter(output)
+        seen = []
+        for line, repo_id in zip(lines, expected):
+            self.check_line_start(line, DISPLAY_IDS[repo_id])
+            self.assertIn("scheduled for synchronisation", line)
+            seen.append(repo_id)
+        self.assertEqual(seen, expected)
+        for line in lines:
+            self.assertEqual("No further repos require synchronisation", line)
+            break
+
+
+    # Expected sync schedules for example_site, ordered by sync frequency
+    EXPECTED_JOBS = {
+        0: ["snapshot_sync__default", "versioned_sync__other", "raw_sync"],
+        1: ["snapshot_sync__default"],
+        12: ["snapshot_sync__default", "versioned_sync__other"],
+    }
+
+    # Test cases
+    #   - with current hour forced
+    #   - with the datetime global patched in ..commands so that
+    #     datetime.datetime.now().hour returns the desired value
+    #   - with and without dryrun set
+
+    def check_specific_hour(self, current_hour):
+        self.enable_sync()
+        expected_repos = self.EXPECTED_JOBS[current_hour % 24]
+        output = self.run_cron_sync(current_hour)
+        self.check_cron_sync_output(output, expected_repos)
+        self.check_server_status(expected_repos, "SYNC_FAILED")
+
+    def test_cron_sync_0(self):
+        self.check_specific_hour(0)
+
+    def test_cron_sync_1(self):
+        self.check_specific_hour(1)
+
+    def test_cron_sync_12(self):
+        self.check_specific_hour(12)
+
+    def test_cron_sync_24(self):
+        self.check_specific_hour(24)
+
+    def test_cron_sync_dryrun(self):
+        self.enable_sync()
+        for current_hour, expected_repos in self.EXPECTED_JOBS.items():
+            output = self.run_cron_sync(current_hour, dryrun=True)
+            self.check_cron_sync_output(output, expected_repos)
+            self.check_server_status([], "SYNC_")
+
+    def test_cron_sync_disabled(self):
+        expected_output = "No repos require synchronisation"
+        for current_hour, expected_repos in self.EXPECTED_JOBS.items():
+            output = self.run_cron_sync(current_hour, dryrun=True)
+            self.assertEqual(output.getvalue().strip(), expected_output)
+            self.check_server_status([], "SYNC_")
 
 
 class TestModifyCommands(InitialisedTestCase):

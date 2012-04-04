@@ -118,19 +118,19 @@ repositories (such as those used by PulpDist).
 Scheduling sync operations with cron
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. note:: This operation is not yet implemented
-
-As Pulp does not currently provide native sync scheduling support for plugin
-based repositories), PulpDist offers a simple alternative mechanism based on
-cron (or any similar tool that can be used to periodically execute a Python
-script).
+As the versions of Pulp currently supported by PulpDist do not provide native
+sync scheduling support for plugin based repositories), PulpDist offers a
+simple alternative mechanism based on cron (or any similar tool that can be
+used to periodically execute a Python script).
 
 The relevant command is::
 
     python -m pulpdist.manage_repos cron_sync
 
-This tool is designed to be run every few minutes (if a previous instance for
+This tool is designed to be run once per hour (if a previous instance for
 the same Pulp host is still running, the new instance will immediately exit).
+For more immediate synchronisation, the ``sync`` command should be invoked
+directly.
 
 The command first retrieves the list of repository definitions from the
 Pulp server and queries each one for a ``["notes"]["pulpdist"]["sync_hours"]``
@@ -138,10 +138,9 @@ setting in the metadata.
 
 If sync operations on the repository are currently enabled, the repository
 does not already have a sync operation in progress, the ``sync_hours`` setting
-is found and is non-zero, and there is either no last sync attempt
-time recorded, or that time is more than ``sync_hours`` in the past, then a
-new thread is spawned to request immediate synchronisation of the repository
-through the Pulp REST API.
+is found and is non-zero,and the current time (in hours) relative to midnight
+is a multiple of the ``sync_hours`` setting, then a new thread is spawned to
+request immediate synchronisation of the repository through the Pulp REST API.
 
 Otherwise, the repository is ignored until the next check for new sync
 operations.
@@ -155,12 +154,13 @@ the client will terminate.
 
 The following options can be set to control the sync operation:
 
-* ``--threads``: maximum number of concurrent sync operations (default: 8)
-* ``--query``: time to wait in minutes between server queries (default: 2)
+* ``--threads``: maximum number of concurrent sync operations (default: 4)
 * ``--day``: rsync bandwidth limit to apply during the day (6 am - 6 pm)
 * ``--night``: rsync bandwidth limit to apply at night (6 pm - 6 am)
 
 By default, no bandwidth limits are applied.
+
+.. note:: Support for bandwidth limiting is not yet implemented
 
 
 The repository definition file format

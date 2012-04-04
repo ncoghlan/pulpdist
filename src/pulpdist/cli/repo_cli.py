@@ -59,6 +59,13 @@ def _add_entries(cmd_parser):
                             dest="num_entries", type=int,
                             help="Number of entries to display")
 
+def _add_hour(cmd_parser):
+    cmd_parser.add_argument("--hour", metavar="HOUR",
+                            dest="current_hour", type=int, default=None,
+                            help="Force a specific hour when determining which "
+                                 "trees to sync (Default: derive dynamically "
+                                 "from current time)")
+
 def _add_showlog(cmd_parser):
     cmd_parser.add_argument("--showlog", action='store_true',
                             help="Include the sync log in each history entry")
@@ -66,6 +73,12 @@ def _add_showlog(cmd_parser):
 def _add_dryrun(cmd_parser):
     cmd_parser.add_argument("--dryrun", action='store_true',
                             help="Dry run only (don't modify local filesystem)")
+
+def _add_threads(cmd_parser):
+    cmd_parser.add_argument("--threads", metavar="NUM",
+                            dest="num_threads", type=int, default=4,
+                            help="Max number of concurrent threads "
+                                 "(Default: %(default)s")
 
 def _add_success(cmd_parser):
     cmd_parser.add_argument("--success", action='store_true',
@@ -76,10 +89,10 @@ def _add_force(cmd_parser):
                             help="Automatically answer yes to all prompts")
 
 _REPO_FILTERS = (
-    ("--repo",   "REPO_ID",   "repo_list", "this repo"),
-    ("--mirror",   "MIRROR_ID",   "mirror_list", "this local mirror"),
-    ("--site",   "SITE_ID",   "site_list", "mirrors at this site"),
-    ("--tree",   "TREE_ID",   "tree_list", "mirrors of this tree"),
+    ("--repo",   "REPO_ID",   "repo_list",   "this repo"),
+    ("--mirror", "MIRROR_ID", "mirror_list", "this local mirror"),
+    ("--site",   "SITE_ID",   "site_list",   "mirrors at this site"),
+    ("--tree",   "TREE_ID",   "tree_list",   "mirrors of this tree"),
     ("--source", "SOURCE_ID", "source_list", "mirrors of trees from this source"),
     ("--server", "SERVER_ID", "server_list", "mirrors of trees from this server"),
 )
@@ -105,7 +118,7 @@ _SYNC_COMMANDS = (
     ("sync", "RequestSync", "Sync repositories", [_add_force]),
     ("enable", "EnableSync", "Set repositories to accept sync commands", [_add_force, _add_dryrun]),
     ("disable", "DisableSync", "Set repositories to ignore sync commands", [_add_force]),
-    ("cron_sync", "_cron_sync_repos", "(NYI) Selectively sync repositories based on metadata", ()),
+    ("cron_sync", "ScheduledSync", "Selectively sync repositories based on metadata", [_add_dryrun, _add_hour, _add_threads]),
 )
 
 _REPO_COMMANDS = (
