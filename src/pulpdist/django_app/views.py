@@ -26,6 +26,7 @@ from .models import PulpServer
 
 # Repo sync history details
 class SyncHistoryTable(Table):
+    result = Column(accessor="summary.result", default="PLUGIN_ERROR")
     started = Column()
     completed = Column()
 

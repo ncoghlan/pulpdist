@@ -281,6 +281,7 @@ fi
 - BZ#794547: pulpdist.manage_repos now supports the cron_sync command
 - BZ#794546: the output of the manage_repos status command has been reformatted
   and now includes details of the current synchronisation status
+- BZ#758936 (continued): repo sync history in web UI now displays sync result
 
 * Thu Mar 29 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.10-1
 - "exclude_from_listing" entries that conflict with the listing_pattern are
