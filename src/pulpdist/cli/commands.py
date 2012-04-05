@@ -243,9 +243,13 @@ class SyncHistoryCommand(PulpCommand):
 class ShowRepoStatus(SyncHistoryCommand):
     """Command that displays the sync status of each repository"""
 
+    def label(self, text):
+        return "{0:17}".format(text + ":")
+
     def print_sync(self, title, sync_info):
+        title = self.label(title)
         if sync_info is None:
-            print_msg("{0}: {1}", title, "Never")
+            print_msg("{0}{1}", title, "Never")
         else:
             summary = sync_info["summary"]
             if summary is None:
@@ -254,7 +258,7 @@ class ShowRepoStatus(SyncHistoryCommand):
                 result = summary["result"]
             start = sync_info["started"]
             finish = summary["finish_time"]
-            print_msg("{0}: {1} ({2} -> {3})", title, result, start, finish)
+            print_msg("{0}{1:25}({2} -> {3})", title, result, start, finish)
 
     def process_repos(self, repos):
         print_msg("Sync status for repositories on {0!r}", self.server.host)
@@ -280,7 +284,7 @@ class ShowRepoStatus(SyncHistoryCommand):
                         sync_status += " (Dry Run Only)"
                     if importer["sync_in_progress"]:
                         sync_status += " (In Progress)"
-                print_msg("Current Status: {0}", sync_status)
+                print_msg("{0}{1}", self.label("Current Status"), sync_status)
 
 
 class ShowSyncHistory(SyncHistoryCommand):

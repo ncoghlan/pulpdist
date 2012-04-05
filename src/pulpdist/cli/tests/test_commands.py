@@ -196,8 +196,8 @@ class SyncHistoryTestCase(InitialisedTestCase):
                 self.check_line_start(line, "====")
                 break
             for line in lines:
-                expected_line = "Last Attempted: {0}".format(status)
-                self.check_line_start(line, expected_line)
+                self.check_line_start(line, "Last Attempted: ")
+                self.assertIn(status, line)
                 break
             for line in lines:
                 self.check_line_start(line, "Last Successful: ")
