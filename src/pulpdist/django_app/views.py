@@ -90,6 +90,9 @@ class RepoView(RepoMixin, DetailView):
 class RepoTable(Table):
     id = Column(verbose_name='Repo Name')
     description = Column(verbose_name='Description')
+    last_status = Column(accessor="sync_history.0.summary.result")
+    last_sync_attempt = Column(accessor="sync_history.0.started")
+    sync_in_progress = Column(accessor="importer.sync_in_progress")
     empty_text = "There are no repositories defined in the Pulp server."
 
     def render_id(self, record):
@@ -113,7 +116,12 @@ class RepoListView(ServerMixin, _TableView):
     def queryset(self):
         server = self.get_pulp_server()
         print "Retrieving repo data from Pulp server"
-        return server.get_repos()
+        repos = server.get_repos()
+        for repo in repos:
+            repo_id = repo["id"]
+            repo["sync_history"] = server.get_sync_history(repo_id)
+            repo["importer"] = server.get_importer(repo_id)
+        return repos
 
     def get_breadcrumbs(self):
         server = self.get_pulp_server()
