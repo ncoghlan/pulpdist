@@ -241,6 +241,10 @@ class PulpServerClient(pulp.client.api.server.PulpServer):
     def get_generic_distributor(self, plugin_id):
         return GenericContentTypes(self).get_entry(plugin_id)
 
+    def get_sync_logs_url(self):
+        # See BZ#799203 - server is publishing sync logs directly over HTTPS
+        return "https://%s/sync_logs" % self.host
+
 
 class PulpServer(PulpServerClient):
     # Unlike the standard Pulp client, we support only OAuth over https

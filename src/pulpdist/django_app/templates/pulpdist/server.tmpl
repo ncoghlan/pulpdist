@@ -7,6 +7,6 @@
   {% trans 'Pulp Server Details' %}
   <ul>
     <li><a href="{% url pulp_repo_index pulp_server.server_slug %}">{% trans 'Repositories' %}</a></li>
-    <li><a href="/sync_logs/">{% trans 'Sync Logs' %}</a></li>
+    <li><a href="{{ object.server.get_sync_logs_url }}">{% trans 'Synchronisation Logs' %}</a></li>
   </ul>
 {% endblock %}
