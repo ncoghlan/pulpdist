@@ -10,12 +10,13 @@
     <h3><p>{% trans 'Automatic Update Configuration' %}</p></h3>
     <ul>
         {% if object.importer_info %}
-        <li><b>{% trans 'Update type' %}:</b> {{ object.importer_info.importer_type_id }}</br></li>
-        <li><b>{% trans 'Last updated' %}:</b> {{ object.importer_info.last_sync }}</br></li>
-        <li><b>{% trans 'Update in progress?' %}:</b> {{ object.importer_info.sync_in_progress }}</br></li>
-        <li><b>{% trans 'Configuration details' %}:</b><ul>
-            {% for k, v in object.importer_info.config.iteritems %}
-            <li><b>{{ k }}:</b> {{ v }}</br></li>
+            <li><b>{% trans 'Automatic update type' %}:</b> {{ object.importer_info.importer_type_id }}</br></li>
+            <li><b>{% trans 'Last updated' %}:</b> {{ object.last_sync_attempt }}</br></li>
+            <li><b>{% trans 'Last update result' %}:</b> {{ object.last_status }}</br></li>
+            <li><b>{% trans 'Update in progress?' %}:</b> {{ object.importer_info.sync_in_progress }}</br></li>
+            <li><b>{% trans 'Configuration details' %}:</b><ul>
+            {% for k, v in object.importer_config %}
+                <li><b>{{ k }}:</b> {{ v }}</li>
             {% endfor %}
             </ul></li>
         {% else %}
@@ -23,19 +24,26 @@
         {% endif %}
     </ul>
 
+    <h3><p>{% trans 'Synchronisation History' %}</p></h3>
+    <ul>
+        <li><a href="{% url pulp_repo_sync_history pulp_server.server_slug repo_id %}">{% trans "Sync History Summary" %}</a></li>
+        {% if object.latest_sync_log_url %}
+            <li><a href="{{ object.latest_sync_log_url }}">{% trans 'Latest Sync Log' %}</a></li>
+            <li><a href="{{ object.latest_sync_log_url }}.prev">{% trans 'Previous Sync Log' %}</a></li>
+            <li><a href="{{ object.latest_sync_log_url }}.bak">{% trans 'Latest Successful Sync Log' %}</a></li>
+        {% else %}
+            <li>{% trans 'Could not determine expected location for sync log files' %}</li>
+        {% endif %}
+    </ul>
+
     <h3><p>{% trans 'Annotations' %}</p></h3>
     <ul>
         {% if object.annotations %}
             {% for k, v in object.annotations.iteritems %}
-                <li><b>{{ k }}:</b> <pre>{{ v }}</pre></br></li>
+                <li><b>{{ k }}:</b> <pre>{{ v }}</pre><br/></li>
             {% endfor %}
         {% else %}
             <li>{% trans 'No repository annotations' %}</li>
         {% endif %}
-    </ul>
-
-    <h3><p>{% trans 'Other repository information' %}</p></h3>
-    <ul>
-        <li><a href="{% url pulp_repo_sync_history pulp_server.server_slug repo_id %}">{% trans "Repo Sync History" %}</a></li>
     </ul>
 {% endblock %}

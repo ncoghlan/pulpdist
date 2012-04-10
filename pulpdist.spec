@@ -286,6 +286,8 @@ fi
 - BZ#811053: rsync invocation no longer relies on the system shell
 - BZ#799203 (continued): link to sync logs from Web UI is now also correct for
   Pulp servers that are not colocated with the Web UI instance
+- BZ#758936 (continued): main repo page in web UI now included latest sync
+  result, as well as links to log files.
 
 * Thu Mar 29 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.10-1
 - "exclude_from_listing" entries that conflict with the listing_pattern are

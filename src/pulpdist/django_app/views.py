@@ -64,17 +64,37 @@ class RepoView(RepoMixin, DetailView):
     def pretty_json(self, value):
         return json.dumps(value, indent=2, separators=(',', ': '))
 
+    def format_entries(self, data):
+        formatted = {}
+        for k, v in data.iteritems():
+            formatted[k] = self.pretty_json(v)
+        return formatted
+
     def get_object(self, queryset=None):
         server = self.get_pulp_server()
         details = self.get_pulp_repo()
-        annotations = {}
-        for k, v in details["notes"].iteritems():
-            annotations[k] = self.pretty_json(v)
-        details["annotations"] = annotations
-        importer_info = server.get_importer(self.repo_id)
-        if importer_info and importer_info["last_sync"] is None:
-            importer_info["last_sync"] = "Never"
-        details["importer_info"] = importer_info
+        details["annotations"] = self.format_entries(details["notes"])
+        importer = details["importer_info"] = server.get_importer(self.repo_id)
+        if importer:
+            raw_config = importer["config"]
+            formatted_config = self.format_entries(raw_config)
+            details["importer_config"] = sorted(formatted_config.iteritems())
+            log_url = "{0}/{1}.log".format(server.server.get_sync_logs_url(),
+                                           raw_config["tree_name"])
+            details["latest_sync_log_url"] = log_url
+        sync_history = server.get_sync_history(self.repo_id)
+        if sync_history:
+            last_sync = sync_history[0]
+            details["last_sync_attempt"] = last_sync["started"]
+            summary = last_sync.get("summary")
+            if summary:
+                last_status = summary["result"]
+            else:
+                last_status = "PLUGIN_ERROR"
+            details["last_status"] = last_status
+        else:
+            details["last_sync_attempt"] = "Never"
+            details["last_status"] = "N/A"
         return details
 
     def get_breadcrumbs(self):
