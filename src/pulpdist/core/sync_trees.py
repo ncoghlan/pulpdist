@@ -205,8 +205,8 @@ class BaseSyncCommand(object):
         with self._indent_run_log(0):
             self._update_run_log("_"*75)
             self._update_run_log("Getting shell output for:\n\n  {0}\n\n", cmd)
-            proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
-                                                     stderr=subprocess.STDOUT)
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                         stderr=subprocess.STDOUT)
             for line in proc.stdout:
                 shell_output.append(line)
                 self._update_run_log(line)
@@ -216,7 +216,7 @@ class BaseSyncCommand(object):
 
     def _consolidate_tree(self):
         local_path = self.local_path
-        hardlink_cmd = "hardlink -v " + self.local_path
+        hardlink_cmd = ["hardlink", "-v", self.local_path]
         try:
             return_code, __ = self._run_shell_command(hardlink_cmd)
         except:
@@ -311,7 +311,7 @@ class BaseSyncCommand(object):
                 rel_path = dir_info.path
                 if os.path.isabs(rel_path):
                     rel_path = os.path.relpath(rel_path, local_dest_path)
-                params.append("--filter='protect {0}'".format(rel_path))
+                params.append("--filter=protect {0}".format(rel_path))
         for seed_path in local_seed_paths:
             params.append("--link-dest={0}".format(seed_path))
         params.append(remote_source_path)
@@ -333,7 +333,7 @@ class BaseSyncCommand(object):
         params = self._build_fetch_dir_rsync_params(remote_source_path,
                                                     local_dest_path,
                                                     local_seed_paths)
-        rsync_fetch_command = "rsync " + " ".join(params)
+        rsync_fetch_command = ["rsync"] + params
         rsync_stats = _null_sync_stats
         self._update_run_log("Downloading {0!r} -> {1!r}", remote_source_path, local_dest_path)
         for seed_path in local_seed_paths:
@@ -432,7 +432,7 @@ class SyncVersionedTree(BaseSyncCommand):
 
     def remote_ls(self, remote_ls_path):
         params = self._build_remote_ls_rsync_params(remote_ls_path)
-        rsync_ls_command = "rsync " + " ".join(params)
+        rsync_ls_command = ["rsync"] + params
         self._update_run_log("Getting remote listing for {0!r}", remote_ls_path)
         dir_entries = link_entries = ()
         with self._indent_run_log():
@@ -619,7 +619,7 @@ class SyncSnapshotTree(SyncVersionedTree):
             params.append(tmp_local_status)
             self._update_run_log("Checking for STATUS file in {0!r}", remote_source_path)
             with self._indent_run_log():
-                rsync_status_command = "rsync " + " ".join(params)
+                rsync_status_command = ["rsync"] + params
                 try:
                     return_code, __ = self._run_shell_command(rsync_status_command)
                 except:

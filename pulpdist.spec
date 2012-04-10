@@ -283,6 +283,7 @@ fi
   and now includes details of the current synchronisation status
 - BZ#758936 (continued): repo sync history in web UI now displays sync result
 - BZ#786678: Include sync status details in repository table in web UI
+- BZ#811053: rsync invocation no longer relies on the system shell
 
 * Thu Mar 29 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.10-1
 - "exclude_from_listing" entries that conflict with the listing_pattern are
