@@ -274,7 +274,8 @@ class PulpServer(PulpServerClient):
         self._log.debug('signing %r request to %r', method, https_url)
         oauth_request = oauth.Request.from_consumer_and_token(consumer, http_method=method, http_url=https_url)
         oauth_request.sign_request(self.oauth_sign_method(), consumer, None)
-        server = PulpServerClient(self.host)
+        # We use dummy credentials so we never try to read a non-existent cert file...
+        server = PulpServerClient(self.host, "admin", "admin")
         server.headers['Authorization'] = oauth_request.to_header()['Authorization'].encode('ascii')
         server.headers.update(pulp_user='admin') # TODO: use Django login (eventually Kerberos)
         return server._request(method, path, queries, body)
