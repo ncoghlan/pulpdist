@@ -144,7 +144,6 @@ class RepoListView(ServerMixin, _TableView):
     @property
     def queryset(self):
         server = self.get_pulp_server()
-        print "Retrieving repo data from Pulp server"
         repos = server.get_repos()
         for repo in repos:
             repo_id = repo["id"]
