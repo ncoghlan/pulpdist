@@ -14,8 +14,10 @@ application.
 This page focuses on deployment of a single PulpDist web app instance with
 a colocated Pulp server. Other configurations are of course possible - the
 two communicate solely through the Pulp REST API (Note: the PulpDist web app
-does not yet cache results received from the Pulp server, so expect abysmal
-performance from the current version if the two aren't at least on the same
+does not yet cache results received from the Pulp server, nor has it been
+optimised to make effective use of server side batch queries and filtering, so
+expect poor performance from the current version if the two aren't running on
+the same web server and abysmal performance if they aren't at least on the same
 LAN).
 
 Deployment
@@ -54,14 +56,15 @@ After installation, a few configuration settings need to be adjusted.
 
 4. Start (or restart) Apache
 
-5. Log in to the web application as one of the system administrators configured
-   in Step 2. Click the "Site Admin" link, then use the Django admin UI to add
-   a reference to the colocated Pulp server. The fields are as follows:
+5. Log in to the PulpDist web application as one of the system administrators
+   configured in Step 2. Click the "Site Admin" link, then use the Django admin
+   UI to add a reference to the colocated Pulp server. The fields are as
+   follows:
 
    * Pulp site: name used in the user interface for this server
    * Hostname: fully qualified hostname for this server (will be checked by SSL)
    * Oauth key: the Pulp OAuth key configured in Step 1
-   * Oauth secret: the Pulp OAuth key configured in Step 2
+   * Oauth secret: the Pulp OAuth secret configured in Step 1
 
 6. Update ``/etc/pulp/admin/admin.conf`` to replace ``localhost.localdomain``
    with the fully qualified domain of the server
@@ -70,14 +73,19 @@ After installation, a few configuration settings need to be adjusted.
    default admin account to read-only access (currently used via the web
    UI over OAuth) ::
 
+      # Use the default account to add a new administrator
       pulp-admin auth login --username admin
       pulp-admin user create --username ncoghlan --name "Nick Coghlan" --ldap
       pulp-admin role add --role super-users --user ncoghlan
+
+      # Use the new administrator account to restrict the default account
       pulp-admin auth login --username ncoghlan
       pulp-admin role create --role read-only
       pulp-admin permission grant --resource / --role read-only -o read
       pulp-admin role add --role read-only --user admin
       pulp-admin role remove --role super-users --user admin
+
+      # Check the permissions have been updated appropriately
       pulp-admin permission show --resource /
 
 
@@ -94,7 +102,7 @@ as::
 
    $ sudo python -m pulpdist.manage_site --help
 
-Refer to the `Django documentation` for details of what this command supports
+Refer to the `Django documentation`_ for details of what this command supports
 (like the default ``manage.py``, ``pulpdist.manage_site`` is a thin
 convenience wrapper around ``django-admin``).
 

@@ -33,7 +33,7 @@ Synchronisation Management Commands
 * ``sync``: Request immediate synchronisation of repositories
 * ``enable``: Configure repositories to respond to sync requests
 * ``disable``: Configure repositories to ignore sync requests
-* ``cron_sync``: See `Scheduling sync operations with cron`_ (Not Yet Implemented)
+* ``cron_sync``: See `Scheduling sync operations with cron`_
 
 
 Repository Status Queries
