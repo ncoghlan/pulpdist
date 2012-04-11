@@ -110,9 +110,11 @@ class RepoView(RepoMixin, DetailView):
 class RepoTable(Table):
     id = Column(verbose_name='Repo Name')
     description = Column(verbose_name='Description')
+    sync_enabled = Column(verbose_name="Sync Enabled?")
     last_status = Column(accessor="sync_history.0.summary.result")
     last_sync_attempt = Column(accessor="sync_history.0.started")
-    sync_in_progress = Column(accessor="importer.sync_in_progress")
+    sync_in_progress = Column(accessor="importer.sync_in_progress",
+                              verbose_name="Sync in Progress?")
     empty_text = "There are no repositories defined in the Pulp server."
 
     def render_id(self, record):
@@ -125,6 +127,13 @@ class RepoTable(Table):
         url = reverse(RepoView.urlname, kwargs=kwargs)
         link = '<a href="{0}">{1}</a>'.format(url, repo_name)
         return mark_safe(link)
+
+    def render_sync_enabled(self, record):
+        status = "-"
+        importer = record["importer"]
+        if importer and importer["config"]["enabled"]:
+            status = "ENABLED"
+        return status
 
 
 class RepoListView(ServerMixin, _TableView):

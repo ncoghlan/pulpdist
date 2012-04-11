@@ -10,10 +10,11 @@
     <h3><p>{% trans 'Automatic Update Configuration' %}</p></h3>
     <ul>
         {% if object.importer_info %}
-            <li><b>{% trans 'Automatic update type' %}:</b> {{ object.importer_info.importer_type_id }}</br></li>
-            <li><b>{% trans 'Last updated' %}:</b> {{ object.last_sync_attempt }}</br></li>
-            <li><b>{% trans 'Last update result' %}:</b> {{ object.last_status }}</br></li>
-            <li><b>{% trans 'Update in progress?' %}:</b> {{ object.importer_info.sync_in_progress }}</br></li>
+            <li><b>{% trans 'Automatic update type' %}:</b> {{ object.importer_info.importer_type_id }}
+                   ({{ object.importer_info.config.enabled|yesno:"ENABLED,DISABLED" }})</li>
+            <li><b>{% trans 'Last updated' %}:</b> {{ object.last_sync_attempt }}</li>
+            <li><b>{% trans 'Last update result' %}:</b> {{ object.last_status }}</li>
+            <li><b>{% trans 'Update in progress?' %}:</b> {{ object.importer_info.sync_in_progress }}</li>
             <li><b>{% trans 'Configuration details' %}:</b><ul>
             {% for k, v in object.importer_config %}
                 <li><b>{{ k }}:</b> {{ v }}</li>
