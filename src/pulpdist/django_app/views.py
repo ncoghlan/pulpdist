@@ -29,12 +29,12 @@ class SyncHistoryTable(Table):
     result = Column(accessor="summary.result", default="PLUGIN_ERROR")
     started = Column()
     completed = Column()
+    empty_text = "There are no sync history entries for this repository."
 
 class SyncHistoryView(RepoMixin, _TableView):
+    table_type = SyncHistoryTable
     view_title='Repository Sync History'
     urlname = 'pulp_repo_sync_history'
-    table_type = SyncHistoryTable
-    empty_text = "There are no sync history entries for this repository."
 
     @property
     def queryset(self):
