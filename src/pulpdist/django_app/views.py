@@ -79,9 +79,9 @@ class RepoView(RepoMixin, DetailView):
             raw_config = importer["config"]
             formatted_config = self.format_entries(raw_config)
             details["importer_config"] = sorted(formatted_config.iteritems())
-            log_url = "{0}/{1}.log".format(server.server.get_sync_logs_url(),
-                                           raw_config["tree_name"])
-            details["latest_sync_log_url"] = log_url
+        log_url = "{0}/{1}.log".format(server.server.get_sync_logs_url(),
+                                       self.repo_id)
+        details["latest_sync_log_url"] = log_url
         sync_history = server.get_sync_history(self.repo_id)
         if sync_history:
             last_sync = sync_history[0]
