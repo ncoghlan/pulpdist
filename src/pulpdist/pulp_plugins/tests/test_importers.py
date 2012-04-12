@@ -303,7 +303,10 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         # Check the exception was written out to the log file
         log_path, previous_path, backup_path  = self._get_sync_log_paths()
         with open(log_path) as sync_log:
-            self.assertIn(actual_error, sync_log.read())
+            log_data = sync_log.read()
+            self.assertIn("PLUGIN ERROR", log_data)
+            self.assertIn("Traceback (most recent", log_data)
+            self.assertIn(actual_error, log_data)
 
     def test_simple_tree_sync_partial(self):
         importer_id = u"simple_tree"
@@ -395,7 +398,7 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
             self.assertServerRequestError(self._sync_repo)
         finally:
             os.chmod(parent_dir, 0644)
-        self.check_sync_error(local_path)
+        self.check_sync_error("Permission denied")
 
     def test_importer_update(self):
         last_sync, previous_stats = self.check_simple_tree_sync()

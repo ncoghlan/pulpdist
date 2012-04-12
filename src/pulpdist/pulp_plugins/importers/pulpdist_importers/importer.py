@@ -86,11 +86,9 @@ class _BaseImporter(Importer):
                   return
                 shutil.copy2(log_path, log_path + ".bak")
 
-            def append_msg(self, msg):
-                """Add a new message to end of the log file"""
-                with open(log_path, 'a') as f:
-                    f.write(msg + "\n")
-                    f.flush()
+            def reopen(self):
+                """Reopen the log to append addition messages"""
+                return open(log_path, 'a')
         yield LogHelper()
 
 
@@ -103,15 +101,10 @@ class _BaseImporter(Importer):
                 command = self.SYNC_COMMAND(sync_config.config, sync_log.path)
                 sync_info = command.run_sync()
         except:
-            et, ev, tb = sys.exc_info()
-            msg = (
-                "exception: {0}\n"
-                "error_message: {1}\n"
-                "traceback:\n{2}\n"
-            )
-            failure = msg.format(et, ev, traceback.format_tb(tb))
-            sync_log.append_msg(failure)
-            raise RuntimeError(failure)
+            with sync_log.reopen() as f:
+                f.write("** PLUGIN ERROR **\n")
+                traceback.print_exc(file=f)
+            raise
         result = sync_info[0]
         sync_log.update_backup(result)
         summary = {
