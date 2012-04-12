@@ -84,6 +84,9 @@ class TestSyncTree(BaseTestCase):
         params.update(self.CONFIG_SNAPSHOT_SYNC)
         link_name = u"latest-relevant"
         link_path = _path(local_path, link_name)
+        # BZ#807913 - make sure this works even if the name is already taken
+        with open(link_path, 'w') as f:
+            pass
         params["latest_link_name"] = link_name
         __, expect_sync, __ = self.setup_snapshot_layout(local_path)
         task = sync_trees.SyncSnapshotTree(params)

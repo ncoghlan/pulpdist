@@ -275,6 +275,9 @@ fi
 
 %changelog
 * Thu Apr 12 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.13-1
+- BZ#807913: In snapshot syncs, handle the case where an existing latest link
+  entry is not a directory (e.g. it is a symlink to a directory that no longer
+  exists, as can happen when deleting old directories)
 
 * Thu Apr 12 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.12-1
 - BZ#811446: Snapshot sync operations now set --link-dest correctly in the
