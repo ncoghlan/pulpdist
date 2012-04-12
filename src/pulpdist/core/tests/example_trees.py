@@ -49,7 +49,12 @@ unexpected_dirs = [
 
 source_layout = expected_layout + unexpected_dirs
 
+# For versioned trees, all 4 folders are always synced
 _expected_versioned_trees = [u"relevant-{0}".format(i) for i in range(1, 5)]
+# For snapshots, we mess with the STATUS files to be selective in syncing them
+_skipped_snapshot_tree = _expected_versioned_trees[2]
+_expected_snapshot_trees = _expected_versioned_trees[:]
+del _expected_snapshot_trees[2]
 
 source_trees = [
     u"simple",
@@ -62,7 +67,7 @@ source_trees = [
 source_trees.extend(os.path.join(u"versioned", tree) for tree in _expected_versioned_trees)
 source_trees.extend(os.path.join(u"snapshot", tree) for tree in _expected_versioned_trees)
 
-test_trees_finished = [os.path.join(u"snapshot", tree) for tree in _expected_versioned_trees[:-1]]
+test_trees_finished = [os.path.join(u"snapshot", tree) for tree in _expected_snapshot_trees]
 
 test_data_layout = [
     os.path.join(tree_dir, subdir)
@@ -219,15 +224,14 @@ class TreeTestCase(unittest.TestCase):
 
     def setup_snapshot_layout(self, local_path):
         # Set up one local tree as already FINISHED
-        skip_finished = _expected_versioned_trees[0]
+        skip_finished = _expected_snapshot_trees[0]
         finished_path = os.path.join(local_path, skip_finished)
         os.makedirs(finished_path)
         mark_trees_finished(local_path, [skip_finished])
-        # We expect most of the trees to be sync'ed
-        expect_sync = _expected_versioned_trees[1:-1]
-        # The last tree we expect to be skipped
-        skip_not_ready = _expected_versioned_trees[-1]
-        not_ready_path = os.path.join(local_path, skip_not_ready)
+        # One tree we expect to be skipped due to a missing STATUS file
+        not_ready_path = os.path.join(local_path, _skipped_snapshot_tree)
+        # We expect the other trees to be synchronised
+        expect_sync = _expected_snapshot_trees[1:]
         return finished_path, expect_sync, not_ready_path
 
 
@@ -261,7 +265,7 @@ class TreeTestCase(unittest.TestCase):
             for fname in expected_files:
                 fpaths = [os.path.join(dpath, fname) for dpath in dpaths]
                 msg = "{0} are different files".format(fpaths)
-                self.assertTrue(os.path.samefile(*fpaths))
+                self.assertTrue(os.path.samefile(*fpaths), msg)
 
     def check_stats(self, actual, expected):
         if isinstance(actual, dict):

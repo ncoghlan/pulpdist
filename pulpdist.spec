@@ -274,6 +274,10 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* Thu Apr 12 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.12-1
+- BZ#811446: Snapshot sync operations now set --link-dest correctly in the
+  rsync commands when some remote directories have been skipped
+
 * Wed Apr 11 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.11-1
 - BZ#799203 (continued): 3 sync log files are now preserved: <repo_id>.log
   (latest sync attempt), <repo_id>.log.prev (previous sync attempt) and

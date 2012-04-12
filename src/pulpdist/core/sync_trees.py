@@ -460,15 +460,20 @@ class SyncVersionedTree(BaseSyncCommand):
         for d in dir_info.subdirs:
             yield os.path.join(local_path, d)
 
+    def _get_initial_seed_paths(self):
+        # By default, there are no initial seed paths
+        return ()
+
     def _iter_remote_versions(self, remote_dir_entries):
-        seed_paths = ()
+        seed_paths = self._get_initial_seed_paths()
         for mtime, version in sorted(remote_dir_entries):
             remote_version = self.remote_path + version
             remote_source_path = "rsync://{0}{1}/".format(self.remote_server, remote_version)
             local_dest_path = os.path.join(self.local_path, version)
             yield remote_source_path, local_dest_path, seed_paths
-            # Use the previous tree as the seed for the next one
-            seed_paths = (local_dest_path,)
+            # If it exists, use the previous tree as the seed for the next one
+            if os.path.isdir(local_dest_path):
+                seed_paths = (local_dest_path,)
 
     def _already_retrieved(self, local_dest_path):
         # Local directories are overwritten by default
@@ -663,6 +668,11 @@ class SyncSnapshotTree(SyncVersionedTree):
         except ValueError:
             pass
         return None
+
+    def _get_initial_seed_paths(self):
+        # Use the most recent local dir as the initial seed path
+        latest_dir = self._get_latest_dir()
+        return (latest_dir,) if latest_dir is not None else ()
 
     def _get_old_dirs(self, remote_dir_entries):
         dirs_to_delete = (super(SyncSnapshotTree, self).
