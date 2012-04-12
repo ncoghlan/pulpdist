@@ -5,7 +5,7 @@
 # -- headers - pulpdist Python package  --------------------------------------
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
-Version:        0.0.12
+Version:        0.0.13
 Release:        1%{?dist}
 Group:          Development/Tools
 License:        GPLv2
@@ -274,6 +274,8 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* Thu Apr 12 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.13-1
+
 * Thu Apr 12 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.12-1
 - BZ#811446: Snapshot sync operations now set --link-dest correctly in the
   rsync commands when some remote directories have been skipped
