@@ -88,7 +88,7 @@ class _BaseImporter(Importer):
 
             def append_msg(self, msg):
                 """Add a new message to end of the log file"""
-                with open(sync_log, 'a') as f:
+                with open(log_path, 'a') as f:
                     f.write(msg + "\n")
                     f.flush()
         yield LogHelper()

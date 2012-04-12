@@ -277,6 +277,7 @@ fi
 * Thu Apr 12 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.12-1
 - BZ#811446: Snapshot sync operations now set --link-dest correctly in the
   rsync commands when some remote directories have been skipped
+- Fix (and test!) the error reporting path for exceptions in sync plugins
 
 * Wed Apr 11 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.11-1
 - BZ#799203 (continued): 3 sync log files are now preserved: <repo_id>.log

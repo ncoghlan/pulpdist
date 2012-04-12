@@ -252,8 +252,7 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         else:
             self.assertNotExists(backup_path)
 
-    def check_postsync(self, expected_result, expected_stats,
-                             previous_result=None, previous_stats=None):
+    def check_postsync_common(self):
         imp = self._get_importer()
         self.assertFalse(imp[u"sync_in_progress"])
         sync_time = imp[u"last_sync"]
@@ -261,7 +260,11 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         self.check_iso_datetime(sync_time, now)
         history = self._get_sync_history()
         self.assertGreaterEqual(len(history), 1)
-        sync_meta = history[0]
+        return imp, now, history[0]
+
+    def check_postsync(self, expected_result, expected_stats,
+                             previous_result=None, previous_stats=None):
+        imp, now, sync_meta = self.check_postsync_common()
         # TODO: Report and check Pulp level sync status properly
         #       Requires Pulp upgrade to get access to relevant plugin API
         # Check top level sync history
@@ -287,6 +290,20 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         self.assertNotIn(u"sync_log", details)
         self.check_logs(expected_result, expected_stats,
                         previous_result, previous_stats)
+
+    def check_sync_error(self, expected_error):
+        imp, now, sync_meta = self.check_postsync_common()
+        self.assertEqual(sync_meta[u"result"], u"error")
+        self.assertIsNone(sync_meta[u"summary"])
+        self.assertIsNone(sync_meta[u"details"])
+        # Check the error is the expected one
+        self.assertIn(expected_error, sync_meta[u"exception"])
+        actual_error = sync_meta[u"error_message"]
+        self.assertIn(expected_error, actual_error)
+        # Check the exception was written out to the log file
+        log_path, previous_path, backup_path  = self._get_sync_log_paths()
+        with open(log_path) as sync_log:
+            self.assertIn(actual_error, sync_log.read())
 
     def test_simple_tree_sync_partial(self):
         importer_id = u"simple_tree"
@@ -363,6 +380,22 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         self.check_postsync("SYNC_UP_TO_DATE", stats,
                             "SYNC_COMPLETED", previous_stats)
         self.check_tree_layout(self.local_path)
+
+    def test_sync_failure(self):
+        # Deliberately trigger an exception by preventing write access
+        importer_id = u"simple_tree"
+        params = self.CONFIG_TREE_SYNC.copy()
+        parent_dir = self.params["local_path"]
+        local_path = os.path.join(parent_dir, "simple_tree/")
+        self.local_path = self.params["local_path"] = local_path
+        imp = self._add_importer(importer_id, params)
+        self.check_presync(imp, importer_id, params)
+        os.chmod(parent_dir, 0444)
+        try:
+            self.assertServerRequestError(self._sync_repo)
+        finally:
+            os.chmod(parent_dir, 0644)
+        self.check_sync_error(local_path)
 
     def test_importer_update(self):
         last_sync, previous_stats = self.check_simple_tree_sync()
