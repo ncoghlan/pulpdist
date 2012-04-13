@@ -712,7 +712,7 @@ class SyncSnapshotTree(SyncVersionedTree):
                 else:
                     self._update_run_log("Existing latest directory, {0!r}, is not a symbolic link, deleting it", link_path)
                     shutil.rmtree(link_path)
-            elif os.path.exists(link_path):
+            elif os.path.lexists(link_path):
                 self._update_run_log("Existing entry, {0!r}, is not a directory, deleting it", link_path)
                 os.unlink(link_path)
             os.symlink(relative_target, link_path)

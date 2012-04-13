@@ -78,15 +78,16 @@ class TestSyncTree(BaseTestCase):
         self.check_sync_details(task.run_sync(), "SYNC_UP_TO_DATE", stats)
         self.check_snapshot_layout(local_path, *details)
 
-    def test_sync_latest_link(self):
+    def latest_link_info(self):
+        link_name = u"latest-relevant"
+        link_path = _path(self.local_path, link_name)
+        return link_name, link_path
+
+    def check_sync_latest_link(self):
         local_path = self.local_path
         params = self.params
         params.update(self.CONFIG_SNAPSHOT_SYNC)
-        link_name = u"latest-relevant"
-        link_path = _path(local_path, link_name)
-        # BZ#807913 - make sure this works even if the name is already taken
-        with open(link_path, 'w') as f:
-            pass
+        link_name, link_path = self.latest_link_info()
         params["latest_link_name"] = link_name
         __, expect_sync, __ = self.setup_snapshot_layout(local_path)
         task = sync_trees.SyncSnapshotTree(params)
@@ -99,6 +100,22 @@ class TestSyncTree(BaseTestCase):
         # Symlink should exist and point to the last synced tree
         self.assertTrue(os.path.islink(link_path))
         self.assertEqual(os.readlink(link_path), expect_sync[-1])
+
+    def test_sync_latest_link(self):
+        self.check_sync_latest_link()
+
+    def test_sync_latest_link_existing_file(self):
+        # BZ#807913 - make sure this works even if the name is already taken
+        __, link_path = self.latest_link_info()
+        with open(link_path, 'w') as f:
+            pass
+        self.check_sync_latest_link()
+
+    def test_sync_latest_link_broken_symlink(self):
+        # BZ#807913 - check broken symlinks are handled correctly
+        __, link_path = self.latest_link_info()
+        os.symlink("missing", link_path)
+        self.check_sync_latest_link()
 
     def test_dir_protection(self):
         # We only test this with a simple sync
@@ -140,7 +157,6 @@ class TestSyncTree(BaseTestCase):
         extra_path = _path(local_path, "extra.txt")
         copied_path = _path(local_path, "copied.txt")
         self.assertTrue(os.path.samefile(extra_path, copied_path))
-
 
     def log_simple_sync(self, log_dest):
         local_path = self.local_path

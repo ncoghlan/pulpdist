@@ -5,7 +5,7 @@
 # -- headers - pulpdist Python package  --------------------------------------
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
-Version:        0.0.13
+Version:        0.0.14
 Release:        1%{?dist}
 Group:          Development/Tools
 License:        GPLv2
@@ -274,6 +274,10 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* Fri Apr 13 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.14-1
+- BZ#807913 (continued): Ensure that symlinks to nonexistent files or
+  directories are removed correctly
+
 * Thu Apr 12 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.13-1
 - BZ#807913: In snapshot syncs, handle the case where an existing latest link
   entry is not a directory (e.g. it is a symlink to a directory that no longer
