@@ -238,6 +238,13 @@ the use of either ``versioned`` or ``snapshot`` as the sync algorithm:
 The ``exclude_from_listing`` and ``listing_filters`` settings are appended to
 the default filtering options including in the remote tree definition.
 
+The following additional settings is only valid if the sync algorithm is set to
+``snapshot``:
+
+* ``sync_latest_only``: If provided and true, only the most recent remote
+  snapshot will be mirrored locally. By default, all remote snapshots are
+  mirrored.
+
 
 Remote Tree Definitions
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -277,7 +284,7 @@ either ``versioned`` or ``snapshot``:
 * ``listing_filters``: rsync filters applied when determining which directories
   to synchronise (optional)
 
-The following additional settings is required if the sync algorithm is set to
+The following additional setting is only valid if the sync algorithm is set to
 ``snapshot``:
 
 * ``latest_link``: the filename used for a symlink that refers to the most

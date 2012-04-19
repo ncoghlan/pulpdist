@@ -108,6 +108,9 @@ create a consistent symbolic link to the most recent snapshot:
 * ``latest_link_name``: If provided and not ``None``, a local symbolic link
   is created with this name that points to the most recent snapshot after
   each sync operation. By default, no symbolic link is created.
+* ``sync_latest_only``: If provided and true, only the most recent remote
+  snapshot will be mirrored locally. By default, all remote snapshots are
+  mirrored.
 
 
 Snapshot Delta Sync

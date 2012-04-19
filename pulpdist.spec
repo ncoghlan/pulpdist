@@ -5,7 +5,7 @@
 # -- headers - pulpdist Python package  --------------------------------------
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
-Version:        0.0.15
+Version:        0.0.16
 Release:        1%{?dist}
 Group:          Development/Tools
 License:        GPLv2
@@ -274,6 +274,9 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* ??? ??? ?? 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.16-1
+- Update documentation to cover new "sync_latest_only" configuration option
+
 * Thu Apr 19 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.15-1
 - Until PulpDist is updated to cope with the backwards incompatible changes to
   the v2 APIs in later Pulp versions, RPM dependency has been temporarily
