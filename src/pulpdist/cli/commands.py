@@ -257,7 +257,7 @@ class ShowRepoStatus(SyncHistoryCommand):
             else:
                 result = summary["result"]
             start = sync_info["started"]
-            finish = summary["finish_time"]
+            finish = sync_info["completed"]
             print_msg("{0}{1:25}({2} -> {3})", title, result, start, finish)
 
     def process_repos(self, repos):
