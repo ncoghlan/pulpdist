@@ -113,6 +113,7 @@ class LocalMirrorConfig(validation.ValidatedConfig):
         u"enabled": validation.check_type(int),
         u"dry_run_only": validation.check_type(int),
         u"delete_old_dirs": validation.check_type(int),
+        u"sync_latest_only": validation.check_type(int),
     }
     _DEFAULTS =  {
         u"site_id": "default",
@@ -127,6 +128,7 @@ class LocalMirrorConfig(validation.ValidatedConfig):
         u"enabled": False,
         u"dry_run_only": False,
         u"delete_old_dirs": False,
+        u"sync_latest_only": False,
     }
 
 class SiteSettingsConfig(validation.ValidatedConfig):

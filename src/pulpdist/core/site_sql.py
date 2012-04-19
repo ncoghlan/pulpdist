@@ -154,8 +154,10 @@ class SourcePrefix(Base, FieldsMixin):
 class LocalMirror(Base, FieldsMixin):
     __tablename__ = "local_mirrors"
     _FIELDS = """mirror_id tree_id site_id name description mirror_path
-                 exclude_from_sync sync_filters exclude_from_listing listing_filters
-                 notes enabled dry_run_only delete_old_dirs""".split()
+                 exclude_from_sync sync_filters
+                 exclude_from_listing listing_filters
+                 notes enabled dry_run_only
+                 delete_old_dirs sync_latest_only""".split()
     mirror_id = sqla.Column(sqla.String, primary_key=True)
     tree_id = sqla.Column(sqla.String, sqla.ForeignKey("remote_trees.tree_id"))
     tree = relation(RemoteTree, backref=backref("mirrors", order_by=mirror_id))
@@ -174,6 +176,7 @@ class LocalMirror(Base, FieldsMixin):
     enabled = sqla.Column(sqla.Boolean, default=False)
     dry_run_only = sqla.Column(sqla.Boolean, default=False)
     delete_old_dirs = sqla.Column(sqla.Boolean, default=False)
+    sync_latest_only = sqla.Column(sqla.Boolean, default=False)
 
     # Easy access to the default site for creation of the repo definition
     default_site_id = sqla.Column(sqla.String,

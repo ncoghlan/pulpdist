@@ -126,7 +126,9 @@ class MirrorConverter(object):
 
     def _build_snapshot_config(self):
         config = self._build_versioned_config()
-        latest_link = self.mirror.tree.latest_link
+        mirror = self.mirror
+        config[u"sync_latest_only"] = mirror.sync_latest_only
+        latest_link = mirror.tree.latest_link
         if latest_link is not None:
             config[u"latest_link_name"] = latest_link
         return config

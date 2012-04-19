@@ -321,6 +321,7 @@ EXPECTED_REPO_CONFIGS = """\
       "listing_pattern": "re*ev*",
       "enabled": false,
       "delete_old_dirs": false,
+      "sync_latest_only": false,
       "local_path": "/var/www/pub/sync_demo/sync_demo_trees/snapshot/"
     }
   },

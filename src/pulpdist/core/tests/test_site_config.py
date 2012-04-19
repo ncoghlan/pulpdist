@@ -261,6 +261,16 @@ class TestSiteConfig(unittest.TestCase):
         importer = repos[0]["importer_config"]
         self.assertNotIn("latest_link_name", importer)
 
+    # BZ#813667, handle syncing only the latest snapshot tree
+    def test_sync_latest_only(self):
+        config = json.loads(TEST_CONFIG)
+        config["LOCAL_MIRRORS"][2]["sync_latest_only"] = True
+        site = site_config.SiteConfig(config)
+        repos = site.get_repo_configs(mirrors=["snapshot_sync"])
+        self.assertEqual(len(repos), 1)
+        importer = repos[0]["importer_config"]
+        self.assertTrue(importer["sync_latest_only"])
+
 
 class TestQueryMirrors(unittest.TestCase):
 

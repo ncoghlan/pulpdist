@@ -148,6 +148,9 @@ class TreeTestCase(unittest.TestCase):
         enabled = True,
     )
 
+    CONFIG_LATEST_SNAPSHOT_SYNC = CONFIG_SNAPSHOT_SYNC.copy()
+    CONFIG_LATEST_SNAPSHOT_SYNC["sync_latest_only"] = True
+
     NUM_TREES_VERSIONED = 4
     NUM_TREES_SNAPSHOT = 2
 
@@ -172,6 +175,7 @@ class TreeTestCase(unittest.TestCase):
     EXPECTED_TREE_STATS.update(_COMMON_STATS)
     EXPECTED_VERSIONED_STATS.update(_COMMON_STATS)
     EXPECTED_SNAPSHOT_STATS.update(_COMMON_STATS)
+    EXPECTED_LATEST_SNAPSHOT_STATS = dict(EXPECTED_TREE_STATS)
 
     EXPECTED_REPEAT_STATS = dict(
         transferred_file_count = 0,
@@ -232,18 +236,23 @@ class TreeTestCase(unittest.TestCase):
         not_ready_path = os.path.join(local_path, _skipped_snapshot_tree)
         # We expect the other trees to be synchronised
         expect_sync = _expected_snapshot_trees[1:]
-        return finished_path, expect_sync, not_ready_path
+        return [finished_path], expect_sync, [not_ready_path]
 
+    def setup_latest_snapshot_layout(self, local_path):
+        finished, expected, not_ready = self.setup_snapshot_layout(local_path)
+        not_ready.extend(expected[:-1])
+        expected = expected[-1:]
+        return finished, expected, not_ready
 
-    def check_snapshot_layout(self, snapshot_path, finished_path=None,
-                                    expected_paths=(), not_ready_path=None):
+    def check_snapshot_layout(self, snapshot_path, finished_paths=(),
+                                    expected_paths=(), not_ready_paths=()):
         # The tree locally marked as complete should not get updated
-        if finished_path is not None:
-            self.assertExists(finished_path)
-            self.assertEqual(os.listdir(finished_path), ["STATUS"])
+        for tree in finished_paths:
+            self.assertExists(tree)
+            self.assertEqual(os.listdir(tree), ["STATUS"])
         # The tree not remotely marked as complete should not get updated
-        if not_ready_path is not None:
-            self.assertNotExists(not_ready_path)
+        for tree in not_ready_paths:
+            self.assertNotExists(tree)
         # The other trees should all get synchronised
         previous_tree_path = None
         for tree in expected_paths:

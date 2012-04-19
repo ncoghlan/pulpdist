@@ -600,6 +600,25 @@ class SyncSnapshotTree(SyncVersionedTree):
     """Sync the contents of a directory containing multiple snapshots of a tree"""
     CONFIG_TYPE = sync_config.SnapshotSyncConfig
 
+    def _find_latest_remote_version(self, remote_dir_entries):
+        seed_paths = self._get_initial_seed_paths()
+        for mtime, dir_entry in sorted(remote_dir_entries, reverse=True):
+            remote_entry = self.remote_path + dir_entry
+            remote_source_path = "rsync://{0}{1}/".format(self.remote_server, remote_entry)
+            local_dest_path = os.path.join(self.local_path, dir_entry)
+            yield remote_source_path, local_dest_path, seed_paths
+            # Keep going until we successfully copy a tree to the local system
+            if self._already_retrieved(local_dest_path):
+                self._update_run_log("Latest remote tree is in {0!r}", local_dest_path)
+                break
+        else:
+            self._update_run_log("No valid remote tree identified")
+
+    def _iter_remote_versions(self, remote_dir_entries):
+        if self.sync_latest_only:
+            return self._find_latest_remote_version(remote_dir_entries)
+        return super(SyncSnapshotTree, self)._iter_remote_versions(remote_dir_entries)
+
     def _already_retrieved(self, local_dest_path):
         local_status_path = os.path.join(local_dest_path, "STATUS")
         with self._indent_run_log():
@@ -656,6 +675,7 @@ class SyncSnapshotTree(SyncVersionedTree):
         return result
 
     def _consolidate_tree(self):
+        # See BZ#814031
         msg = "Skipping consolidation of {0!r} in order to preserve directory mtimes"
         self._update_run_log(msg, self.local_path)
 

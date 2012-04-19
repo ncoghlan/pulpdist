@@ -117,6 +117,18 @@ class TestSyncTree(BaseTestCase):
         os.symlink("missing", link_path)
         self.check_sync_latest_link()
 
+    def test_sync_latest_only(self):
+        local_path = self.local_path
+        params = self.params
+        params.update(self.CONFIG_LATEST_SNAPSHOT_SYNC)
+        finished, expect_sync, not_ready = self.setup_latest_snapshot_layout(local_path)
+        task = sync_trees.SyncSnapshotTree(params)
+        # We expect only the *latest* path to get filled in
+        self.assertEqual(len(expect_sync), 1)
+        stats = dict(self.EXPECTED_LATEST_SNAPSHOT_STATS)
+        self.check_sync_details(task.run_sync(), "SYNC_COMPLETED", stats)
+        self.check_snapshot_layout(local_path, finished, expect_sync, not_ready)
+
     def test_dir_protection(self):
         # We only test this with a simple sync
         # since versioned sync is merely a series
@@ -358,7 +370,7 @@ class TestSyncTreeDryRun(BaseTestCase):
         self.check_dry_run_sync(sync_trees.SyncSnapshotTree,
                                 self.CONFIG_SNAPSHOT_SYNC,
                                 stats,
-                                [os.path.basename(existing_dir)])
+                                [os.path.basename(d) for d in existing_dir])
 
 
 class TestLinkValidation(TreeTestCase):

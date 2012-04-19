@@ -64,9 +64,11 @@ class VersionedSyncConfig(TreeSyncConfig):
 class SnapshotSyncConfig(VersionedSyncConfig):
     _SPEC = _updated(VersionedSyncConfig._SPEC, {
         u"latest_link_name": validation.check_path(allow_none=True),
+        u"sync_latest_only": validation.check_type(int),
     })
     _DEFAULTS = _updated(VersionedSyncConfig._DEFAULTS, {
         u"latest_link_name": None,
+        u"sync_latest_only": False,
     })
 
     def __init__(self, config=None):

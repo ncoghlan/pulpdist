@@ -281,6 +281,8 @@ fi
 - BZ#813114: the management client now better tolerates missing summary data
 - BZ#812200: repos configured for dry run mode are now better distinguished
   in the web UI from those configured for full synchronisation.
+- BZ#813667: snapshot trees now provide the "sync_latest_only" configuration
+  option
 
 * Fri Apr 13 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.14-1
 - BZ#807913 (continued): Ensure that symlinks to nonexistent files or

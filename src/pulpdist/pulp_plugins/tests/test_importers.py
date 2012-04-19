@@ -367,6 +367,18 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         self.check_postsync("SYNC_COMPLETED", stats)
         self.check_snapshot_layout(self.local_path, *details)
 
+    def test_latest_snapshot_tree_sync(self):
+        importer_id = u"snapshot_tree"
+        params = self.CONFIG_LATEST_SNAPSHOT_SYNC.copy()
+        details = self.setup_latest_snapshot_layout(self.local_path)
+        imp = self._add_importer(importer_id, params)
+        self.check_presync(imp, importer_id, params)
+        self.assertTrue(self._sync_repo())
+        self._wait_for_sync()
+        stats = self.EXPECTED_LATEST_SNAPSHOT_STATS
+        self.check_postsync("SYNC_COMPLETED", stats)
+        self.check_snapshot_layout(self.local_path, *details)
+
     def test_sync_log_backup(self):
         # First, we repeat test_simple_tree_sync to get a good backup
         last_sync, previous_stats = self.check_simple_tree_sync()
