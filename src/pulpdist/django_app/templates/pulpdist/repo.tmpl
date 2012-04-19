@@ -11,7 +11,8 @@
     <ul>
         {% if object.importer_info %}
             <li><b>{% trans 'Automatic update type' %}:</b> {{ object.importer_info.importer_type_id }}
-                   ({{ object.importer_info.config.enabled|yesno:"ENABLED,DISABLED" }})</li>
+                   ({{ object.importer_info.config.enabled|yesno:"ENABLED,DISABLED" }}
+                   {% if object.importer_info.config.dry_run_only %} - DRY RUN ONLY{% endif%})</li>
             <li><b>{% trans 'Last updated' %}:</b> {{ object.last_sync_attempt }}</li>
             <li><b>{% trans 'Last update result' %}:</b> {{ object.last_status }}</li>
             <li><b>{% trans 'Update in progress?' %}:</b> {{ object.importer_info.sync_in_progress }}</li>

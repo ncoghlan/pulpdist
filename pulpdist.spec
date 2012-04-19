@@ -279,6 +279,8 @@ fi
   the v2 APIs in later Pulp versions, RPM dependency has been temporarily
   locked specifically to Pulp 0.0.267
 - BZ#813114: the management client now better tolerates missing summary data
+- BZ#812200: repos configured for dry run mode are now better distinguished
+  in the web UI from those configured for full synchronisation.
 
 * Fri Apr 13 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.14-1
 - BZ#807913 (continued): Ensure that symlinks to nonexistent files or

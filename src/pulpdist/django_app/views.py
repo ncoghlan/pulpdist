@@ -131,8 +131,10 @@ class RepoTable(Table):
     def render_sync_enabled(self, record):
         status = "-"
         importer = record["importer"]
-        if importer and importer["config"]["enabled"]:
-            status = "ENABLED"
+        if importer:
+            config = importer["config"]
+            if config["enabled"]:
+                status = "TEST" if config["dry_run_only"] else "ENABLED"
         return status
 
 
