@@ -18,7 +18,7 @@ BuildRequires: rpm-python
 BuildRequires: python2-devel
 BuildRequires: python-setuptools
 
-Requires: pulp-admin >= 0.0.262
+Requires: pulp-admin = 0.0.267
 Requires: python >= 2.6
 Requires: python-oauth2
 Requires: python-httplib2
@@ -85,7 +85,7 @@ Django site on Apache.
 Summary:        Pulp plugins to support PulpDist mirroring network
 
 Requires: %{name} = %{version}
-Requires: pulp >= 0.0.262
+Requires: pulp = 0.0.267
 Requires: rsync
 Requires: hardlink
 
@@ -275,7 +275,9 @@ fi
 
 %changelog
 * Thu Apr 19 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.15-1
-
+- Until PulpDist is updated to cope with the backwards incompatible changes to
+  the v2 APIs in later Pulp versions, RPM dependency has been temporarily
+  locked specifically to Pulp 0.0.267
 
 * Fri Apr 13 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.14-1
 - BZ#807913 (continued): Ensure that symlinks to nonexistent files or
