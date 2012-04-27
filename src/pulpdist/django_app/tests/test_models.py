@@ -17,7 +17,7 @@ from . import util
 
 from django.conf import settings
 
-class PulpUI_TestCase(DatabaseTestCase):
+class TestPulpServerModel(DatabaseTestCase):
     def setup(self):
         with util.patch_pulpapi() as api:
             server = models.PulpServer.objects.create(

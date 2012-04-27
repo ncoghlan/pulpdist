@@ -37,7 +37,7 @@ def su_login(client):
     return site_login(client, settings.DUMMY_AUTH_SUPER)
 
 
-class Index_TestCase(HttpTestCase):
+class TestSiteIndex(HttpTestCase):
     fixtures = ["pulpdist/fixtures/pulpdist_server_details.json"]
 
     def test_index_loads(self):

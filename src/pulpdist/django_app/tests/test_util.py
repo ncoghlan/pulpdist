@@ -15,7 +15,7 @@ from ...core.tests.compat import unittest
 from .. import util as app_util
 from ...core import util as core_util
 
-class Utility_TestCase(unittest.TestCase):
+class TestUtilities(unittest.TestCase):
     def test_version(self):
         self.assertEqual(app_util.version(), core_util.__version__)
 

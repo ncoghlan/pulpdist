@@ -87,8 +87,7 @@ DATABASES = {
 
 TEST_RUNNER = "djangosanetesting.testrunner.DstNoseTestSuiteRunner"
 DST_RUN_SOUTH_MIGRATIONS = False
-DJANGO_TEST_DIRS = ['pulpdist/django_app', 'pulpdist/django_site']
-NOSE_ARGS = ['--nologcapture'] + DJANGO_TEST_DIRS
+NOSE_ARGS = ['--match=^test_', '--include=^Test', '--nologcapture', '--exe']
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
