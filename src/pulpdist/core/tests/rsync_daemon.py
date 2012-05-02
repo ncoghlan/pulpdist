@@ -72,7 +72,7 @@ class RsyncDaemon(object):
                 break
             time.sleep(0.01)
         else:
-            raise RuntimeError("rsync server failed to start")
+            raise RuntimeError("timeout waiting for rsync server to start")
 
     def start(self):
         rsync_dir = self.rsync_dir
@@ -91,6 +91,8 @@ class RsyncDaemon(object):
         if subprocess.call(command) == 0:
             with self._wait_for_pid_file(pid_path) as pid_text:
                 self.pid = int(pid_text)
+        else:
+            raise RuntimeError("rsync server failed to start")
 
     def close(self):
         if self.pid is not None:
