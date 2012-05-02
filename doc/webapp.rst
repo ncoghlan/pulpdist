@@ -39,12 +39,14 @@ After installation, a few configuration settings need to be adjusted.
    * setting up `OAuth authentication`_
    * setting up `LDAP user authentication`_
 
+
 2. Update ``/etc/pulpdist/site.conf`` in accordance with the embedded comments.
    Notably:
 
    * Enter the initial list of system administrators
    * Set the passphrase for encrypted database fields
-   * Generate and enter a private Django secret key
+   * Generate and enter a private Django secret key (see below)
+
 
 3. Update  ``/etc/httpd/conf.d/pulpdist.conf`` to set the Kerberos domain
    correctly (and, optionally, add a keytab reference for single-sign-on
@@ -65,6 +67,7 @@ After installation, a few configuration settings need to be adjusted.
    * Hostname: fully qualified hostname for this server (will be checked by SSL)
    * Oauth key: the Pulp OAuth key configured in Step 1
    * Oauth secret: the Pulp OAuth secret configured in Step 1
+
 
 6. Update ``/etc/pulp/admin/admin.conf`` to replace ``localhost.localdomain``
    with the fully qualified domain of the server
@@ -88,6 +91,10 @@ After installation, a few configuration settings need to be adjusted.
       # Check the permissions have been updated appropriately
       pulp-admin permission show --resource /
 
+
+The following command can be used to generate a fresh Django secret key::
+
+   python -c 'from random import choice; print("".join([choice("abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)") for i in range(50)]))'
 
 .. _`Pulp Installation Guide`: http://pulpproject.org/ug/UGInstallation.html
 .. _OAuth authentication: https://fedorahosted.org/pulp/wiki/AuthenticationOAuth#HowTo
