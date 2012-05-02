@@ -9,7 +9,7 @@
 # NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
-# Django settings for pulpweb project.
+# Django settings for example pulpdist project.
 import os
 import tempfile
 import logging
@@ -84,10 +84,6 @@ DATABASES = {
         # 'TEST_NAME': TEST_DB_NAME,       # Enable if in-memory test DB starts causing problems
     }
 }
-
-TEST_RUNNER = "djangosanetesting.testrunner.DstNoseTestSuiteRunner"
-DST_RUN_SOUTH_MIGRATIONS = False
-NOSE_ARGS = ['--match=^test_', '--include=^Test', '--nologcapture', '--exe']
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
