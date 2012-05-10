@@ -169,6 +169,12 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
 
     def tearDown(self):
         self.server.delete_repo(self.repo[u"id"])
+        # Note we don't clean up the test tree. This actually fails due
+        # to permission problems, and the least-bad option currently
+        # identified is to let the tree leak and just clean up the /tmp
+        # directory occasionally.
+        # See the test_as_apache_user branch for a failed attempt at
+        # fixing this
 
     def _add_importer(self, importer_id, params):
         params.update(self.params)
