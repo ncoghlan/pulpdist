@@ -161,6 +161,8 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
 
     def setUp(self):
         super(TestLocalSync, self).setUp()
+        # Due to the multiple inheritance arrangement, the super() call
+        # doesn't  automatically set up our connection to the Pulp server
         self.server = self.local_test_server()
         self.repo = self.local_test_repo()
         # Ensure Pulp server can write to our data dir
@@ -175,6 +177,8 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         # directory occasionally.
         # See the test_as_apache_user branch for a failed attempt at
         # fixing this
+        # We *do* want to kill our rsync daemon, though
+        self.rsyncd.close()
 
     def _add_importer(self, importer_id, params):
         params.update(self.params)
