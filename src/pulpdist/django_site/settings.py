@@ -40,7 +40,7 @@ if SITE_CONFIG.read(SITE_CONFIG_FILE):
     PULPAPI_OAUTH_KEY_STORE_PASSPHRASE = SITE_CONFIG.get('database', 'passphrase')
     SECRET_KEY = SITE_CONFIG.get('django', 'secret_key')
     PULPDIST_ADMINS = dict(SITE_CONFIG.items('admins'))
-    ADMINS = tuple((email, name) for (name, email) in PULPDIST_ADMINS.iteritems())
+    ADMINS = tuple((name, email) for (email, name) in PULPDIST_ADMINS.iteritems())
     VAR_ROOT = '/' + VAR_RELPATH
     LOG_ROOT = '/' + LOG_RELPATH
 else:
