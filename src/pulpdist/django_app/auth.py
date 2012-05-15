@@ -24,7 +24,7 @@ LOGIN_TEMPLATE = 'pulpdist/login.tmpl'
 LOGOUT_TEMPLATE = 'pulpdist/logout.tmpl'
 
 class PulpDistAuthForm(AuthenticationForm):
-    allow_local_auth = settings.ENABLE_DUMMY_AUTH
+    allow_local_auth = getattr(settings, "ENABLE_DUMMY_AUTH", False)
     if allow_local_auth:
         dummy_user = settings.DUMMY_AUTH_USER
 
