@@ -278,6 +278,7 @@ fi
 - Update documentation to cover new "sync_latest_only" configuration option
 - Test discovery now correctly identifies all test cases
 - Repo summary table is more tolerant of missing fields in the importer config
+- Test suite no longer leaves rsync daemon processes active
 
 * Thu Apr 19 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.15-1
 - Until PulpDist is updated to cope with the backwards incompatible changes to
