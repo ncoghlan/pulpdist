@@ -133,8 +133,8 @@ class RepoTable(Table):
         importer = record["importer"]
         if importer:
             config = importer["config"]
-            if config["enabled"]:
-                status = "TEST" if config["dry_run_only"] else "ENABLED"
+            if config.get("enabled"):
+                status = "TEST" if config.get("dry_run_only") else "ENABLED"
         return status
 
 
