@@ -276,6 +276,8 @@ fi
 %changelog
 * ??? ??? ?? 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.16-1
 - Update documentation to cover new "sync_latest_only" configuration option
+- Test discovery now correctly identifies all test cases
+- Repo summary table is more tolerant of missing fields in the importer config
 
 * Thu Apr 19 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.15-1
 - Until PulpDist is updated to cope with the backwards incompatible changes to
