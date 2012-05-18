@@ -92,8 +92,8 @@ class PulpServer(models.Model):
     def get_importer(self, repo_id):
         return self.server.get_importer(repo_id)
 
-    def get_sync_history(self, repo_id):
-        return self.server.get_sync_history(repo_id)
+    def get_sync_history(self, repo_id, limit=None):
+        return self.server.get_sync_history(repo_id, limit)
 
     def add_slug_seq(self, data):
         for item in data:

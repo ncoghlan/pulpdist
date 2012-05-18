@@ -149,7 +149,7 @@ class RepoListView(ServerMixin, _TableView):
         repos = server.get_repos()
         for repo in repos:
             repo_id = repo["id"]
-            repo["sync_history"] = server.get_sync_history(repo_id)
+            repo["sync_history"] = server.get_sync_history(repo_id, 1)
             repo["importer"] = server.get_importer(repo_id)
         return repos
 
