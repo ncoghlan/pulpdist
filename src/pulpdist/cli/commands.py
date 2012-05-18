@@ -206,6 +206,9 @@ class ShowRepoDetails(PulpCommand):
 class SyncHistoryCommand(PulpCommand):
     """Operations on Pulp repositories that require sync history details"""
 
+    def _get_history_limit(self):
+        return None
+
     def _get_repos(self):
         """Returns a list of (repo_id, display_id, repo_info) tuples
 
@@ -224,8 +227,12 @@ class SyncHistoryCommand(PulpCommand):
             details["sync_history"] = None
             details["last_attempt"] = None
             details["last_success"] = None
+            limit = self._get_history_limit()
+            if limit == 0:
+                continue
             with catch_server_error(history_error, repo.display_id):
-                details["sync_history"] = history = server.get_sync_history(repo.id)
+                history = server.get_sync_history(repo.id, limit)
+                details["sync_history"] = history
                 if not history:
                     continue
                 details["last_attempt"] = history[0]
@@ -289,15 +296,15 @@ class ShowRepoStatus(SyncHistoryCommand):
 
 class ShowSyncHistory(SyncHistoryCommand):
     """Command that displays the sync history of each repository"""
+    def _get_history_limit(self):
+        return self.args.num_entries
+
     def process_repo(self, repo):
         history = repo.config["sync_history"]
         if not history:
             print_msg("No sync history for {0}", repo.display_id)
             return
         args = self.args
-        num_entries = args.num_entries
-        if num_entries is not None:
-            history = history[:num_entries]
         print_header("Sync history for {0}", repo.display_id)
         for sync_job in history:
             details = sync_job.get("details")
@@ -307,6 +314,13 @@ class ShowSyncHistory(SyncHistoryCommand):
 
 class LatestSyncCommand(SyncHistoryCommand):
     """Operations that need to access the latest success or attempt"""
+    def _get_history_limit(self):
+        if self.args.success:
+            # Need all entries to find most recent successful run
+            return None
+        # Otherwise, we only need the latest entry
+        return 1
+
     def get_latest_sync(self, repo):
         display_success = self.args.success
         sync_version = "last_success" if display_success else "last_attempt"

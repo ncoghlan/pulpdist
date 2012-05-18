@@ -279,6 +279,7 @@ fi
 - Test discovery now correctly identifies all test cases
 - Repo summary table is more tolerant of missing fields in the importer config
 - Test suite no longer leaves rsync daemon processes active
+- BZ#802593: Management CLI uses "limit" option when fetching sync history
 
 * Thu Apr 19 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.15-1
 - Until PulpDist is updated to cope with the backwards incompatible changes to

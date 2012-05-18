@@ -88,9 +88,13 @@ class PulpRepositories(_PulpCollection):
         path = "%s%s/importers/" % (self.collection_path, repo_id)
         return _response_data(self.server.GET(path))
 
-    def get_sync_history(self, repo_id):
+    def get_sync_history(self, repo_id, limit=None):
         path = "%s%s/sync_history/" % (self.collection_path, repo_id)
-        return _response_data(self.server.GET(path))
+        if limit is None:
+            queries = ()
+        else:
+            queries = (("limit", limit),)
+        return _response_data(self.server.GET(path, queries))
 
     def sync_repo(self, repo_id):
         path = "%s%s/actions/sync/" % (self.collection_path, repo_id)
@@ -220,7 +224,7 @@ class PulpServerClient(pulp.client.api.server.PulpServer):
         type_id, config = self.get_importer_config(repo_id)
         return config.get("enabled", False)
 
-    def get_sync_history(self, repo_id):
+    def get_sync_history(self, repo_id, limit=None):
         return PulpRepositories(self).get_sync_history(repo_id)
 
     def get_generic_types(self):

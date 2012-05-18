@@ -293,7 +293,7 @@ class TestDisabledSyncHistory(SyncHistoryTestCase):
         cmd = self.command(commands.ShowSyncHistory, num_entries=0)
         output = self.get_cmd_output(cmd)
         expected = example_site.ALL_REPOS
-        self.check_repo_display(output, expected, "Sync history for")
+        self.check_repo_display(output, expected, "No sync history for")
         self.assertNotIn("{", output.getvalue())
         self.assertNotIn("}", output.getvalue())
 
