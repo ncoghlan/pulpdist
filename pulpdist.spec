@@ -281,6 +281,8 @@ fi
 - Test suite no longer leaves rsync daemon processes active
 - BZ#802593: The management CLI and the repo summary table in the web UI use
   the server side  "limit" option when fetching sync history
+- Test suite now correctly cleans up temporary directories used for the Pulp
+  plugin integration tests
 
 * Thu Apr 19 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.15-1
 - Until PulpDist is updated to cope with the backwards incompatible changes to

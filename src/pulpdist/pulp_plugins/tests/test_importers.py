@@ -96,9 +96,6 @@ class TestConfiguration(PulpTestCase):
         super(TestConfiguration, self).setUp()
         self.repo = self.local_test_repo()
 
-    def tearDown(self):
-        self.server.delete_repo(self.repo[u"id"])
-
     def _add_importer(self, importer_id, params):
         params[u"local_path"] = u"test_path"
         repo_id = self.repo[u"id"]
@@ -168,17 +165,6 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         # Ensure Pulp server can write to our data dir
         os.chmod(self.local_path, 0o777)
         self._remove_logs()
-
-    def tearDown(self):
-        self.server.delete_repo(self.repo[u"id"])
-        # Note we don't clean up the test tree. This actually fails due
-        # to permission problems, and the least-bad option currently
-        # identified is to let the tree leak and just clean up the /tmp
-        # directory occasionally.
-        # See the test_as_apache_user branch for a failed attempt at
-        # fixing this
-        # We *do* want to kill our rsync daemon, though
-        self.rsyncd.close()
 
     def _add_importer(self, importer_id, params):
         params.update(self.params)

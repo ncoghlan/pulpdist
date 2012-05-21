@@ -42,14 +42,17 @@ class PulpTestCase(unittest.TestCase):
         oauth_secret = "example-oauth-secret"
         return pulpapi.PulpServer(localhost, oauth_key, oauth_secret)
 
-    def local_test_repo(self):
+    def local_test_repo(self, cleanup=True):
         try:
             self.server.delete_repo(self.REPO_ID)
         except pulpapi.ServerRequestError:
             pass
         else:
             raise RuntimeError("Previous test run didn't destroy test repo!")
-        return self.server.create_repo(self.REPO_ID)
+        repo = self.server.create_repo(self.REPO_ID)
+        if cleanup:
+            self.addCleanup(self.server.delete_repo, self.REPO_ID)
+        return repo
 
     def assertServerRequestError(self, *args, **kwds):
         return self.assertRaises(pulpapi.ServerRequestError, *args, **kwds)

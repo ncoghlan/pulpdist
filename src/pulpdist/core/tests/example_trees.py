@@ -17,6 +17,7 @@
 import shutil
 import tempfile
 import os.path
+import subprocess
 
 from .compat import unittest
 
@@ -186,13 +187,21 @@ class TreeTestCase(unittest.TestCase):
 
     def setUp(self):
         self.rsyncd = rsyncd = self.start_rsyncd()
+        self.addCleanup(self.rsyncd.close)
         self.local_path = local_path = tempfile.mkdtemp().decode("utf-8")
+        self.addCleanup(shutil.rmtree, local_path)
+        # Ensure we can still delete the temporary directory even if
+        # another process (such as apache) owns the files in the directory
+        # Also ensure other processes (such as apache) have read access
+        # to the contents of the directory
+        this_acl = "d:u:{0}:rwX".format(os.geteuid())
+        other_acl = "d:o::rX"
+        subprocess.check_call(["setfacl",
+                               "-m", this_acl,
+                               "-m", other_acl,
+                               local_path])
         self.params = dict(rsync_port = rsyncd.port,
                            local_path = local_path+'/')
-
-    def tearDown(self):
-        self.rsyncd.close()
-        shutil.rmtree(self.local_path)
 
     def assertExists(self, full_path):
         err = "{0} does not exist".format(full_path)
