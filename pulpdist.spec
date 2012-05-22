@@ -276,13 +276,13 @@ fi
 %changelog
 * ??? ??? ?? 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.16-1
 - Update documentation to cover new "sync_latest_only" configuration option
-- Test discovery now correctly identifies all test cases
+- BZ#807081: Test discovery now correctly identifies all test cases
 - Repo summary table is more tolerant of missing fields in the importer config
-- Test suite no longer leaves rsync daemon processes active
+- BZ#807081: Test suite no longer leaves rsync daemon processes active
+- BZ#807081: Test suite now correctly cleans up temporary directories used for
+  the Pulp plugin integration tests
 - BZ#802593: The management CLI and the repo summary table in the web UI use
   the server side  "limit" option when fetching sync history
-- Test suite now correctly cleans up temporary directories used for the Pulp
-  plugin integration tests
 - BZ#812197: Added initial version of Python API documentation
 
 * Thu Apr 19 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.15-1
