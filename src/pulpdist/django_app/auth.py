@@ -41,9 +41,19 @@ def logout_view(request):
 
 
 class LDAPAuthBackend(RemoteUserBackend):
-    def clean_username(self, username):
-        _log.debug("Accepted LDAP login: %s", username)
-        return username
+    """Remote User Backend that checks LDAP users against the configured
+    list of site administrators to dynamically update their permissions
+
+    Assumes that login names of the form "user@EXAMPLE.COM" correspond to email
+    addresses of the form "user@example.com"
+
+    Specifically designed to work with Apache's mod_auth_kerb.
+    """
+    def authenticate(self, remote_user):
+        user = super(LDAPAuthBackend, self).authenticate(remote_user)
+        _log.debug("Accepted LDAP login: %s", user.username)
+        self.update_user_permissions(user)
+        return user
 
     def configure_user(self, user):
         name = user.username
@@ -52,8 +62,16 @@ class LDAPAuthBackend(RemoteUserBackend):
             email = name.lower()
             _log.debug("Setting email address for %s to %s", name, email)
             user.email = email
-            if email in settings.PULPDIST_ADMINS:
-                _log.debug("Configuring %s as a site administrator", name)
-                user.is_staff = user.is_superuser = True
         user.save()
         return user
+
+    def update_user_permissions(self, user):
+        if user.email in settings.PULPDIST_ADMINS:
+            if not user.is_superuser:
+                _log.debug("Configuring %s as a site administrator",
+                          user.username)
+                user.is_staff = user.is_superuser = True
+        elif user.is_staff or user.is_superuser:
+            _log.debug("%s is no longer a site administrator",
+                      user.username)
+            user.is_staff = user.is_superuser = False

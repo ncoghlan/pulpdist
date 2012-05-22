@@ -284,6 +284,8 @@ fi
 - BZ#802593: The management CLI and the repo summary table in the web UI use
   the server side  "limit" option when fetching sync history
 - BZ#812197: Added initial version of Python API documentation
+- BZ#823740: A user's administrator status is read from the site configuration
+  every time they're authenticated, rather than only the first time they log in
 
 * Thu Apr 19 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.15-1
 - Until PulpDist is updated to cope with the backwards incompatible changes to
