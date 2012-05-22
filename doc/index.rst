@@ -22,6 +22,7 @@ Contents:
    webapp.rst
    cli.rst
    plugins.rst
+   api.rst
    about.rst
 
 Indices and tables

@@ -19,6 +19,10 @@ import sys, os
 sys.path.insert(0, os.path.abspath('../src'))
 import pulpdist.core.util
 
+# Allow the Django subpackages to be imported
+import os
+os.environ["DJANGO_SETTINGS_MODULE"] = "pulpdist.django_site.settings"
+
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -26,7 +30,7 @@ import pulpdist.core.util
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.viewcode']
+extensions = ['sphinx.ext.viewcode', 'sphinx.ext.autodoc']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
