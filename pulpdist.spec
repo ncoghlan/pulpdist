@@ -283,7 +283,7 @@ fi
   the server side  "limit" option when fetching sync history
 - Test suite now correctly cleans up temporary directories used for the Pulp
   plugin integration tests
-- Added initial version of Python API documentation
+- BZ#812197: Added initial version of Python API documentation
 
 * Thu Apr 19 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.15-1
 - Until PulpDist is updated to cope with the backwards incompatible changes to
