@@ -11,8 +11,8 @@ _`Bugzilla`: https://bugzilla.redhat.com/buglist.cgi?product=PulpDist&bug_status
 Target Platforms
 ----------------
 
-The code is currently tested known to work under Python 2.7 on Fedora and under
-Python 2.6 on RHEL6. It should also run under either version of Python on
+The code is currently tested and known to work under Python 2.7 on Fedora and
+under Python 2.6 on RHEL6. It should also run under either version of Python on
 other \*nix systems (so long as the relevant dependencies are available).
 
 
@@ -22,11 +22,13 @@ Build/Test Dependencies
   * setuptools/distribute (packaging)
   * setuptools-git (tito RPM build tool support)
   * tito (RPM build tool)
-  * sphinx (documentation)
+  * sphinx (the reStructuredText documentation tool)
   * sphinxcontrib-blockdiag (not used yet, but will be eventually)
   * nose (test runner)
+  * unittest2 (backport of Python 2.7 unittest module to earlier versions)
   * mock (the Python test library, not the Fedora packaging utility)
   * djangosanetesting (web app test runner)
+  * parse (date/time checking)
 
 
 Plugin Dependencies
