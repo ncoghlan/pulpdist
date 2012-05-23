@@ -286,6 +286,10 @@ fi
 - BZ#812197: Added initial version of Python API documentation
 - BZ#823740: A user's administrator status is read from the site configuration
   every time they're authenticated, rather than only the first time they log in
+- BZ#823740: The Django sessions backend is now configured in pulpdist-httpd to
+  use the in-memory cache backend. This avoids accumulating stale sessions in
+  the database and helps ensure permission changes are picked up as soon as the
+  server is restarted
 
 * Thu Apr 19 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.15-1
 - Until PulpDist is updated to cope with the backwards incompatible changes to
