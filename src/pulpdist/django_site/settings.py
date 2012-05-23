@@ -160,6 +160,7 @@ TEMPLATE_LOADERS = (
 
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -198,6 +199,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
+    'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
@@ -212,7 +214,7 @@ INSTALLED_APPS = (
 # Make sessions relatively transient
 #  - they're used only because the auth middleware needs them
 #  - when using Kerberos, signing back in should be transparent
-# 
+#
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 
 CACHES = {
