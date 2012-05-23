@@ -290,6 +290,7 @@ fi
   use the in-memory cache backend. This avoids accumulating stale sessions in
   the database and helps ensure permission changes are picked up as soon as the
   server is restarted
+- BZ#788314: Write access to the REST API is now restricted to site admins
 
 * Thu Apr 19 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.15-1
 - Until PulpDist is updated to cope with the backwards incompatible changes to

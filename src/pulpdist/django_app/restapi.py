@@ -13,6 +13,7 @@
 import collections 
 from django.conf.urls.defaults import url
 from django.core.urlresolvers import reverse
+from django.core.exceptions import PermissionDenied
 from django.template.defaultfilters import slugify
 from django.http import Http404
 from django.contrib.auth.decorators import login_required
@@ -60,8 +61,21 @@ class BaseView(View):
         return  '^' + '/'.join(regex_parts)
 
     @method_decorator(login_required)
-    def dispatch(self, *args, **kwargs):
-        return super(BaseView, self).dispatch(*args, **kwargs)
+    def dispatch(self, request, *args, **kwargs):
+        if (request.method.lower() not in self.http_method_names_read_only
+            and not request.user.is_staff):
+            raise PermissionDenied("Site updates restricted to site admins")
+        return super(BaseView, self).dispatch(request, *args, **kwargs)
+
+    http_method_names_read_only = ["get", "head"]
+    @property
+    def allowed_methods(self):
+        if self.request.user.is_staff:
+            candidates = self.http_method_names
+        else:
+            candidates = self.http_method_names_read_only
+        return [meth.upper() for meth in candidates if hasattr(self, meth)]
+
 
     @classmethod
     def make_url(cls, url_parts):
@@ -129,7 +143,7 @@ class PulpServerResource(ModelResource):
             else:
                 server_slug = slugify(pulp_site)
         return server_slug
-        
+
     def get_bound_form(self, data=None, files=None, method=None):
         if isinstance(data, collections.Mapping):
             server_slug = self.get_server_slug(data)
