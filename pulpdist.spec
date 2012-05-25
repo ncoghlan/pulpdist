@@ -275,7 +275,7 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
-* ??? ??? ?? 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.16-1
+* Fri May 25 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.16-1
 - Update documentation to cover new "sync_latest_only" configuration option
 - BZ#807081: Test discovery now correctly identifies all test cases
 - Repo summary table is more tolerant of missing fields in the importer config
