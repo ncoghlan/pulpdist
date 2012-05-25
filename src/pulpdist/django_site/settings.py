@@ -242,6 +242,7 @@ if DEBUG:
         def always_show_toolbar(request):
             return True
         DEBUG_TOOLBAR_CONFIG = {
+          "INTERCEPT_REDIRECTS": False,
           "SHOW_TOOLBAR_CALLBACK" : always_show_toolbar,
         }
 
