@@ -10,6 +10,7 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 # Django settings for example pulpdist project.
+import sys
 import os
 import tempfile
 import logging
@@ -24,6 +25,9 @@ SITE_CONFIG = RawConfigParser()
 VAR_RELPATH = 'var/lib/pulpdist/'
 LOG_RELPATH = 'var/log/pulpdist/'
 
+DEBUG_SERVER = ("pulpdist/manage_site.py" in sys.argv[0] and
+                "runserver" == sys.argv[1])
+
 _sentinel = object()
 def _read_option(meth, section, option, default=_sentinel):
     try:
@@ -33,7 +37,7 @@ def _read_option(meth, section, option, default=_sentinel):
             return default
         raise
 
-if SITE_CONFIG.read(SITE_CONFIG_FILE):
+if not DEBUG_SERVER and SITE_CONFIG.read(SITE_CONFIG_FILE):
     # Use deployed settings
     DEBUG = _read_option(SITE_CONFIG.getboolean, 'devel', 'debug_pages', False)
     ENABLE_DUMMY_AUTH = _read_option(SITE_CONFIG.getboolean, 'devel', 'allow_test_users', False)
@@ -210,6 +214,38 @@ INSTALLED_APPS = (
     'django_tables2',
     'pulpdist.django_app',
 )
+
+# Show the Django debug toolbar if it's available
+if DEBUG:
+    try:
+        import debug_toolbar
+    except ImportError:
+        pass
+    else:
+        INSTALLED_APPS += ("debug_toolbar",)
+        MIDDLEWARE_CLASSES += (
+            "debug_toolbar.middleware.DebugToolbarMiddleware",
+        )
+        _DEBUG_TOOLBAR_PANELS = (
+            'debug_toolbar.panels.version.VersionDebugPanel',
+            'debug_toolbar.panels.timer.TimerDebugPanel',
+            'debug_toolbar.panels.settings_vars.SettingsVarsDebugPanel',
+            'debug_toolbar.panels.headers.HeaderDebugPanel',
+            'debug_toolbar.panels.request_vars.RequestVarsDebugPanel',
+            'debug_toolbar.panels.template.TemplateDebugPanel',
+            'debug_toolbar.panels.sql.SQLDebugPanel',
+            'debug_toolbar.panels.signals.SignalDebugPanel',
+            'debug_toolbar.panels.logger.LoggingPanel',
+        )
+        # Note: this is also a handy hook if you want to tinker with the
+        # request object while debugging a particular page
+        def always_show_toolbar(request):
+            import django.core.urlresolvers as ur
+            ur.resolve(request.path + "other")
+            return True
+        DEBUG_TOOLBAR_CONFIG = {
+          "SHOW_TOOLBAR_CALLBACK" : always_show_toolbar,
+        }
 
 # Make sessions relatively transient
 #  - they're used only because the auth middleware needs them
