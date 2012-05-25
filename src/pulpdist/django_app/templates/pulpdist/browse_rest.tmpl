@@ -16,6 +16,8 @@
 {% block title %}{{ name }} | {% trans 'Browse REST API' %}{% endblock %}
 
 {% block breadcrumbtrail %}
+    {# "breadcrumblist" gets filled in automatically by djangorestframework #}
+    {# If it's not getting filled in, check for failing reverse URL lookups #}
     {% for breadcrumb_name, breadcrumb_url in breadcrumblist %}
         &rsaquo; <a href="{{breadcrumb_url}}">{{breadcrumb_name}}</a>
     {% endfor %}
