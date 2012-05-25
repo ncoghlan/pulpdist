@@ -6,7 +6,7 @@
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
 Version:        0.0.16
-Release:        1%{?dist}
+Release:        2%{?dist}
 Group:          Development/Tools
 License:        GPLv2
 Source0:        %{name}-%{version}.tar.gz
@@ -275,6 +275,9 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* Fri May 25 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.16-2
+- fix version number
+
 * Fri May 25 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.16-1
 - Update documentation to cover new "sync_latest_only" configuration option
 - BZ#807081: Test discovery now correctly identifies all test cases
