@@ -43,16 +43,11 @@ class TestSiteIndex(HttpTestCase):
     def test_index_loads(self):
         with user_login(self.client) as logged_in:
             self.assertTrue(logged_in)
-            resp = self.client.get("/pulpdist/")
+            resp = self.client.get("/")
             self.assertEqual(resp.status_code, 200)
-
-    def test_root_redirect(self):
-        resp = self.client.get("")
-        self.assertEqual(resp.status_code, 301)
-        self.assertTrue(resp["Location"].endswith("/pulpdist/"))
 
     def test_version_display(self):
         # This is part of the base template, we check the login page
         # so we don't need to log in first
-        resp = self.client.get("/pulpdist/login/")
+        resp = self.client.get("/login/")
         self.assertIn(util.version(), resp.content)
