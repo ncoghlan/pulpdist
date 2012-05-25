@@ -277,6 +277,7 @@ fi
 %changelog
 * Fri May 25 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.16-2
 - fix version number
+- include the actual fix for BZ#825085
 
 * Fri May 25 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.16-1
 - Update documentation to cover new "sync_latest_only" configuration option

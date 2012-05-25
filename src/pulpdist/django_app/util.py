@@ -17,13 +17,14 @@ from django.utils.safestring import mark_safe
 from django.core.urlresolvers import reverse
 from django.conf import settings
 
+from .models import PulpServer
+from ..core import util as core_util
+
 # We delve into djangorestframework internals to work around a bug
 # See https://bugzilla.redhat.com/show_bug.cgi?id=825085
 from djangorestframework.utils.breadcrumbs \
     import get_breadcrumbs as get_api_breadcrumbs
 
-from .models import PulpServer
-from ..core import util as core_util
 
 # Easy access to common version definition
 def version():
@@ -140,4 +141,8 @@ class _TableView(ListView):
 def fix_api_breadcrumb_trail(request, context):
     """Adjusts the REST API breadcrumbs to handle a leading script prefix"""
     if request.path_info.startswith("/api/"):
-        context["breadcrumblist"] = get_api_breadcrumbs(request.path_info)
+        broken_crumbs = get_api_breadcrumbs(request.path_info)
+        prefix = request.path[:-len(request.path_info)]
+        crumbs = [(crumb_name, prefix + crumb_url)
+                     for crumb_name, crumb_url in broken_crumbs]
+        context["breadcrumblist"] = crumbs
