@@ -291,6 +291,8 @@ fi
   the database and helps ensure permission changes are picked up as soon as the
   server is restarted
 - BZ#788314: Write access to the REST API is now restricted to site admins
+- BZ#825085: display the REST API breadcrumb trail correctly even when
+  running somewhere other than the server root URL
 
 * Thu Apr 19 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.15-1
 - Until PulpDist is updated to cope with the backwards incompatible changes to
