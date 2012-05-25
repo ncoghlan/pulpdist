@@ -17,6 +17,11 @@ from django.utils.safestring import mark_safe
 from django.core.urlresolvers import reverse
 from django.conf import settings
 
+# We delve into djangorestframework internals to work around a bug
+# See https://bugzilla.redhat.com/show_bug.cgi?id=825085
+from djangorestframework.utils.breadcrumbs \
+    import get_breadcrumbs as get_api_breadcrumbs
+
 from .models import PulpServer
 from ..core import util as core_util
 
@@ -31,6 +36,7 @@ def app_context(request):
         "APP_TRACKER_URL": "https://bugzilla.redhat.com/enter_bug.cgi?product=PulpDist",
         "APP_ALLOWS_LOCAL_LOGIN": settings.ENABLE_DUMMY_AUTH
     }
+    fix_api_breadcrumb_trail(request, app_details)
     return app_details
 
 # Helpers for class-based views
@@ -129,3 +135,9 @@ class _TableView(ListView):
         else:
             context['data_unavailable'] = self.table_type.empty_text
         return context
+
+# Helper for REST API views
+def fix_api_breadcrumb_trail(request, context):
+    """Adjusts the REST API breadcrumbs to handle a leading script prefix"""
+    if request.path_info.startswith("/api/"):
+        context["breadcrumblist"] = get_api_breadcrumbs(request.path_info)
