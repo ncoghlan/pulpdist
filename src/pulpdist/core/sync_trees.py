@@ -672,14 +672,18 @@ class SyncSnapshotTree(SyncVersionedTree):
         if not self.dry_run_only:
             with open(status_path, 'w') as f:
                 f.write("FINISHED\n")
+            self._link_to_latest(local_dest_path)
         return result
 
-    def _consolidate_tree(self):
-        # See BZ#814031
-        msg = "Skipping consolidation of {0!r} in order to preserve directory mtimes"
-        self._update_run_log(msg, self.local_path)
-
     def _get_latest_dir(self):
+        # Preferred approach is to use the symbolic link to the latest version
+        link_name = self.latest_link_name
+        if link_name is not None:
+            link_path = os.path.join(self.local_path, link_name)
+            if os.path.isdir(link_path):
+                target_path = os.path.join(link_path, os.readlink(link_path))
+                return os.path.abspath(target_path)
+        # If that's not available, we rely on the local mtime
         def _sort_key(d):
             return os.path.getmtime(d), d
         candidates = self._iter_local_versions()
@@ -707,7 +711,7 @@ class SyncSnapshotTree(SyncVersionedTree):
                 pass
         return dirs_to_delete
 
-    def _link_to_latest(self):
+    def _link_to_latest(self, target_path):
         link_name = self.latest_link_name
         if link_name is None:
             return
@@ -718,7 +722,6 @@ class SyncSnapshotTree(SyncVersionedTree):
             if self.dry_run_only:
                 self._update_run_log("Skipping creation of {0!r} for test run", link_path)
                 return
-            target_path = self._get_latest_dir()
             if target_path is None:
                 self._update_run_log("No valid target versions in {0!r}, skipping", local_path)
                 return
@@ -737,11 +740,6 @@ class SyncSnapshotTree(SyncVersionedTree):
                 os.unlink(link_path)
             os.symlink(relative_target, link_path)
             self._update_run_log("Linked {0!r} -> {1!r}", link_path, relative_target)
-
-    def _do_transfer(self):
-        result, sync_stats = super(SyncSnapshotTree, self)._do_transfer()
-        self._link_to_latest()
-        return result, sync_stats
 
 
 class SyncSnapshotDelta(BaseSyncCommand):

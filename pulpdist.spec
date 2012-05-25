@@ -293,6 +293,9 @@ fi
 - BZ#788314: Write access to the REST API is now restricted to site admins
 - BZ#825085: display the REST API breadcrumb trail correctly even when
   running somewhere other than the server root URL
+- BZ#814031: The "latest link" symlink is now updated as each tree is
+  downloaded. When available, it is also used to identify the latest directory
+  for seeding purposes.
 
 * Thu Apr 19 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.15-1
 - Until PulpDist is updated to cope with the backwards incompatible changes to
