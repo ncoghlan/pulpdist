@@ -204,7 +204,8 @@ if [ "$1" = "1" ]; then
 fi
 %{run_manage_site} migrate
 popd
-chmod -R u=rwX,g=rX,o=rX %{data_dir} %{log_dir}
+chmod -R u=rwX,g=rX,o-rwx %{data_dir}
+chmod -R u=rwX,g=rX,o=rX %{log_dir}
 chown -R apache:apache %{data_dir} %{log_dir}
 
 # Static files (CSS, JS, images)
@@ -256,7 +257,7 @@ fi
 %ghost %{database_file}
 %{httpd_static_media}
 /var/log/%{name}/
-%config(noreplace) /etc/%{name}/site.conf
+%attr(640, apache, apache) %config(noreplace) /etc/%{name}/site.conf
 
 # -- files - Pulp plugins ----------------------------------------------------------
 %files -n %{plugin_package}
@@ -296,6 +297,8 @@ fi
 - BZ#814031: The "latest link" symlink is now updated as each tree is
   downloaded. When available, it is also used to identify the latest directory
   for seeding purposes.
+- BZ#824245: configuration and data files containing sensitive information are
+  no longer installed as world readable
 
 * Thu Apr 19 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.15-1
 - Until PulpDist is updated to cope with the backwards incompatible changes to
