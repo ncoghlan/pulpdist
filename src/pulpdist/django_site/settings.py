@@ -240,8 +240,6 @@ if DEBUG:
         # Note: this is also a handy hook if you want to tinker with the
         # request object while debugging a particular page
         def always_show_toolbar(request):
-            import django.core.urlresolvers as ur
-            ur.resolve(request.path + "other")
             return True
         DEBUG_TOOLBAR_CONFIG = {
           "SHOW_TOOLBAR_CALLBACK" : always_show_toolbar,
