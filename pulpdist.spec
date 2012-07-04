@@ -6,7 +6,7 @@
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
 Version:        0.0.17
-Release:        1%{?dist}
+Release:        2%{?dist}
 Group:          Development/Tools
 License:        GPLv2
 Source0:        %{name}-%{version}.tar.gz
@@ -28,6 +28,7 @@ Requires: openssl
 Requires: python-ldap
 Requires: python-sqlalchemy >= 0.5
 Requires: python-argparse
+Requires: python-kerberos
 
 # Note: pulpdist.django_app/site require additional dependencies to execute
 #       Refer to the pulpdist-django meta package dependencies listed below.
@@ -275,6 +276,9 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* Wed Jul 04 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.17-2
+- explicitly depend on python-kerberos
+
 * Wed Jul 04 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.17-1
 - clean up initialisation of pulpdist.core.pulpapi.PulpServer
 - update tests to expect correct payload from a successful sync request
