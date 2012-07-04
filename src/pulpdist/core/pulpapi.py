@@ -14,6 +14,10 @@ import json
 
 from M2Crypto import SSL, httpslib
 import oauth2 as oauth
+try:
+    import kerberos
+except ImportError:
+    kerberos = None
 
 # The pulp client libraries commit a cardinal sin and
 # implicitly install a logging handler
@@ -121,9 +125,10 @@ class PulpServerClient(pulp.client.api.server.PulpServer):
     # fallback to the cert file
     def __init__(self, hostname,
                        username=None, password=None,
-                       cert_file_fallback=True):
+                       cert_file_fallback=True,
+                       path_prefix="/pulp/api/v2/"):
         super(PulpServerClient, self).__init__(hostname,
-                                               path_prefix="/pulp/api/v2/")
+                                               path_prefix=path_prefix)
         if None not in (username, password):
             # Use basic auth
             self.set_basic_auth_credentials(username, password)
@@ -253,7 +258,6 @@ class PulpServerClient(pulp.client.api.server.PulpServer):
         # See BZ#799203 - server is publishing sync logs directly over HTTPS
         return "https://%s/sync_logs" % self.host
 
-
 class PulpServer(PulpServerClient):
     # Unlike the standard Pulp client, we support only OAuth over https
     def __init__(self, hostname, oauth_key, oauth_secret):
@@ -280,8 +284,40 @@ class PulpServer(PulpServerClient):
         self._log.debug('signing %r request to %r', method, https_url)
         oauth_request = oauth.Request.from_consumer_and_token(consumer, http_method=method, http_url=https_url)
         oauth_request.sign_request(self.oauth_sign_method(), consumer, None)
-        # We use dummy credentials so we never try to read a non-existent cert file...
-        server = PulpServerClient(self.host, "admin", "admin")
+        server = PulpServerClient(self.host, cert_file_fallback=False)
         server.headers['Authorization'] = oauth_request.to_header()['Authorization'].encode('ascii')
         server.headers.update(pulp_user='admin') # TODO: use Django login (eventually Kerberos)
         return server._request(method, path, queries, body)
+
+if kerberos is not None:
+    # A lot of code duplication between this and PulpServer. However, this
+    # whole wrapper will likely change greatly when upgrading to Pulp 2.0...
+    class PulpKerberosClient(PulpServerClient):
+        # Unlike the standard Pulp client, support only Kerberos over https
+        # We expect the server URL to change as well
+        def __init__(self, hostname):
+            super(PulpKerberosClient, self).__init__(
+              hostname, cert_file_fallback=False, path_prefix="/pulp/krb/v2/")
+
+        def _connect(self):
+            context = SSL.Context("sslv3")
+            connection = httpslib.HTTPSConnection(self.host, self.port, ssl_context=context)
+            connection.connect()
+            return connection
+
+        def _request(self, method, path, queries=(), body=None):
+            # make a request to the pulp server and return the response
+            # NOTE this throws a ServerRequestError if the request did not succeed
+            # HACK: To avoid thread safety issues with self.headers, we do something
+            # clumsy and horrible: create a new PulpServerClient instance and make the
+            # request on that instance...
+            url = self._build_url(path, queries)
+            # Kerberos setup
+            __, krb_context = kerberos.authGSSClientInit("HTTP@%s" % self.host)
+            kerberos.authGSSClientStep(krb_context, "")
+            negotiate_details = kerberos.authGSSClientResponse(krb_context)
+            server = PulpServerClient(self.host, cert_file_fallback=False,
+                                      path_prefix=self.path_prefix)
+            server.headers['Authorization'] = "Negotiate " + negotiate_details
+            return server._request(method, path, queries, body)
+

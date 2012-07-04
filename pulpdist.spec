@@ -278,6 +278,7 @@ fi
 * Wed Jul 04 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.17-1
 - clean up initialisation of pulpdist.core.pulpapi.PulpServer
 - update tests to expect correct payload from a successful sync request
+- added a new client type that uses Kerberos for authentication
 
 * Fri May 25 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.16-2
 - fix version number
