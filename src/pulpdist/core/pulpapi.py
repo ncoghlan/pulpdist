@@ -17,6 +17,7 @@ import oauth2 as oauth
 
 # The pulp client libraries commit a cardinal sin and
 # implicitly install a logging handler
+# See https://bugzilla.redhat.com/show_bug.cgi?id=833255
 # We monkeypatch pulp.client.lib.logutil to prevent this
 import pulp.client.lib.logutil
 import logging
