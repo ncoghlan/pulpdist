@@ -5,8 +5,8 @@
 # -- headers - pulpdist Python package  --------------------------------------
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
-Version:        0.0.16
-Release:        2%{?dist}
+Version:        0.0.17
+Release:        1%{?dist}
 Group:          Development/Tools
 License:        GPLv2
 Source0:        %{name}-%{version}.tar.gz
@@ -275,6 +275,9 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* Wed Jul 04 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.17-1
+- clean up initialisation of pulpdist.core.pulpapi.PulpServer
+
 * Fri May 25 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.16-2
 - fix version number
 - include the actual fix for BZ#825085
