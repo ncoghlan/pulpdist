@@ -21,7 +21,7 @@ import os.path
 import contextlib
 import datetime
 
-from ..core.pulpapi import PulpServerClient, ServerRequestError
+from ..core import pulpapi
 from ..core.repo_config import RepoConfig
 from ..core.site_config import SiteConfig, PulpRepo
 from .display import (print_msg, print_header, print_data,
@@ -74,6 +74,15 @@ def make_args(pulp_host=None, verbose=0, ignoremeta=False,
 # Basic commands - work directly off the site metadata
 #================================================================
 
+_AUTH_TYPES = {
+  "pulp": pulpapi.PulpServerClient,
+}
+
+try:
+    _AUTH_TYPES["krb"] = pulpapi.PulpKerberosClient
+except AttributeError:
+    pass
+
 class PulpCommand(object):
     """Operations on PulpDist managed Pulp repositories"""
 
@@ -81,7 +90,7 @@ class PulpCommand(object):
         self.args = args
         self._site_config = None
         if server is None:
-            server = PulpServerClient(args.pulp_host)
+            server = _AUTH_TYPES[args.auth_type](args.pulp_host)
         self.server = server
 
     @property

@@ -26,6 +26,10 @@ def make_parser():
     parser.add_argument("--host", metavar="HOST",
                         dest="pulp_host", default=commands.default_host(),
                         help="The Pulp server to be managed (Default: %(default)s)")
+    parser.add_argument("--auth", metavar="AUTH",
+                        dest="auth_type", default="krb",
+                        help="Authentication type (krb = Kerberos (default), "
+                             "pulp = Pulp admin client SSL certificate)")
     parser.add_argument("-v", "--verbose",
                         dest="verbose", action='count',
                         help="Increase level of debugging information displayed")
