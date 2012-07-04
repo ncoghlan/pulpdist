@@ -117,17 +117,20 @@ class PulpServerClient(pulp.client.api.server.PulpServer):
     # pulp-admin client API. Can pass username and password
     # to use Basic Auth, otherwise relies on the certfile
     # created by "pulp-admin auth login"
-    def __init__(self, hostname, username=None, password=None):
+    # Subclasses that use a different auth mechanism can disable the
+    # fallback to the cert file
+    def __init__(self, hostname,
+                       username=None, password=None,
+                       cert_file_fallback=True):
         super(PulpServerClient, self).__init__(hostname,
-                                               path_prefix="/pulp/api/v2")
-        if None in (username, password):
+                                               path_prefix="/pulp/api/v2/")
+        if None not in (username, password):
+            # Use basic auth
+            self.set_basic_auth_credentials(username, password)
+        elif cert_file_fallback:
             # Rely on certfile
             certfile = pulp.client.admin.credentials.Login().crtpath()
             self.set_ssl_credentials(certfile)
-        else:
-            # Use basic auth
-            self.set_basic_auth_credentials(username, password)
-
 
     def _build_url(self, path, queries=()):
         # base class gets this wrong when path starts with '/'
@@ -254,9 +257,7 @@ class PulpServerClient(pulp.client.api.server.PulpServer):
 class PulpServer(PulpServerClient):
     # Unlike the standard Pulp client, we support only OAuth over https
     def __init__(self, hostname, oauth_key, oauth_secret):
-        # Slightly dodgy - want to bypass the PulpServerClient init function
-        # TODO: use an API Mixin to make this less dodgy
-        super(PulpServerClient, self).__init__(hostname, path_prefix="/pulp/api/v2")
+        super(PulpServer, self).__init__(hostname, cert_file_fallback=False)
         self.oauth_consumer = oauth.Consumer(oauth_key, oauth_secret)
         self.oauth_sign_method = oauth.SignatureMethod_HMAC_SHA1
 
