@@ -309,7 +309,7 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         params = self.CONFIG_TREE_SYNC.copy()
         imp = self._add_importer(importer_id, params)
         self.check_presync(imp, importer_id, params)
-        self.assertTrue(self._sync_repo())
+        self.assertEqual(self._sync_repo(), {})
         self._wait_for_sync()
         stats = self.EXPECTED_TREE_STATS
         # With the default settings, the rsync download in the
@@ -330,7 +330,7 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         self.local_path = self.params["local_path"] = local_path
         imp = self._add_importer(importer_id, params)
         self.check_presync(imp, importer_id, params)
-        self.assertTrue(self._sync_repo())
+        self.assertEqual(self._sync_repo(), {})
         last_sync = self._wait_for_sync()
         stats = self.EXPECTED_TREE_STATS
         self.check_postsync("SYNC_COMPLETED", stats)
@@ -345,7 +345,7 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         params = self.CONFIG_VERSIONED_SYNC.copy()
         imp = self._add_importer(importer_id, params)
         self.check_presync(imp, importer_id, params)
-        self.assertTrue(self._sync_repo())
+        self.assertEqual(self._sync_repo(), {})
         self._wait_for_sync()
         stats = self.EXPECTED_VERSIONED_STATS
         self.check_postsync("SYNC_COMPLETED", stats)
@@ -357,7 +357,7 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         details = self.setup_snapshot_layout(self.local_path)
         imp = self._add_importer(importer_id, params)
         self.check_presync(imp, importer_id, params)
-        self.assertTrue(self._sync_repo())
+        self.assertEqual(self._sync_repo(), {})
         self._wait_for_sync()
         stats = self.EXPECTED_SNAPSHOT_STATS
         self.check_postsync("SYNC_COMPLETED", stats)
@@ -369,7 +369,7 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         details = self.setup_latest_snapshot_layout(self.local_path)
         imp = self._add_importer(importer_id, params)
         self.check_presync(imp, importer_id, params)
-        self.assertTrue(self._sync_repo())
+        self.assertEqual(self._sync_repo(), {})
         self._wait_for_sync()
         stats = self.EXPECTED_LATEST_SNAPSHOT_STATS
         self.check_postsync("SYNC_COMPLETED", stats)
@@ -384,7 +384,7 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         # async tasking REST API available and this "wait for sync" dance
         # can be cleaned up significantly
         time.sleep(1.5) 
-        self.assertTrue(self._sync_repo())
+        self.assertEqual(self._sync_repo(), {})
         self._wait_for_sync(last_sync)
         stats = self.EXPECTED_TREE_STATS.copy()
         stats.update(self.EXPECTED_REPEAT_STATS)
@@ -420,7 +420,7 @@ class TestLocalSync(example_trees.TreeTestCase, PulpTestCase):
         self.local_path = self.params["local_path"] = local_path
         imp = self._add_importer(importer_id, params)
         self.check_presync(imp, importer_id, params)
-        self.assertTrue(self._sync_repo())
+        self.assertEqual(self._sync_repo(), {})
         last_sync = self._wait_for_sync()
         stats = self.EXPECTED_TREE_STATS
         self.check_postsync("SYNC_COMPLETED", stats,
