@@ -318,6 +318,8 @@ fi
   for seeding purposes.
 - BZ#824245: configuration and data files containing sensitive information are
   no longer installed as world readable
+- BZ#820814: treat missing importer configuration fields as having their
+  default value when displaying the repo table
 
 * Thu Apr 19 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.15-1
 - Until PulpDist is updated to cope with the backwards incompatible changes to
