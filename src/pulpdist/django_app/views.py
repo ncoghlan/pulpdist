@@ -108,16 +108,24 @@ class RepoView(RepoMixin, DetailView):
 
 # Repos on a server
 class RepoTable(Table):
-    id = Column(verbose_name='Repo Name')
-    description = Column(verbose_name='Description')
+    display_name = Column(verbose_name='Repo Name')
+    description = Column()
     sync_enabled = Column(verbose_name="Sync Enabled?")
-    last_status = Column(accessor="sync_history.0.summary.result")
-    last_sync_attempt = Column(accessor="sync_history.0.started")
+    last_status = Column()
+    last_sync_attempt = Column()
     sync_in_progress = Column(accessor="importer.sync_in_progress",
                               verbose_name="Sync in Progress?")
     empty_text = "There are no repositories defined in the Pulp server."
 
-    def render_id(self, record):
+    def __init__(self, data):
+        super(RepoTable, self).__init__(data)
+        for record in data:
+            # Add a few derived fields
+            self.set_sync_enabled(record)
+            self.set_last_status(record)
+            self.set_last_sync_attempt(record)
+
+    def render_display_name(self, record):
         repo_id = record['id']
         kwargs = {
             'repo_id' : repo_id,
@@ -128,14 +136,28 @@ class RepoTable(Table):
         link = '<a href="{0}">{1}</a>'.format(url, repo_name)
         return mark_safe(link)
 
-    def render_sync_enabled(self, record):
+    def set_sync_enabled(self, record):
         status = "-"
         importer = record["importer"]
         if importer:
             config = importer["config"]
             if config.get("enabled"):
                 status = "TEST" if config.get("dry_run_only") else "ENABLED"
-        return status
+        record["sync_enabled"] = status
+
+    def set_last_status(self, record):
+        status = None
+        history = record["sync_history"]
+        if history:
+            status = history[0]["summary"]["result"]
+        record["last_status"] = status
+
+    def set_last_sync_attempt(self, record):
+        start = None
+        history = record["sync_history"]
+        if history:
+            start = history[0]["started"]
+        record["last_sync_attempt"] = start
 
 
 class RepoListView(ServerMixin, _TableView):

@@ -277,7 +277,9 @@ fi
 
 %changelog
 * Thu Jul 12 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.18-1
-- BZ#839101: Sync history limiting now actually works as intended.
+- BZ#839101: Sync history limiting now actually works as intended
+- BZ#835075: Calculate derived columns when initialising repo summary table
+- BZ#839139: Server side sorting of data tables is now configured correctly
 
 * Wed Jul 04 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.17-2
 - explicitly depend on python-kerberos

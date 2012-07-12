@@ -17,6 +17,8 @@ from django.utils.safestring import mark_safe
 from django.core.urlresolvers import reverse
 from django.conf import settings
 
+from django_tables2 import RequestConfig as DataTableConfig
+
 from .models import PulpServer
 from ..core import util as core_util
 
@@ -127,12 +129,18 @@ class _TableView(ListView):
     def data_unavailable(self, context):
         return "No data available"
 
+    def create_table(self, data):
+        """Create and configure the table object"""
+        table = self.table_type(data)
+        DataTableConfig(self.request, paginate=False).configure(table)
+        return table
+
     def get_context_data(self, **kwds):
         context = super(_TableView, self).get_context_data(**kwds)
         context['title'] = self.view_title
         data = context['data_as_list']
         if data:
-            context['data_as_table'] = self.table_type(data)
+            context['data_as_table'] = self.create_table(data)
         else:
             context['data_unavailable'] = self.table_type.empty_text
         return context
