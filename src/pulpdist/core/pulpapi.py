@@ -234,7 +234,7 @@ class PulpServerClient(pulp.client.api.server.PulpServer):
         return config.get("enabled", False)
 
     def get_sync_history(self, repo_id, limit=None):
-        return PulpRepositories(self).get_sync_history(repo_id)
+        return PulpRepositories(self).get_sync_history(repo_id, limit)
 
     def get_generic_types(self):
         return GenericContentTypes(self).get_list()

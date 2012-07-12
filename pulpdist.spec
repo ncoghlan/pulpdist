@@ -5,8 +5,8 @@
 # -- headers - pulpdist Python package  --------------------------------------
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
-Version:        0.0.17
-Release:        2%{?dist}
+Version:        0.0.18
+Release:        1%{?dist}
 Group:          Development/Tools
 License:        GPLv2
 Source0:        %{name}-%{version}.tar.gz
@@ -276,6 +276,9 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* Thu Jul 12 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.18-1
+- BZ#839101: Sync history limiting now actually works as intended.
+
 * Wed Jul 04 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.17-2
 - explicitly depend on python-kerberos
 

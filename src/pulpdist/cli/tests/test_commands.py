@@ -14,6 +14,7 @@
 import tempfile
 import sys
 import contextlib
+import re
 from cStringIO import StringIO
 
 from .. import commands
@@ -177,34 +178,20 @@ class SyncHistoryTestCase(InitialisedTestCase):
         self.assertEqual(actual, expected)
 
     def check_repo_status(self, output, expected, status):
-        # The for/break approach to single line access is forward compatible
-        # with Py3k, whereas direct invocation of .next() on the iterator
-        # is not.
         lines = iter(output)
-        for line in lines:
-            self.check_line_start(line, "Sync status for")
-            break
+        def _next_line():
+            return next(lines, "")
+        self.check_line_start(_next_line(), "Sync status for")
         seen = []
         for repo_id in expected:
-            for line in lines:
-                self.check_line_start(line, "====")
-                break
-            for line in lines:
-                self.assertIn(DISPLAY_IDS[repo_id], line)
-                break
-            for line in lines:
-                self.check_line_start(line, "====")
-                break
-            for line in lines:
-                self.check_line_start(line, "Last Attempted: ")
-                self.assertIn(status, line)
-                break
-            for line in lines:
-                self.check_line_start(line, "Last Successful: ")
-                break
-            for line in lines:
-                self.check_line_start(line, "Current Status: ")
-                break
+            self.check_line_start(_next_line(), "====")
+            self.assertIn(DISPLAY_IDS[repo_id], _next_line())
+            self.check_line_start(_next_line(), "====")
+            attempted = _next_line()
+            self.check_line_start(attempted, "Last Attempted: ")
+            self.assertIn(status, attempted)
+            self.check_line_start(_next_line(), "Last Successful: ")
+            self.check_line_start(_next_line(), "Current Status: ")
             seen.append(repo_id)
         self.assertEqual(seen, expected)
 
@@ -289,14 +276,6 @@ class TestDisabledSyncHistory(SyncHistoryTestCase):
         self.check_repo_display(output, expected, "Sync history for")
         self.assertNotIn("sync_log", output.getvalue())
 
-    def test_sync_history_no_entries(self):
-        cmd = self.command(commands.ShowSyncHistory, num_entries=0)
-        output = self.get_cmd_output(cmd)
-        expected = example_site.ALL_REPOS
-        self.check_repo_display(output, expected, "No sync history for")
-        self.assertNotIn("{", output.getvalue())
-        self.assertNotIn("}", output.getvalue())
-
     @unittest.skip("Automated test disabled due to BZ#799203")
     def test_sync_history_show_log(self):
         cmd = self.command(commands.ShowSyncHistory, showlog=True)
@@ -319,6 +298,50 @@ class TestDisabledSyncHistory(SyncHistoryTestCase):
         output = self.get_cmd_output(cmd)
         expected = example_site.ALL_REPOS
         self.check_repo_display(output, expected, "No successful sync entry for")
+
+
+class TestSyncHistoryLimiting(SyncHistoryTestCase):
+    mirror_list = ["simple_sync"]
+    expected_repos = ["simple_sync__default"]
+    total_entries = 3
+
+    def request_sync(self):
+        cmd = self.command(commands.RequestSync, force=True,
+                           mirror_list=self.mirror_list)
+        return self.get_cmd_output(cmd)
+
+    def get_history(self, num_entries=None):
+        kwds = {"mirror_list" : self.mirror_list}
+        if num_entries is not None:
+            kwds["num_entries"] = num_entries
+        cmd = self.command(commands.ShowSyncHistory, **kwds)
+        return self.get_cmd_output(cmd)
+
+    def setUp(self):
+        super(TestSyncHistoryLimiting, self).setUp()
+        for i in range(self.total_entries):
+            self.request_sync()
+
+    def test_sync_history_no_entries(self):
+        output = self.get_history(0)
+        expected = self.expected_repos
+        self.check_repo_display(output, expected, "No sync history for")
+        self.assertNotIn("{", output.getvalue())
+        self.assertNotIn("}", output.getvalue())
+
+    def test_sync_history_limited_entries(self):
+        def check_limited_entries(requested_entries, expected_entries):
+            output = self.get_history(requested_entries)
+            self.check_repo_display(output, self.expected_repos,
+                                        "Sync history for")
+            num_entries = len(output.getvalue().split("}\n{"))
+            self.assertEqual(num_entries, expected_entries)
+
+        check_limited_entries(1, 1)
+        check_limited_entries(2, 2)
+        check_limited_entries(3, 3)
+        check_limited_entries(10, 3)
+        check_limited_entries(None, 3)
 
 
 class TestEnabledSyncHistory(SyncHistoryTestCase):
