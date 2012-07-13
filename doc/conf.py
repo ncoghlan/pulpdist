@@ -19,6 +19,9 @@ import sys, os
 sys.path.insert(0, os.path.abspath('../src'))
 import pulpdist.core.util
 
+# Allow the Pulp plugins to be imported (for docstring retrieval)
+sys.path.insert(0, os.path.abspath('../src/pulpdist/pulp_plugins/importers'))
+
 # Allow the Django subpackages to be imported
 import os
 os.environ["DJANGO_SETTINGS_MODULE"] = "pulpdist.django_site.settings"

@@ -8,9 +8,10 @@ PulpDist is a set of Pulp_ plugins and an associated Django_ application that
 together allow a network of Pulp_ servers to be used as a filtered mirroring
 network with robust access control mechanisms.
 
-The project is still in an alpha state, so there are quite a few rough edges,
-not only in the code and documentation, but also in the development
-infrastructure around the project.
+The project is in a usable state for the specific task of filtered mirroring
+with rsync, but still has quite a few rough edges. In particular, it still
+relies on the alpha version of the plugin APIs in Pulp v1 rather than using
+the updated version that are coming in Pulp v2.
 
 Contents:
 
@@ -22,6 +23,7 @@ Contents:
    webapp.rst
    cli.rst
    plugins.rst
+   configuration.rst
    api.rst
    about.rst
 
