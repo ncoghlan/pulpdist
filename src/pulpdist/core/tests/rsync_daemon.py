@@ -69,7 +69,7 @@ class RsyncDaemon(object):
                     pid_text = f.read().strip()
                     if pid_text:
                         yield pid_text
-                break
+                continue
             time.sleep(0.01)
         else:
             raise RuntimeError("timeout waiting for rsync server to start")
