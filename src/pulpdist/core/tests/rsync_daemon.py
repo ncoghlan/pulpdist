@@ -69,6 +69,7 @@ class RsyncDaemon(object):
                     pid_text = f.read().strip()
                     if pid_text:
                         yield pid_text
+                        return
                 continue
             time.sleep(0.01)
         else:
