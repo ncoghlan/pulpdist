@@ -88,9 +88,14 @@ def create_dirs(opts):
         os.makedirs(d, 0777)
 
 def get_package_link(opts):
-    site_dir = site.getsitepackages()[0]
-    if '64' in site_dir:
-        site_dir = site.getsitepackages()[1]
+    try:
+        site_dir = site.getsitepackages()[0]
+    except AttributeError:
+        # Assume 2.6 == RHEL6 (or derivative)
+        site_dir = '/usr/lib/python2.6/site-packages'
+    else:
+        if '64' in site_dir:
+            site_dir = site.getsitepackages()[1]
     debug(opts, 'site package dir: %s' % site_dir)
     dst = os.path.join(site_dir, 'pulpdist')
     return 'src/pulpdist', dst
