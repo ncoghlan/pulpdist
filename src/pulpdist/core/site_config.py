@@ -155,7 +155,7 @@ class SiteConfig(validation.ValidatedConfig):
         u"REMOTE_TREES": [RemoteTreeConfig],
         u"REMOTE_SOURCES": [RemoteSourceConfig],
         u"REMOTE_SERVERS": [RemoteServerConfig],
-        u"RAW_TREES": [repo_config.RepoConfig],
+        u"RAW_REPOS": [repo_config.RepoConfig],
     }
     _DEFAULTS = {
         u"SITE_SETTINGS": [],
@@ -163,7 +163,7 @@ class SiteConfig(validation.ValidatedConfig):
         u"REMOTE_TREES": [],
         u"REMOTE_SOURCES": [],
         u"REMOTE_SERVERS": [],
-        u"RAW_TREES": [],
+        u"RAW_REPOS": [],
     }
 
     _SQL_LOAD_ORDER = (
@@ -205,7 +205,7 @@ class SiteConfig(validation.ValidatedConfig):
                     db_session.commit()
                 except site_sql.IntegrityError as exc:
                     validation.fail_validation(exc)
-        self._convert_raw_trees()
+        self._convert_raw_repos()
         self._convert_mirrors()
 
     def _store_repo(self, config):
@@ -216,9 +216,9 @@ class SiteConfig(validation.ValidatedConfig):
         except site_sql.IntegrityError as exc:
             validation.fail_validation(exc)
 
-    def _convert_raw_trees(self):
-        raw_trees = self.config["RAW_TREES"]
-        for repo_data in raw_trees:
+    def _convert_raw_repos(self):
+        raw_repos = self.config["RAW_REPOS"]
+        for repo_data in raw_repos:
             repo_details = {
                 "repo_id": repo_data["repo_id"],
                 "config": repo_data,

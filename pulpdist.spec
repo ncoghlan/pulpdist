@@ -5,7 +5,7 @@
 # -- headers - pulpdist Python package  --------------------------------------
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
-Version:        0.0.18
+Version:        0.1.0
 Release:        1%{?dist}
 Group:          Development/Tools
 License:        GPLv2
@@ -276,6 +276,14 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* Fri Jul 20 2012 Nick Coghlan <ncoghlan@redhat.com> 0.1.0-1
+- BZ#841756: Support running the httpd-dev helper script on RHEL 6
+- Make the unit tests more reliably wait for rsync daemon activation
+- Make the unit test more robust against differences in reverse DNS lookup
+- BZ#841084: Rename the RAW_TREES section in the site config file format as
+  RAW_REPOS (this is a backwards incompatible change - any existing site
+  config files will require updates, or they will fail validation)
+
 * Thu Jul 12 2012 Nick Coghlan <ncoghlan@redhat.com> 0.0.18-1
 - BZ#839101: Sync history limiting now actually works as intended
 - BZ#835075: Calculate derived columns when initialising repo summary table

@@ -99,7 +99,7 @@ configuration file, every repository named in the file.
 By default, the command line client uses the metadata stored on the server to
 identify the available repositories. If this metadata is incomplete or invalid,
 the ``--ignoremeta`` option can be passed before the command to be executed. In
-this mode, the Pulp server will be treated as containing only raw tree
+this mode, the Pulp server will be treated as containing only raw repo
 definitions, allowing listing and manipulation of repos that would otherwise be
 ignored (due to the fact they aren't recorded in the stored metadata).
 

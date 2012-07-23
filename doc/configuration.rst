@@ -22,7 +22,7 @@ the following attributes:
 * ``REMOTE_SOURCES``: A sequence of `remote source definitions`_.
 * ``REMOTE_SERVERS``: A sequence of `remote server definitions`_.
 * ``SITE_SETTINGS``: A sequence of `site definitions`_.
-* ``RAW_TREES``: A sequence of `raw tree definitions`_.
+* ``RAW_REPOS``: A sequence of `raw repo definitions`_.
 
 The general concept is that:
 
@@ -30,10 +30,10 @@ The general concept is that:
 * each remote tree is provided by a particular remote source
 * each remote source is provided by a particular remote server
 * these settings are combined with the appropriate site settings to create
-  raw tree definitions that are uploaded to the server
-* details of the original settings are stored in the raw tree metadata,
+  raw repo definitions that are uploaded to the server
+* details of the original settings are stored in the raw repo metadata,
   allowing them to be exported again if necessary
-* additional raw trees can be defined and are passed directly to the Pulp
+* additional raw repos can be defined and are passed directly to the Pulp
   server
 
 The current format doesn't allow for the definition of alternative sources for
@@ -184,23 +184,23 @@ A site definition is a mapping with the following attributes:
 * ``exclude_from_listing``: rsync wildcard patterns to ignore by default
   when determining which version directories to synchronise (if one of these
   filters matches the wildcard pattern identifying *desired* versions, then
-  that exclusion filter will be omitted from the raw tree definition).
+  that exclusion filter will be omitted from the raw repo definition).
 * ``exclude_from_sync``: rsync wildcard patterns that are always ignored
-  when creating a raw tree definition (e.g. to exclude standard locations for
+  when creating a raw repo definition (e.g. to exclude standard locations for
   temporary working files)
 
 
 .. _raw-tree-def:
 
-Raw Tree Definitions
+Raw Repo Definitions
 ^^^^^^^^^^^^^^^^^^^^
 
-Raw tree definitions are a low-level interface that corresponds directly with
+Raw repo definitions are a low-level interface that corresponds directly with
 the settings accepted by the underyling calls to the Pulp REST API. They allow
 direct specification of sync operations at the rsync level without needing to
 create single use remote tree, source and server definitions.
 
-A raw tree definition is a mapping with the following attributes:
+A raw repo definition is a mapping with the following attributes:
 
 * ``repo_id``: Locally unique repo ID (alphanumeric characters and hyphens only)
 * ``display_name``: Human readable short name for the repository
@@ -228,10 +228,10 @@ For further information, refer to the documentation for the Pulp
 
 .. _deriving-tree-defs:
 
-Deriving Raw Tree Definitions from Local Tree Definitions
----------------------------------------------------------
+Deriving Raw Repo Definitions from Local Mirror Definitions
+-----------------------------------------------------------
 
-Deriving raw tree definitions from a local mirror definition requires that a
+Deriving raw repo definitions from local mirror definitions requires that a
 specific site be nominated (e.g. via the ``--site`` flag to the ``init``
 command). If no site is nominated, or the site settings have no entry for a
 particular value, then the corresponding settings for the ``default`` site
@@ -372,14 +372,14 @@ layout appropriately). This section aims to break the example down
 into components and explain how each of them works.
 
 
-The Raw Tree Definition
+The Raw Repo Definition
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 The example configuration includes a single
-:ref:`Raw Tree Definition <raw-tree-def>`. For ease
+:ref:`Raw Repo Definition <raw-tree-def>`. For ease
 of reference, it is reproduced here::
 
-   "RAW_TREES": [
+   "RAW_REPOS": [
      {
        "repo_id": "raw_sync",
        "display_name": "Raw Sync Demo",
@@ -404,7 +404,7 @@ of reference, it is reproduced here::
      }
    ]
 
-Raw trees map almost directly to the Pulp settings for the corresponding
+Raw repos map almost directly to the Pulp settings for the corresponding
 plugin. This has the advantage of making them entirely self contained and
 very flexible, but also makes their configuration very repetitive if multiple
 trees are being mirrored from the same source location.

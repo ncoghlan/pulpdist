@@ -71,10 +71,10 @@ class TestSiteConfig(unittest.TestCase):
         self.assertSpecValid(example)
         self.assertValid(example)
 
-    def test_raw_trees_only(self):
+    def test_raw_repos_only(self):
         example = json.loads(TEST_CONFIG)
-        raw_trees = {u"RAW_TREES": example["RAW_TREES"]}
-        config = site_config.SiteConfig()
+        raw_repos = {u"RAW_REPOS": example["RAW_REPOS"]}
+        config = site_config.SiteConfig(raw_repos)
         self.assertSpecValid(config)
         self.assertValid(config)
 
@@ -85,7 +85,7 @@ class TestSiteConfig(unittest.TestCase):
 
     def test_missing_top_level_entries(self):
         base_config = json.loads(TEST_CONFIG)
-        _missing_ok = "LOCAL_MIRRORS RAW_TREES".split()
+        _missing_ok = "LOCAL_MIRRORS RAW_REPOS".split()
         for entry in base_config.keys():
             example = base_config.copy()
             example.pop(entry)
@@ -220,7 +220,7 @@ class TestSiteConfig(unittest.TestCase):
         self.assertValid(site)
 
     def test_duplicate_repo_id(self):
-        self._check_duplicate_id("RAW_TREES")
+        self._check_duplicate_id("RAW_REPOS")
 
     def test_mirror_repo_id_conflict(self):
         example = json.loads(TEST_CONFIG)
@@ -228,7 +228,7 @@ class TestSiteConfig(unittest.TestCase):
         mirror_id = mirror_config["mirror_id"]
         site_id = mirror_config.get("site_id", "default")
         repo_id = "{0}__{1}".format(mirror_id, site_id)
-        example["RAW_TREES"][0]["repo_id"] = repo_id
+        example["RAW_REPOS"][0]["repo_id"] = repo_id
         site = site_config.SiteConfig(example)
         self.assertSpecValid(site)
         self.assertInvalid(site)
@@ -361,7 +361,7 @@ class TestDataTransfer(test_sync_trees.BaseTestCase):
             server["rsync_port"] = self.rsyncd.port
         for mirror in config["LOCAL_MIRRORS"]:
             mirror["enabled"] = True
-        for repo in config["RAW_TREES"]:
+        for repo in config["RAW_REPOS"]:
             sync_config = repo["importer_config"]
             sync_config["rsync_port"] = self.rsyncd.port
             sync_config["enabled"] = True
@@ -407,7 +407,7 @@ class TestDataTransfer(test_sync_trees.BaseTestCase):
         self.check_sync_details(task.run_sync(), "SYNC_UP_TO_DATE", stats)
         self.check_snapshot_layout(local_path, *details)
 
-    def test_raw_tree(self):
+    def test_raw_repo(self):
         local_path, params = self._get_sync_config(repos=["raw_sync"])
         task = sync_trees.SyncTree(params)
         stats = dict(self.EXPECTED_TREE_STATS)

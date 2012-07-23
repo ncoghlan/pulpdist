@@ -172,7 +172,7 @@ TEST_CONFIG = """\
       "dns": "localhost"
     }
   ],
-  "RAW_TREES": [
+  "RAW_REPOS": [
     {
       "repo_id": "raw_sync",
       "display_name": "Raw Sync Demo",

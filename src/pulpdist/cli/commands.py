@@ -119,10 +119,10 @@ class PulpCommand(object):
             if config_data is None:
                 config_data = server.get_repos()
                 if verbose:
-                    print_msg("Handling all repos on server as raw trees")
+                    print_msg("Handling all repos on server as raw repos")
                 for tree in config_data:
                     tree["repo_id"] = tree.pop("id")
-                config_data = {"RAW_TREES": config_data}
+                config_data = {"RAW_REPOS": config_data}
         else:
             if verbose:
                 print_msg("Loading configuration from file {0!r}", config_fname)
@@ -141,7 +141,7 @@ class PulpCommand(object):
         """Returns a list of (repo_id, display_id, repo_info) tuples
 
         The display_id is just a more nicely formatted alternative to the
-        combined repo_id used for local mirror definitions. For raw trees, it
+        combined repo_id used for local mirror definitions. For raw repos, it
         is the same as repo_id.
         """
         args = self.args
@@ -225,7 +225,7 @@ class SyncHistoryCommand(PulpCommand):
         config data provided by PulpCommand.
 
         The display_id is just a more nicely formatted alternative to the
-        combined repo_id used for local mirror definitions. For raw trees, it
+        combined repo_id used for local mirror definitions. For raw repos, it
         is the same as repo_id.
         """
         server = self.server
