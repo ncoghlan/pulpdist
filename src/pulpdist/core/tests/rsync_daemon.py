@@ -33,7 +33,7 @@ port = {port}
   path = {test_data_path}
   comment = Data for test purposes
   read only = true
-  hosts allow = localhost
+  hosts allow = 127.0.0.1 ::1
   use chroot = false
 """
 
