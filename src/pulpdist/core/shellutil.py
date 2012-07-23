@@ -40,22 +40,24 @@ def filtered_walk(top, file_pattern=None, dir_pattern=None,
                        excluded_files=None, excluded_dirs=None,
                        depth=None, followlinks=False,
                        onerror=None, onloop=None):
-    """filtered_walk is similar to os.walk, but offers the following additional features:
-        - yields a named tuple of (path, subdirs, files, depth)
-        - allows independent glob-style filters for filenames and subdirectories
-        - allows independent exclusion filters for filenames and subdirectories
-        - emits a message to stderr and skips the directory if a symlink loop is encountered when following links
-        - allows a recursion depth limit to be specified
+    """\
+    filtered_walk is similar to os.walk, but offers the following additional features:
 
-       Selective walks are always top down, as the directory listings must be altered to provide
-       the above features. If not None, depth must be at least 0. A depth of zero can be useful
-       to get separate filtered subdirectory and file listings for a given directory.
+       - yields a named tuple of (path, subdirs, files, depth)
+       - allows independent glob-style filters for filenames and subdirectories
+       - allows independent exclusion filters for filenames and subdirectories
+       - emits a message to stderr and skips the directory if a symlink loop is encountered when following links
+       - allows a recursion depth limit to be specified
 
-       onerror is passed to os.walk to handle os.listdir errors
-       onloop (if provided) can be used to override the default symbolic loop handling. It is
-       called with the directory path as an argument when a loop is detected. Any false return
-       value will skip the directory, any true value means the directory will be processed
-       as normal.
+    Selective walks are always top down, as the directory listings must be altered to provide
+    the above features. If not None, depth must be at least 0. A depth of zero can be useful
+    to get separate filtered subdirectory and file listings for a given directory.
+
+    onerror is passed to os.walk to handle os.listdir errors
+    onloop (if provided) can be used to override the default symbolic loop handling. It is
+    called with the directory path as an argument when a loop is detected. Any false return
+    value will skip the directory, any true value means the directory will be processed
+    as normal.
     """
     if depth is not None and depth < 0:
         msg = "Depth limit must be None or greater than 0 ({0!r} provided)"
