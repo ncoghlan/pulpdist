@@ -3,9 +3,10 @@
 PulpDist Repository Management Client
 =====================================
 
-The upstream Pulp project does not currently provide a management client for
-repositories that use the new plugin model. Accordingly, PulpDist comes with
-a command line interface for working with these repositories.
+The 1.x series of the upstream Pulp project does not provide a management
+client for repositories that use the preliminary support for the v2 repo
+plugin model. Accordingly, PulpDist comes with a command line interface
+for working with these repositories.
 
 
 Invoking the Client
@@ -18,14 +19,27 @@ the appropriate module as a command line script::
    $ python -m pulpdist.manage_repos --help
 
 Before using the command line client to manage a Pulp server, it is necessary
-to create the login credentials for the Pulp server with the upstream
-``pulp-admin`` client (entering the appropriate password when prompted)::
+to create the login credentials for the Pulp server. PulpDist supports three
+mechanisms for that:
+
+* Kerberos tickets (default, but requires a `patched version of Pulp`_)
+* Pulp's native credential caching mechanism
+
+The former just requires an active Kerberos ticket that will be recognised
+by the server. The credentials for the latter can be acquired with the
+upstream ``pulp-admin`` client (entering the appropriate password when
+prompted)::
 
    $ pulp-admin --host <HOST> auth login --username <USER>
+
+To request use of these credentials (rather than a Kerberos ticket), pass
+the ``--auth pulp`` option to the client.
 
 Like ``pulp-admin`` the PulpDist repo management client defaults to using the
 fully qualified domain name of the current host as the target server. This can
 be overridden by passing a different hostname via the ``--host`` option.
+
+.. _patched version of Pulp: https://bugzilla.redhat.com/show_bug.cgi?id=831937
 
 Synchronisation Management Commands
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
