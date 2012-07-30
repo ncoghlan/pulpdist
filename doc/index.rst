@@ -24,6 +24,7 @@ Contents:
    cli.rst
    plugins.rst
    configuration.rst
+   config_tutorial.rst
    api.rst
    about.rst
 
