@@ -5,11 +5,19 @@
       "name": "Default Site",
       "storage_prefix": "/var/www/pub",
       "server_prefixes": {
-        "demo_server": "sync_demo"
+        "demo_server": "sync_demo",
+        "other_demo_server": "sync_demo_trees"
       },
       "source_prefixes": {
         "sync_demo": "sync_demo_trees"
-      }
+      },
+      "exclude_from_sync": ["*dull*"],
+      "exclude_from_listing": ["*justfortesting*"]
+    },
+    {
+      "site_id": "other",
+      "name": "Other Site",
+      "storage_prefix": "/var/www/pub/sync_demo"
     }
   ],
   "LOCAL_MIRRORS": [
@@ -28,6 +36,8 @@
     {
       "mirror_id": "versioned_sync",
       "tree_id": "versioned_sync",
+      "site_id": "other",
+      "exclude_from_sync": ["*skip*"],
       "sync_filters": ["exclude_dull/"],
       "exclude_from_listing": ["relevant-but*"],
       "notes": {
@@ -63,7 +73,7 @@
       "tree_path": "versioned",
       "sync_type": "versioned",
       "sync_hours": 12,
-      "source_id": "sync_demo",
+      "source_id": "sync_demo_other",
       "listing_pattern": "relevant*",
       "exclude_from_sync": ["*skip*"],
       "sync_filters": ["exclude_irrelevant/"]
@@ -76,7 +86,8 @@
       "sync_type": "snapshot",
       "sync_hours": 1,
       "source_id": "sync_demo",
-      "listing_prefix": "relev",
+      "listing_prefix": "re*ev",
+      "latest_link": "latest-relevant",
       "exclude_from_listing": ["relevant-but*"],
       "exclude_from_sync": ["*skip*"],
       "sync_filters": ["exclude_irrelevant/", "exclude_dull/"]
@@ -89,12 +100,24 @@
       "name": "Sync Demo Trees",
       "remote_path": "demo",
       "listing_suffix": "*"
+    },
+    {
+      "source_id": "sync_demo_other",
+      "server_id": "other_demo_server",
+      "name": "Other Sync Demo Trees",
+      "remote_path": "demo",
+      "listing_suffix": "*"
     }
   ],
   "REMOTE_SERVERS": [
     {
       "server_id": "demo_server",
       "name": "Sync Demo Server",
+      "dns": "localhost"
+    },
+    {
+      "server_id": "other_demo_server",
+      "name": "Other Sync Demo Server",
       "dns": "localhost"
     }
   ],
