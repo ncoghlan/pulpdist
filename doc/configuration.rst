@@ -232,10 +232,9 @@ Deriving Raw Repo Definitions from Local Mirror Definitions
 -----------------------------------------------------------
 
 Deriving raw repo definitions from local mirror definitions requires that a
-specific site be nominated (e.g. via the ``--site`` flag to the ``init``
-command). If no site is nominated, or the site settings have no entry for a
-particular value, then the corresponding settings for the ``default`` site
-are used instead.
+specific site be nominated. If no site is nominated, or the site settings
+have no entry for a particular value, then the corresponding settings for
+the ``default`` site are used instead.
 
 The local path used in the import configuration is calculated as::
 
@@ -246,10 +245,10 @@ Where:
 * ``storage_prefix`` is taken directly from the site settings
 * ``server_prefix`` is looked up in the server prefixes map. If it is not
   defined for either the specified site or the default site, then the empty
-  string is used.
+  string is used (and the now redundant extra path separator is omitted).
 * ``source_prefix`` is looked up in the source prefixes map. If it is not
   defined for either the specified site or the default site, then the empty
-  string is used.
+  string is used (and the now redundant extra path separator is omitted).
 * ``local_tree_path`` is the ``tree_path`` setting for the local tree, if
   it is defined, otherwise it uses the setting for the remote tree.
 
@@ -266,4 +265,16 @@ remote tree, the local site and the default site. All filtering options given
 in any of those applications are applied to the underlying rsync command. (The
 one exception is that any listing exclusion settings that would exclude
 directories matching the listing pattern for a particular tree are omitted
-from the remote listing command for that tree)
+from the remote listing command for that tree).
+
+For the ``sync_filters`` and ``listing_filters`` properties, order is
+preserved and the filters for the local mirror are added to the
+command line before those for the remote tree.
+
+For the ``exclude_from_sync`` and ``exclude_from_listing`` options, order
+is not preserved. The settings for the local mirror, remote tree, specific
+site (if any) and default site are merged into a single list in sorted
+order with any duplicates remove.
+
+Other settings are derived as detailed in the descriptions of the individual
+setting.
