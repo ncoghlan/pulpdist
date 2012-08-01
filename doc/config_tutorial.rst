@@ -367,7 +367,7 @@ definition is used. The default site definition is also used to provide
 default values that are used when a specific site definition doesn't
 replace them with more specific values.
 
-The example configuration contains only the default
+This particular mirror definition is for the default
 :ref:`Site Definition <site-def>` in the ``SITE_SETTINGS`` section::
 
   "SITE_SETTINGS": [
@@ -376,11 +376,14 @@ The example configuration contains only the default
       "name": "Default Site",
       "storage_prefix": "/var/www/pub",
       "server_prefixes": {
-        "demo_server": "sync_demo"
+        "demo_server": "sync_demo",
+        "other_demo_server": "sync_demo/sync_demo_trees"
       },
       "source_prefixes": {
         "sync_demo": "sync_demo_trees"
-      }
+      },
+      "exclude_from_sync": ["*dull*"],
+      "exclude_from_listing": ["*justfortesting*"]
     }
   ]
 
@@ -390,7 +393,13 @@ The ``site_id`` is just a unique identifier for the site, while the
 The ``storage_prefix`` is included in all local paths.
 
 The ``server_prefixes`` and ``source_prefixes`` mappings are used to
-map ``server_id`` and ``source_id`` values to local path components.
+map ``server_id`` and ``source_id`` values to local path components. For
+this local mirror, the relevant entries are ``demo_server`` and
+``sync_demo`` respectively.
+
+The ``exclude_from_sync`` and ``exclude_from_listing`` settings affect the
+filtering used for various rsync operations. For a simple sync operation,
+only the ``exclude_from_sync`` operation is relevant.
 
 See the :ref:`config reference <site-def>` for additional
 options and details.
@@ -410,7 +419,7 @@ For the simple tree mirror, the equivalent definition would look like this::
      {
        "repo_id": "simple__default",
        "display_name": "Simple Sync Demo",
-       "description": "Demonstration of simple tree sync plugin",
+       "description": "Demonstration of the simple tree sync plugin",
        "notes": {
           "basic": "note",
           "pulpdist": {
@@ -431,14 +440,17 @@ For the simple tree mirror, the equivalent definition would look like this::
          "remote_server": "localhost",
          "remote_path": "/demo/simple/",
          "local_path": "/var/www/pub/sync_demo/sync_demo_trees/simple/",
-         "exclude_from_sync": ["*skip*"],
+         "exclude_from_sync": ["*dull*", "*skip*"],
          "sync_filters": ["exclude_irrelevant/"]
        }
      }
 
 The ``repo_id`` is a combination of the ``mirror_id`` and the ``site_id``.
 This allows multiple nominal sites to be configured on the same Pulp
-server without identifier conflicts.
+server without identifier conflicts. Note that the command line client
+displays these merged IDs a little differently (``<mirror_id>(<site_id>)``).
+To select a mirror by its repo id, use the back end form with the double
+underscore separator (``<mirror_id>__<site_id>``).
 
 The ``display_name`` and ``description`` in this case come directly from
 the remote tree definition.
@@ -455,11 +467,11 @@ remote tree definition.
 The import configuration details used for a simple sync operation are
 common to all supported importer plugins.
 
-``tree_name`` is always just the dervied ``repo_id`` for the local mirror.
+``tree_name`` is always just the derived ``repo_id`` for the local mirror.
 
 ``remote_server`` is the ``dns`` property of the remote server definition.
 
-``remote_path`` in this cases is a combination of the ``remote_path`` entry
+``remote_path`` in this case is a combination of the ``remote_path`` entry
 in the remote source definition and the ``tree_path`` entry in the remote
 tree definition.
 
@@ -470,11 +482,14 @@ from the remote tree definition (this is one of those settings where the
 value from the remote tree definition is used if the local mirror
 definition doesn't override it).
 
-Finally, the ``exclude_from_sync`` and ``sync_filters`` settings are taken
-directly from the local mirror definition, as none of the other components
-involved in this particular mirror configuration include any of the
+The ``exclude_from_sync`` setting includes the value from the local mirror
+definition along with the value from the default site settings.
+
+The ``sync_filters`` setting is taken directly from the local mirror
+definition, as this particular remote tree definition omits all of the
 filtering options.
 
+Unlisted configuration options are left at their default values.
 
 Synchronization Behaviour
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -499,9 +514,9 @@ The following filtered tree layout should be seen in
    subdir2/
      data.txt
      data2.txt
-     dull/
-       data.txt
-       data2.txt
+
+This is the same as the tree layout produced by the example raw repo
+definition.
 
 
 Why Use Mirror Definitions?
@@ -510,9 +525,9 @@ Why Use Mirror Definitions?
 From the worked example, it may seem that mirror definitions are actually
 harder to use than the equivalent raw repo definitions. If you only want to
 mirror a single tree, this is true (that's why the option to provide a
-raw repo definition instead exists).
+raw repo definition exists).
 
-The intended use case for PulpDist, however, is for an internal mirroring
+The primary use case for PulpDist, however, is for an internal mirroring
 network, where any given rsync server will be publishing multiple trees,
 and any given site will be downloading multiple trees (potentially from
 different sources).
@@ -530,7 +545,273 @@ between mirrors, and also makes various data changes substantially easier
 Local Mirror Definition: Versioned Tree
 ---------------------------------------
 
-Coming soon!
+Where a simple sync definition maps directly to a single invocation of
+rsync, a versioned sync performs an initial listing step to identify a
+set of remote directories. A separate rsync task is then invoked for
+each directory. This is useful when a subset of directories from a
+particular remote directory are being split out to separate locations
+in the local mirror.
+
+The versioned tree definition in the example site configuration is set up
+to show the mechanism for limiting a mirror definition to a specific site.
+It also shows the additional filtering options that become available once
+the mirroring plugin switches to the two-step process of first doing a
+remote listing to identify the trees to be synchronised and then issuing
+a separate rsync command to mirror each tree.
+
+
+Defining the Local Mirror
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The basic mirror definition appears in the ``LOCAL_MIRRORS`` section of the
+configuration file::
+
+  "LOCAL_MIRRORS": [
+    {
+      "mirror_id": "versioned_sync",
+      "tree_id": "versioned_sync",
+      "site_id": "other",
+      "exclude_from_sync": ["*skip*"],
+      "sync_filters": ["exclude_dull/"],
+      "exclude_from_listing": ["relevant-but*"],
+      "notes": {
+        "site_custom": {
+          "origin": "PulpDist example repository"
+        }
+      }
+    }
+  ]
+
+This example creates a local mirror named ``versioned_sync`` at the site
+``other``, which will be a copy of the remote tree ``versioned_sync``.
+As with the ``simple_sync`` example, using the same name for the local
+mirror and the remote tree is entirely optional.
+
+The ``notes`` entry is again used to record additional information about
+the mirror, such as the initial rationale for creating it.
+
+The ``exclude_from_sync`` and ``sync_filters`` entries contribute to the
+filter settings in the derived raw repo definition. These filters apply
+to the step of synchronising the individual trees
+
+The ``exclude_from_listing`` setting controls which remote directories will
+be synchronised at all.
+
+See the :ref:`config reference <local-mirror-def>` for additional
+options and details.
+
+Defining the Remote Tree
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``tree_id`` entry names a particular
+:ref:`Remote Tree Definition <remote-tree-def>` in the ``REMOTE_TREES``
+section::
+
+  "REMOTE_TREES": [
+    {
+      "tree_id": "versioned_sync",
+      "name": "Versioned Sync Demo",
+      "description": "Demonstration of the versioned tree sync plugin",
+      "tree_path": "versioned",
+      "sync_type": "versioned",
+      "sync_hours": 12,
+      "source_id": "sync_demo_other",
+      "listing_pattern": "relevant*",
+      "exclude_from_sync": ["*skip*"],
+      "sync_filters": ["exclude_irrelevant/"]
+    }
+  ]
+
+The settings here are largely the same as those for the simple local mirror.
+
+The setting of ``12``for ``sync_hours`` indicates that ``cron_sync`` should
+sync this repo at 12 AM and 12 PM each day.
+
+The ``listing_pattern`` setting restricts the trees which will be considered
+for synchronisation, while ``exclude_from_sync`` and ``sync_filters``
+contribute to the rsync settings for the actual tree synchronisation tasks.
+
+See the :ref:`config reference <remote-tree-def>` for additional
+options and details.
+
+Defining the Remote Source
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``source_id`` entry names a particular
+:ref:`Remote Source Definition <remote-source-def>` in the
+``REMOTE_SOURCES`` section::
+
+  "REMOTE_SOURCES": [
+    {
+      "source_id": "sync_demo_other",
+      "server_id": "other_demo_server",
+      "name": "Other Sync Demo Trees",
+      "remote_path": "demo",
+      "listing_suffix": "*"
+    }
+  ]
+
+Aside from referring to a different remote server, the settings here are
+essentially the same as those for the simple local mirror.
+
+While the ``listing_suffix`` can be relevant for versioned tree definitions,
+in this case it is superseded by the ``listing_pattern`` setting in the
+remote tree definition.
+
+See the :ref:`config reference <remote-source-def>` for additional
+options and details.
+
+Defining the Remote Server
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``server_id`` entry names a particular
+:ref:`Remote Server Definition <remote-server-def>` in the
+``REMOTE_SERVERS`` section::
+
+  "REMOTE_SERVERS": [
+    {
+      "server_id": "other_demo_server",
+      "name": "Other Sync Demo Server",
+      "dns": "localhost"
+    }
+  ]
+
+As this is just an example site configuration, the "other" remote server
+also resolves to the local machine. This can also occur in real mirroring
+networks if multiple logical servers end up being combined on a single
+physical server.
+
+See the :ref:`config reference <remote-server-def>` for additional
+options and details.
+
+Defining the Local Site
+^^^^^^^^^^^^^^^^^^^^^^^
+
+The scope of this mirror is limited to a specific site. This means the
+settings for the named site become relevant, while those for the
+default site also still apply.
+
+Both of these :ref:`Site Definitions <site-def>` are given in the
+``SITE_SETTINGS`` section::
+
+  "SITE_SETTINGS": [
+    {
+      "site_id": "default",
+      "name": "Default Site",
+      "storage_prefix": "/var/www/pub",
+      "server_prefixes": {
+        "demo_server": "sync_demo",
+        "other_demo_server": "sync_demo_trees"
+      },
+      "source_prefixes": {
+        "sync_demo": "sync_demo_trees"
+      },
+      "exclude_from_sync": ["*dull*"],
+      "exclude_from_listing": ["*justfortesting*"]
+    },
+    {
+      "site_id": "other",
+      "name": "Other Site",
+      "storage_prefix": "/var/www/pub/sync_demo"
+    }
+  ]
+
+The interest point to note is that this site definition overrides the
+``storage_prefix`` setting. This will be used in preference to the
+default setting when deriving the raw repo configuration.
+
+See the :ref:`config reference <site-def>` for additional
+options and details.
+
+
+Equivalent Raw Repo Definition
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For the versioned tree mirror, the equivalent raw repo definition looks
+like this::
+
+     {
+       "repo_id": "versioned__other",
+       "display_name": "Versioned Sync Demo",
+       "description": "Demonstration of the versioned tree sync plugin",
+       "notes": {
+          "pulpdist": {
+            "mirror_id": "versioned_sync",
+            "source_id": "sync_demo_other",
+            "server_id": "other_demo_server",
+            "site_id": "other",
+            "sync_hours": 12,
+            "tree_id": "versioned_sync"
+          },
+          "site_custom": {
+            "origin": "PulpDist example repository"
+          }
+       },
+       "importer_type_id": "versioned_tree",
+       "importer_config": {
+         "tree_name": "versioned_sync__other",
+         "remote_server": "localhost",
+         "remote_path": "/demo/versioned/",
+         "local_path": "/var/www/pub/sync_demo/sync_demo_trees/versioned/",
+         "exclude_from_sync": ["*dull*", "*skip*"],
+         "sync_filters": ["exclude_dull/", "exclude_irrelevant/"],
+         "listing_pattern": "relevant*",
+         "exclude_from_listing": ["*justfortesting*", "relevant-but*"]
+       }
+     }
+
+The derivation of most of these settings is essentially the same as that
+for the simple mirror.
+
+``local_path`` is slightly different, in that the ``storage_prefix`` comes
+from the settings for the ``other`` site, while the prefix for the remote
+server still comes from the default site, and there is no prefix at all
+for the nominated remote source.
+
+The ``exclude_from_sync`` setting includes the value from the local mirror
+definition along with the value from the default site settings. Note that
+the duplicate value from the remote tree settings has been omitted.
+
+The ``sync_filters`` setting includes the filter options from both the
+local mirror and remote tree defitions.
+
+The completely new configuration settings all relate to the remote
+listing step.
+
+The ``listing_pattern`` is taken directly from the remote
+tree configuration and is passed to rsync to indicate which directories to
+include in the listing.
+
+The ``exclude_from_listing`` setting includes the value from the local mirror
+definition along with the value from the default site settings.
+
+Unlisted configuration options are left at their default values.
+
+
+Synchronization Behaviour
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The effect of this configuration is that, after running the following two
+commands::
+
+    python -m pulpdist.manage_repos enable --mirror versioned_sync --force
+    python -m pulpdist.manage_repos sync --mirror versioned_sync --force
+
+The following filtered tree layout should be seen in
+``/var/www/pub/sync_demo/sync_demo_trees/versioned``::
+
+   relevant-1/
+     ...
+   relevant-2/
+     ...
+   relevant-3/
+     ...
+   relevant-4/
+     ...
+
+Where the individual tree layouts represented by ``...`` are the same as
+those produced by both the local mirror and raw repo simple sync
+definitions.
 
 
 Local Mirror Definition: Snapshot Tree
