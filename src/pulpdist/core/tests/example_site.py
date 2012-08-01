@@ -57,7 +57,7 @@ TEST_CONFIG = """\
       "storage_prefix": "/var/www/pub",
       "server_prefixes": {
         "demo_server": "sync_demo",
-        "other_demo_server": "sync_demo/sync_demo_trees"
+        "other_demo_server": "sync_demo_trees"
       },
       "source_prefixes": {
         "sync_demo": "sync_demo_trees"
@@ -68,7 +68,7 @@ TEST_CONFIG = """\
     {
       "site_id": "other",
       "name": "Other Site",
-      "storage_prefix": "/var/www/pub"
+      "storage_prefix": "/var/www/pub/sync_demo"
     }
   ],
   "LOCAL_MIRRORS": [
