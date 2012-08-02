@@ -84,6 +84,12 @@ build the list of individual subtrees to be synchronised:
   are retained until explicitly deleted by a system administrator. Adding a
   ``PROTECTED`` file will also ensure a directory is not deleted automatically.
 
+  To avoid data loss due to network and remote storage glitches, the plugin
+  treats the case where absolutely no relevant remote directories are found
+  as an error and never deletes local directories in that situation.
+  Similarly, if the overall job will be reported as ``SYNC_FAILED``
+  or ``SYNC_PARTIAL``, then no local directories will be removed.
+
 The versioned tree sync also reproduces locally any upstream symlinks that
 match the listing pattern and point to destinations that exist on the local
 server after the sync operation is otherwise complete.
