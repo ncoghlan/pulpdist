@@ -15,7 +15,7 @@
 
 # This should be kept in sync with the version in the RPM spec file
 # The suffix should be removed before creating the RPM
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 def format_iter(iterable, fmt='{0!r}', sep=', '):
     return sep.join(fmt.format(x) for x in iterable)

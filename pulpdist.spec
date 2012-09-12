@@ -5,7 +5,7 @@
 # -- headers - pulpdist Python package  --------------------------------------
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
-Version:        0.1.0
+Version:        0.1.1
 Release:        1%{?dist}
 Group:          Development/Tools
 License:        GPLv2
@@ -276,6 +276,9 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* Wed Sep 12 2012 Nick Coghlan <ncoghlan@redhat.com> 0.1.1-1
+- BZ#856474: Fix race conditions when creating local directories
+
 * Fri Jul 20 2012 Nick Coghlan <ncoghlan@redhat.com> 0.1.0-1
 - BZ#841756: Support running the httpd-dev helper script on RHEL 6
 - Make the unit tests more reliably wait for rsync daemon activation

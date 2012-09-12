@@ -34,7 +34,7 @@ project_maintainer       = 'Nick Coghlan'
 project_point_of_contact = 'ncoghlan@redhat.com'
 project_description      = 'Pulp based mirroring network'
 project_packages         = find_packages()
-project_version          = '0.0.1'
+project_version          = '0.1.1'
 project_license          = 'GPLv2+'
 project_classifiers      = [
         'License :: OSI Approved :: GNU General Public License (GPL)',

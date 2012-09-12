@@ -251,7 +251,12 @@ class BaseSyncCommand(object):
                 self._update_run_log("Performing test run (no file transfer)")
             elif not path.exists(self.local_path):
                 self._update_run_log("Local path {0!r} does not exist, creating it", self.local_path)
-                os.makedirs(self.local_path, 0755)
+                try:
+                    os.makedirs(self.local_path, 0755)
+                except OSError as ex:
+                    if ex.errno != errno.EEXIST:
+                        raise
+                    self._update_run_log("  Destination directory already created by another process")
 
             result, sync_stats = self._do_transfer()
 
@@ -349,7 +354,12 @@ class BaseSyncCommand(object):
             # Ensure the full path to the destination directory exists locally
             if not os.path.lexists(local_dest_path):
                 self._update_run_log("Creating destination directory {0!r}", local_dest_path)
-                os.makedirs(local_dest_path)
+                try:
+                    os.makedirs(local_dest_path)
+                except OSError as ex:
+                    if ex.errno != errno.EEXIST:
+                        raise
+                    self._update_run_log("  Destination directory already created by another process")
         with self._indent_run_log():
             try:
                 return_code, captured = self._run_shell_command(rsync_fetch_command)
