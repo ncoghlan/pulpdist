@@ -24,6 +24,7 @@ import traceback
 import collections
 import re
 import contextlib
+import errno
 
 from . import sync_config, util
 

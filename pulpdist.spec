@@ -6,7 +6,7 @@
 Name:           pulpdist
 Summary:        Python library for PulpDist web application and associated Pulp plugins
 Version:        0.1.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 Group:          Development/Tools
 License:        GPLv2
 Source0:        %{name}-%{version}.tar.gz
@@ -276,6 +276,9 @@ fi
 # -- changelog ---------------------------------------------------------------
 
 %changelog
+* Wed Sep 12 2012 Nick Coghlan <ncoghlan@redhat.com> 0.1.1-2
+- Add missing import for BZ#856474 fix
+
 * Wed Sep 12 2012 Nick Coghlan <ncoghlan@redhat.com> 0.1.1-1
 - BZ#856474: Fix race conditions when creating local directories
 - BZ#856468: Handle case when most recent sync status is PLUGIN_ERROR
