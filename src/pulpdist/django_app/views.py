@@ -149,7 +149,8 @@ class RepoTable(Table):
         status = None
         history = record["sync_history"]
         if history:
-            status = history[0]["summary"]["result"]
+            summary = history[0]["summary"]
+            status = summary["result"] if summary else "PLUGIN_ERROR"
         record["last_status"] = status
 
     def set_last_sync_attempt(self, record):

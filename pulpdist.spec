@@ -278,6 +278,7 @@ fi
 %changelog
 * Wed Sep 12 2012 Nick Coghlan <ncoghlan@redhat.com> 0.1.1-1
 - BZ#856474: Fix race conditions when creating local directories
+- BZ#856468: Handle case when most recent sync status is PLUGIN_ERROR
 
 * Fri Jul 20 2012 Nick Coghlan <ncoghlan@redhat.com> 0.1.0-1
 - BZ#841756: Support running the httpd-dev helper script on RHEL 6
